@@ -1,18 +1,18 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
-import Pairing from "./pages/pairing/pairing";
+import Pairing from "./components/pairing/pairing";
 
+const opponentData =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRcdQNKgQOjIqnLimYvEurAKWn4c7GQOV12zIfChzWoB-YoRQZ6-iMZYWsptdmoUzbbEZ4dpvFH7t1s/pub?output=csv";
+const playerData =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0fGIK5on2vqYIlv7EZf5DNAx1GtMHhG9QMc7QFp7jMgrojr-_N3INII8uBdVx-M19QveCWfN-NSeH/pub?output=csv";
 
-const opponentData = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcdQNKgQOjIqnLimYvEurAKWn4c7GQOV12zIfChzWoB-YoRQZ6-iMZYWsptdmoUzbbEZ4dpvFH7t1s/pub?output=csv'
-const playerData = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR0fGIK5on2vqYIlv7EZf5DNAx1GtMHhG9QMc7QFp7jMgrojr-_N3INII8uBdVx-M19QveCWfN-NSeH/pub?output=csv'
-
-
-
-
-const teams:Map<string, Player[]> = new Map<string, Player[]>;
-
-async function fetchOpponents(setOpponents: React.Dispatch<React.SetStateAction<Player[]>>, opposingTeam: string) {
+async function fetchOpponents(
+  teams: Map<string, Opponent[]>,
+  setOpponents: React.Dispatch<React.SetStateAction<Opponent[]>>,
+  opposingTeam: string
+) {
   try {
     const res = await fetch(opponentData);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -24,11 +24,11 @@ async function fetchOpponents(setOpponents: React.Dispatch<React.SetStateAction<
       .split(/\r?\n/)
       .filter((l) => l.length > 0);
 
-    // Assume headers: Name,Faction,Id (or no Id; we’ll generate one)
+    // Assume headers: Name,Faction,Id (or no Id; we'll generate one)
     const [header, ...rows] = lines;
     const headers = header.split(",").map((h) => h.trim().toLowerCase());
 
-    const teamIdx = headers.indexOf("team")
+    const teamIdx = headers.indexOf("team");
     const nameIdx = headers.indexOf("player");
     const factionIdx = headers.indexOf("faction");
     const listIdx = headers.indexOf("list");
@@ -49,22 +49,27 @@ async function fetchOpponents(setOpponents: React.Dispatch<React.SetStateAction<
       };
     });
 
+    // Reset the team lookup before repopulating so re-fetching doesn't
+    // accumulate duplicate entries.
+    teams.clear();
     data.forEach((opponent) => {
-      if (teams.get(opponent.team) === undefined) {
+      const existing = teams.get(opponent.team);
+      if (existing === undefined) {
         teams.set(opponent.team, [opponent]);
       } else {
-        teams.get(opponent.team)!.push(opponent);
+        existing.push(opponent);
       }
-    })
+    });
 
-    const badGuys = teams.get(opposingTeam) === undefined ? teams.get(opposingTeam) : [];
-
-    setOpponents(badGuys!);
-  } catch (err: any) {
-    console.log(err.message ?? "Failed to load CSV");
+    setOpponents(teams.get(opposingTeam) ?? []);
+  } catch (err) {
+    console.log(err instanceof Error ? err.message : "Failed to load CSV");
   }
 }
-async function fetchTeamMatrix(setPlayers: React.Dispatch<React.SetStateAction<Player[]>>) {
+
+async function fetchTeamMatrix(
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>
+) {
   try {
     const res = await fetch(playerData);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -76,32 +81,30 @@ async function fetchTeamMatrix(setPlayers: React.Dispatch<React.SetStateAction<P
       .split(/\r?\n/)
       .filter((l) => l.length > 0);
 
-    // Assume headers: Name,Faction,Id (or no Id; we’ll generate one)
+    // Assume headers: Name,Faction,Id (or no Id; we'll generate one)
     const [header, ...rows] = lines;
     const headers = header.split(",").map((h) => h.trim().toLowerCase());
 
     const idIdx = headers.indexOf("id"); // optional
     const nameIdx = headers.indexOf("player");
     const factionIdx = headers.indexOf("faction");
-    const factions: Map<string, number> = new Map<string, number>()
-    headers.forEach((value, index)=>{
-      if (value != "player" && value != "faction" && value != "") {
-        factions.set(value, index)
+    const factions: Map<string, number> = new Map<string, number>();
+    headers.forEach((value, index) => {
+      if (value !== "player" && value !== "faction" && value !== "") {
+        factions.set(value, index);
       }
     });
 
-
-
-     const data: Player[] = rows.map((line, index) => {
+    const data: Player[] = rows.map((line, index) => {
       const cols = line.split(",").map((c) => c.trim());
-      const matrix: Map<string, number> = new Map<string, number>()
-      factions.forEach((value, key)=>{
+      const matrix: Map<string, number> = new Map<string, number>();
+      factions.forEach((value, key) => {
         matrix.set(key, Number(cols[value]));
       });
       return {
         name: cols[nameIdx] ?? "no name",
         faction: cols[factionIdx] ?? "",
-        team:  "thundercluckers",
+        team: "thundercluckers",
         matrix: matrix,
         id:
           idIdx >= 0 && cols[idIdx] !== undefined
@@ -110,73 +113,86 @@ async function fetchTeamMatrix(setPlayers: React.Dispatch<React.SetStateAction<P
       };
     });
 
-    console.log(data)
-    setPlayers(data!);
-  } catch (err: any) {
-
+    setPlayers(data);
+  } catch (err) {
+    console.log(err instanceof Error ? err.message : "Failed to load CSV");
   }
 }
 
 export default function Home() {
   const [opponents, setOpponents] = React.useState<Opponent[]>([]);
-  const [players, setPlayers] = React.useState<Player[]>([])
-  const [opposingTeam, setOpposingTeam] = React.useState<string>("")
+  const [players, setPlayers] = React.useState<Player[]>([]);
+  const [opposingTeam, setOpposingTeam] = React.useState<string>("");
+
+  // Scoped to this component instance (rather than a module-level global)
+  // so it doesn't leak across mounts/hot reloads.
+  const teamsRef = useRef<Map<string, Opponent[]>>(new Map());
 
   useEffect(() => {
-    fetchOpponents(setOpponents, opposingTeam);
+    fetchOpponents(teamsRef.current, setOpponents, opposingTeam);
     fetchTeamMatrix(setPlayers);
+    // Only runs once on mount; opposingTeam changes are handled by the
+    // <select> below, which reads directly from teamsRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   const selectOpponent = (player: Player, opp: Opponent) => {
-    players[players.indexOf(player)].pair = opp
-    setOpponents(opponents.filter((opps) => opps.id != opp.id));
-    setPlayers(players)
-    return opp;
-  }
+    setPlayers((prev) =>
+      prev.map((p) => (p.id === player.id ? { ...p, pair: opp } : p))
+    );
+    setOpponents((prev) => prev.filter((o) => o.id !== opp.id));
+  };
 
   const undoPair = (player: Player) => {
-    opponents.push(player.pair!)
-    players[players.indexOf(player)].pair = undefined
-    setOpponents(opponents);
-    setPlayers([...players])
-    return player
-  }
+    const releasedOpponent = player.pair;
+    setPlayers((prev) =>
+      prev.map((p) => (p.id === player.id ? { ...p, pair: undefined } : p))
+    );
+    if (releasedOpponent) {
+      setOpponents((prev) => [...prev, releasedOpponent]);
+    }
+  };
 
-  var expectedScore: number = 0;
-
-
-  players.forEach(player => {
-    const opponent = player?.pair
-    const expected = opponent ? player.matrix?.get(opponent.faction)! : 0;
-    expectedScore = expectedScore + expected;
-  })
+  let expectedScore = 0;
+  players.forEach((player) => {
+    const opponent = player.pair;
+    const expected = opponent ? player.matrix?.get(opponent.faction) ?? 0 : 0;
+    expectedScore += expected;
+  });
 
   return (
     <div>
       <div>
-        Opponent: 
-        <select onChange={(e) => {
-          setOpposingTeam(e.target.value);
-          setOpponents(teams.get(e.target.value)!);
-          }}>
-            {
-              teams.keys().toArray().map((team)=> <option key={team} value={team}>{team}</option>)
-            }
+        Opponent:
+        <select
+          onChange={(e) => {
+            const team = e.target.value;
+            setOpposingTeam(team);
+            setOpponents(teamsRef.current.get(team) ?? []);
+          }}
+        >
+          {Array.from(teamsRef.current.keys()).map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
         </select>
       </div>
       <div className="flex items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-        {
-          players.map(player => {
-            return (
-                <Pairing key={player.id} player={player} opponents={opponents} selectOpponent={selectOpponent} undoPair={undoPair} className="bg-zinc-50 font-sans dark:bg-black" />
-            );
-          })
-        }
+        {players.map((player) => (
+          <Pairing
+            key={player.id}
+            player={player}
+            opponents={opponents}
+            selectOpponent={selectOpponent}
+            undoPair={undoPair}
+            className="bg-zinc-50 font-sans dark:bg-black"
+          />
+        ))}
       </div>
       <div className="flex items-center justify-center font-sans dark:bg-black">
         expectedScore: {expectedScore} out of {players.length * 20}
       </div>
-    </div >
+    </div>
   );
 }

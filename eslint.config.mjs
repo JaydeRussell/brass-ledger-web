@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // next.js-generated, not hand-written
+    "types/routes.d.ts",
+    "types/validator.ts",
+    "types/cache-life.d.ts",
   ]),
 ]);
 

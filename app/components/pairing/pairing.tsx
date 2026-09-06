@@ -13,8 +13,8 @@ type PairingProps = {
     className?: string;
 };
 
-type selectOpponent = (player: Player, opp: Opponent) => Player
-type undoPair = (player: Player) => Player
+type selectOpponent = (player: Player, opp: Opponent) => void
+type undoPair = (player: Player) => void
 
 
 const matrixColor = (rating: number | undefined) => {
