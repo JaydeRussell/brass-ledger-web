@@ -19,8 +19,29 @@
   }
 }
 
+html,
+body {
+  /* Safety net for phone-width screens: nothing in the layout should
+     need to scroll sideways, but this guarantees a single stray wide
+     element (a badge, a long team name, a dropdown) can't force the
+     whole page to pan horizontally. */
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Hides the scrollbar on an explicitly horizontally-scrollable strip
+   (the tab bar on a narrow phone) without hiding the ability to scroll
+   it — a visible scrollbar there reads as a broken layout rather than
+   an intentional "swipe to see more tabs" affordance. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
