@@ -245,18 +245,20 @@ stale, rather than appending to it forever.
 
 ## Environment quirks that will trip up a new session
 
-Same bridge-to-the-user's-Mac setup as the backend repo — see its
-`CLAUDE.md` for the full explanation of the two available shells (a cloud
-sandbox with no access to the user's files, vs. a `device_bash` VM that
-mounts the real project folders but has no Go/Docker) and the
-edit-in-sandbox-then-`SendUserFile`+`device_commit_files` workflow used
-to get changes onto the user's machine. Frontend-specific notes:
+**As of 2026-09-07, work happens directly in a terminal on the user's own
+Mac**, and this frontend is treated as part of the same working session
+as the backend repo (`teams-match-making-be`, sibling directory) rather
+than a separate context to hand off to — see that repo's `CLAUDE.md`
+"Environment quirks" section for the full explanation. The old
+bridge/cloud-sandbox split (`device_bash` VM vs. a separate cloud
+sandbox, edit-then-`SendUserFile`+`device_commit_files` to sync changes
+across) no longer applies.
 
-- `npm test`, `npm run lint`, and `npx tsc --noEmit` all work fine via
-  `device_bash` and are what this project leans on for verification.
-- `npm run build` fails via `device_bash` with a "Failed to load SWC
-  binary for linux/arm64" error — a missing optional native binary in
-  that sandboxed local VM, not a real bug. The actual production build
-  only needs to work inside the Docker image (fresh `npm ci` on
-  `node:20-alpine`) or on the user's own terminal — don't chase this
-  error as if it were a code problem.
+- `npm test`, `npm run lint`, and `npx tsc --noEmit` all work fine and
+  are what this project leans on for verification.
+- `npm run build` now succeeds cleanly (confirmed 2026-09-07, Next.js 16
+  + Turbopack). The previous "Failed to load SWC binary for linux/arm64"
+  error was specific to the old sandboxed Linux VM (a missing optional
+  native binary there, not a real bug) and doesn't reproduce on this
+  native darwin/arm64 terminal — safe to rely on a real `npm run build`
+  for verification now instead of deferring it to Docker/the user.
