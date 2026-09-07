@@ -1,5 +1,5 @@
 // Client for this app's own backend's Google sign-in endpoints
-// (see internal/api/auth.go in the teams-match-making-be repo).
+// (see internal/api/auth.go in the brass-ledger-api repo).
 //
 // Session state lives in an httpOnly cookie the backend sets on
 // successful sign-in — every request here needs `credentials: "include"`

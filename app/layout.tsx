@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Teams Pairing Tool",
-  description: "Warhammer 40k teams-event pairing tool: matches your players against an opponent team using per-faction matchup scores.",
+  title: "Brass Ledger — Tournament Companion",
+  description: "Tournament companion for Warhammer 40k: rosters, pairings, and placings pulled straight from Best Coast Pairings, in one place.",
 };
 
 export default function RootLayout({

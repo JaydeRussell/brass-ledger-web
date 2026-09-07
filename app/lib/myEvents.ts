@@ -1,5 +1,5 @@
 // Client for this app's own backend's "my events" endpoints (see
-// internal/api/me.go in the teams-match-making-be repo): linking a Best
+// internal/api/me.go in the brass-ledger-api repo): linking a Best
 // Coast Pairings profile to the signed-in account, and fetching that
 // profile's events classified into past/present/future.
 //

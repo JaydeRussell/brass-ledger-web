@@ -4,7 +4,7 @@
 // implementation, still used for a signed-out (guest) visitor.
 // fetchRecentEventsFromServer/recordRecentEventOnServer, further down,
 // are this app's own backend's sync client (see internal/api/sync.go in
-// teams-match-making-be) for a signed-in visitor, so the list follows
+// brass-ledger-api) for a signed-in visitor, so the list follows
 // them across devices instead of staying pinned to one browser. Neither
 // half talks to BCP.
 

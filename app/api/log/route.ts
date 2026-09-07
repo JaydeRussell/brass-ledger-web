@@ -1,7 +1,7 @@
 // A tiny server-side sink for client-side log events (see
 // app/lib/clientLog.ts and app/components/shared/clientErrorLogger.tsx).
 // This app is otherwise a pure client — every backend call goes straight
-// from the browser to teams-match-making-be — but a browser's own
+// from the browser to brass-ledger-api — but a browser's own
 // console isn't something anyone can read back later, so this route
 // lets the client hand a log line to the Next.js server process, which
 // appends it to a plain file on disk (LOG_FILE, alongside the backend's
@@ -19,7 +19,7 @@ import { dirname } from "node:path";
 // Unset -> the default path. Explicitly set to an empty string ->
 // console-only (skip the file write below entirely) — same
 // unset-vs-explicitly-empty distinction the backend's LOG_FILE makes
-// (see teams-match-making-be's internal/config), so "LOG_FILE=" in
+// (see brass-ledger-api's internal/config), so "LOG_FILE=" in
 // either .env.example behaves the same way.
 const LOG_FILE = process.env.LOG_FILE === undefined ? "logs/frontend.log" : process.env.LOG_FILE;
 

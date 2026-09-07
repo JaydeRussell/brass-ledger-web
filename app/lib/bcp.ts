@@ -6,7 +6,7 @@
 // to be a respectful API citizen (see CLAUDE.md's "be respectful of
 // third-party APIs" rule). That fetching/caching/rate-limiting logic has
 // moved server-side into this app's own Go backend (see the
-// teams-match-making-be repo's internal/bcp package), so every browser
+// brass-ledger-api repo's internal/bcp package), so every browser
 // now shares one server-side cache and rate limit against BCP instead of
 // each tab enforcing its own. This file is now a thin client for this
 // app's own backend, and every exported type/function signature here is

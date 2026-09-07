@@ -1,7 +1,7 @@
 // The "following" (teams/players tracked within one event) type shared
 // between app/page.tsx and this file, plus a client for this app's own
 // backend's per-event follows endpoints (see internal/api/sync.go in the
-// teams-match-making-be repo) — used only when a user is signed in; a
+// brass-ledger-api repo) — used only when a user is signed in; a
 // signed-out visitor keeps the original localStorage-only behavior (see
 // app/page.tsx's readLocalStorage/writeLocalStorage/followingKey).
 //

@@ -247,7 +247,7 @@ stale, rather than appending to it forever.
 
 **As of 2026-09-07, work happens directly in a terminal on the user's own
 Mac**, and this frontend is treated as part of the same working session
-as the backend repo (`teams-match-making-be`, sibling directory) rather
+as the backend repo (`brass-ledger-api`, sibling directory) rather
 than a separate context to hand off to — see that repo's `CLAUDE.md`
 "Environment quirks" section for the full explanation. The old
 bridge/cloud-sandbox split (`device_bash` VM vs. a separate cloud

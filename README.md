@@ -1,8 +1,9 @@
-# What is this?
+# Brass Ledger
 
-A read-only tournament aid for Warhammer 40k events, pulling data straight
-from Best Coast Pairings (BCP). Switch it to any BCP event from the gear
-icon in the header — it's not hardcoded to one tournament.
+**Tournament Companion** for Warhammer 40k — a read-only tournament aid,
+pulling data straight from Best Coast Pairings (BCP). Switch it to any BCP
+event from the gear icon in the header — it's not hardcoded to one
+tournament.
 
 The page is split into tabs mirroring BCP's own event page:
 - **Overview**: event name, format, and round status, plus the event
@@ -74,7 +75,7 @@ AI — so this stays a plain data display. See the scope note at the top of
 anything that would compute or recommend a matchup.
 
 `app/lib/bcp.ts` no longer talks to BCP directly — that moved to this
-app's own backend (the sibling `teams-match-making-be` repo's
+app's own backend (the sibling `brass-ledger-api` repo's
 `internal/bcp` package), which calls BCP's undocumented
 (`newprod-api.bestcoastpairings.com`) endpoints, caches the results, and
 enforces a minimum refetch interval per key, shared across every browser
@@ -95,7 +96,7 @@ limiting, etc.
 # Getting Started
 
 This app now calls its own backend for all BCP data (see above) — start
-that first (`go run ./cmd/server` in `teams-match-making-be`, or `./run.sh`
+that first (`go run ./cmd/server` in `brass-ledger-api`, or `./run.sh`
 there for the whole stack), then:
 
 ```bash
@@ -137,7 +138,7 @@ Debugging a sign-in that isn't working from the browser's side? Look
 here for what `/api/me` actually returned (a network error usually means
 a wrong `NEXT_PUBLIC_BACKEND_URL` or a CORS mismatch — see that repo's
 `FRONTEND_BASE_URL`) alongside the backend's own log file
-(`teams-match-making-be`'s README — its "Logging" section), which has
+(`brass-ledger-api`'s README — its "Logging" section), which has
 the *why* for anything that failed server-side.
 
 # Testing
@@ -161,7 +162,7 @@ npm run lint
 This repo has its own `Dockerfile` (multi-stage, using Next's
 `output: "standalone"` build for a small runtime image), but the actual
 "start everything" command lives in the backend repo
-(`teams-match-making-be`), since that's what also owns Postgres and the
+(`brass-ledger-api`), since that's what also owns Postgres and the
 API — see its README's "Running the whole stack with Docker" section.
 Short version, from that repo:
 
@@ -227,7 +228,7 @@ building/running just the frontend container by hand.
     still per-browser `localStorage`) so they survive clearing site data
     and follow you across devices.
 [x] Backend integration — all BCP fetching/caching/rate-limiting has moved
-    to the `teams-match-making-be` repo; this frontend now calls it via
+    to the `brass-ledger-api` repo; this frontend now calls it via
     `NEXT_PUBLIC_BACKEND_URL` instead of BCP directly. See its README for
     the new `internal/bcp`/`internal/api` layout.
 [x] Database — Postgres (via Neon/Supabase/Railway, or the local

@@ -26,11 +26,11 @@ clean: ## Remove build output
 	rm -rf .next
 
 docker-build: ## Build this app's standalone Docker image
-	docker build -t teams-match-making-fe .
+	docker build -t brass-ledger-web .
 
 docker-run: ## Run the image built above by itself, on localhost:3000
-	docker run --rm -p 3000:3000 teams-match-making-fe
+	docker run --rm -p 3000:3000 brass-ledger-web
 
 # For the whole stack (this app + the backend + Postgres) together, use
-# `make docker-up` in ../teams-match-making-be instead — that's what
+# `make docker-up` in ../brass-ledger-api instead — that's what
 # wires this app up to a real backend via NEXT_PUBLIC_BACKEND_URL.
