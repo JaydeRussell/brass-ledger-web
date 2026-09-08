@@ -36,6 +36,16 @@ export type FactionStat = {
 };
 
 /**
+ * A best placing plus the size of the field it was achieved in (BCP's
+ * own published player/team count for that event, when available) — see
+ * internal/api/stats.go's placingWithField.
+ */
+export type PlacingWithField = {
+  placing: number;
+  fieldSize?: number;
+};
+
+/**
  * The signed-in account's player-stats summary (see
  * internal/api/stats.go's playerStatsResponse). `linked` is false — with
  * every other field empty/zero — for an account that hasn't pasted a BCP
@@ -46,16 +56,19 @@ export type FactionStat = {
  * fetchCurrentItcLeagueId/fetchItcRanking) — deliberately not fetched by
  * this endpoint itself, so a page that doesn't want an ITC badge doesn't
  * pay for one.
+ *
+ * competingSince is the earliest event date in the player's history.
  */
 export type MyStats = {
   linked: boolean;
   totalEvents: number;
-  bestPlacing?: number;
-  bestPlacingRtt?: number;
-  bestPlacingGt?: number;
-  bestPlacingTeams?: number;
+  bestPlacing?: PlacingWithField;
+  bestPlacingRtt?: PlacingWithField;
+  bestPlacingGt?: PlacingWithField;
+  bestPlacingTeams?: PlacingWithField;
   factions: FactionStat[];
   mostRecentGameSystemId?: string;
+  competingSince?: string;
 };
 
 export async function fetchMyStats(): Promise<MyStats> {

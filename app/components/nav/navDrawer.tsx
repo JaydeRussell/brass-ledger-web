@@ -7,6 +7,7 @@ import AccountSection from "./accountSection";
 const LINKS = [
   { href: "/", label: "Event" },
   { href: "/my-events", label: "My Events" },
+  { href: "/stats", label: "Player Stats" },
 ];
 
 /**
@@ -42,7 +43,7 @@ export default function NavDrawer() {
         }`}
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Tournament Aid</span>
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Brass Ledger</span>
           <button
             type="button"
             onClick={close}

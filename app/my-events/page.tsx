@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
-import PlayerStatsPanel from "../components/myEvents/playerStatsPanel";
 import { googleSignInUrl, useCurrentUser } from "../lib/auth";
 import { fetchMyEvents, type MyEvent, type MyEvents } from "../lib/myEvents";
 import { logClientEvent } from "../lib/clientLog";
@@ -143,8 +142,6 @@ function MyEventsContent() {
           </div>
         ) : (
           <>
-            <PlayerStatsPanel bcpUserId={bcpUserId} />
-
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800">
               <nav className="flex gap-1">
                 {TAB_KEYS.map((tab) => {

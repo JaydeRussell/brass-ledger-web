@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { fetchMyStats, type MyStats } from "../../lib/myStats";
+import { fetchMyStats, type MyStats, type PlacingWithField } from "../../lib/myStats";
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
 import ItcBadge from "../shared/itcBadge";
 import { logClientEvent } from "../../lib/clientLog";
@@ -9,11 +9,12 @@ type PlayerStatsPanelProps = {
   bcpUserId: string;
 };
 
-function StatTile({ label, value }: { label: string; value: string }) {
+function StatTile({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="flex min-w-[6rem] flex-1 flex-col items-center rounded-xl bg-zinc-50 px-3 py-2 text-center dark:bg-zinc-800/60">
       <span className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{value}</span>
       <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+      {detail && <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{detail}</span>}
     </div>
   );
 }
@@ -33,16 +34,33 @@ function ordinal(n: number): string {
   }
 }
 
+/** "of 53 · top 4%" — undefined if the event never published a field size. */
+function fieldDetail(p?: PlacingWithField): string | undefined {
+  if (!p?.fieldSize) return undefined;
+  const percentile = Math.max(1, Math.round((p.placing / p.fieldSize) * 100));
+  return `of ${p.fieldSize} · top ${percentile}%`;
+}
+
+/** "Nov 2025" from a BCP date string, or undefined if it can't be parsed. */
+function formatMonthYear(iso?: string): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
 /**
- * A compact "player stats" summary card for the signed-in account's
- * linked BCP profile — best placing (overall, and split GT vs Teams vs
- * RTT) plus
- * a per-faction breakdown, all straight from internal/api/stats.go's
- * aggregation of BCP's own already-published placing history, and a
- * current ITC score/rank badge once a game system can be resolved.
- * Deliberately just one card, not a whole page: see the scope note in
- * app/page.tsx before adding anything that scores or ranks rather than
- * displays already-published numbers.
+ * The signed-in account's player stats — best placing (overall, and
+ * split GT vs Teams vs RTT), each with the field size it was achieved in
+ * when BCP published one ("of 53 · top 4%"), plus a per-faction
+ * breakdown, how long they've been competing, and a current ITC
+ * score/rank badge once a game system can be resolved. All straight from
+ * internal/api/stats.go's aggregation of BCP's own already-published
+ * placing history — see the scope note in app/page.tsx before adding
+ * anything that scores or ranks rather than displays already-published
+ * numbers. Lives on its own page (app/stats/page.tsx) rather than as a
+ * card squeezed onto another page, once there was enough here to
+ * warrant it.
  */
 export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
   const [stats, setStats] = React.useState<MyStats | null>(null);
@@ -102,7 +120,14 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Player stats</h2>
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Player stats</h2>
+          {formatMonthYear(stats.competingSince) && (
+            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+              Competing since {formatMonthYear(stats.competingSince)}
+            </p>
+          )}
+        </div>
         {itcRanking && (
           <ItcBadge
             ranking={itcRanking}
@@ -117,19 +142,23 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
         <StatTile label="Events played" value={String(stats.totalEvents)} />
         <StatTile
           label="Best placing"
-          value={stats.bestPlacing !== undefined ? ordinal(stats.bestPlacing) : "—"}
+          value={stats.bestPlacing !== undefined ? ordinal(stats.bestPlacing.placing) : "—"}
+          detail={fieldDetail(stats.bestPlacing)}
         />
         <StatTile
           label="Best GT placing"
-          value={stats.bestPlacingGt !== undefined ? ordinal(stats.bestPlacingGt) : "—"}
+          value={stats.bestPlacingGt !== undefined ? ordinal(stats.bestPlacingGt.placing) : "—"}
+          detail={fieldDetail(stats.bestPlacingGt)}
         />
         <StatTile
           label="Best Teams placing"
-          value={stats.bestPlacingTeams !== undefined ? ordinal(stats.bestPlacingTeams) : "—"}
+          value={stats.bestPlacingTeams !== undefined ? ordinal(stats.bestPlacingTeams.placing) : "—"}
+          detail={fieldDetail(stats.bestPlacingTeams)}
         />
         <StatTile
           label="Best RTT placing"
-          value={stats.bestPlacingRtt !== undefined ? ordinal(stats.bestPlacingRtt) : "—"}
+          value={stats.bestPlacingRtt !== undefined ? ordinal(stats.bestPlacingRtt.placing) : "—"}
+          detail={fieldDetail(stats.bestPlacingRtt)}
         />
       </div>
 

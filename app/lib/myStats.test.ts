@@ -29,12 +29,13 @@ test("fetchMyStats: sends credentials and returns the parsed body", async () => 
   const wantBody = {
     linked: true,
     totalEvents: 4,
-    bestPlacing: 1,
-    bestPlacingGt: 2,
-    bestPlacingRtt: 1,
-    bestPlacingTeams: 5,
+    bestPlacing: { placing: 1 },
+    bestPlacingGt: { placing: 2, fieldSize: 53 },
+    bestPlacingRtt: { placing: 1 },
+    bestPlacingTeams: { placing: 5, fieldSize: 12 },
     factions: [{ faction: "World Eaters", eventCount: 3, bestPlacing: 2 }],
     mostRecentGameSystemId: "gs-40k",
+    competingSince: "2025-11-01T00:00:00.000Z",
   };
   const { calls } = installFetch(() => ({ status: 200, body: wantBody }));
 
