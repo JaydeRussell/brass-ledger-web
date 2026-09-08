@@ -38,6 +38,7 @@ import {
 import { fetchFollows, addFollow, removeFollow, followedKey, type Followed } from "./lib/follows";
 import { useCurrentUser } from "./lib/auth";
 import { logClientEvent } from "./lib/clientLog";
+import { useDelayedFlag } from "./lib/useDelayedFlag";
 
 // The default BCP event to open on first visit. Use the settings (gear)
 // button in the header to switch to a different event — the choice is
@@ -223,6 +224,7 @@ function HomeContent() {
   const requestedItcIdsRef = React.useRef<Set<string>>(new Set());
   const [following, setFollowing] = React.useState<Followed[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const slowLoad = useDelayedFlag(loading);
   const [error, setError] = React.useState<string | null>(null);
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
   // Note: the shared Roster/Pairings/Placings search box's value
@@ -749,7 +751,7 @@ function HomeContent() {
           <HamburgerButton />
           <div>
             <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
-              Tournament Aid
+              Brass Ledger
             </h1>
             <p className="mt-1 hidden text-sm text-zinc-500 dark:text-zinc-400 sm:block">
               Pulls roster, published-pairing, and placings data straight from Best Coast
@@ -816,9 +818,17 @@ function HomeContent() {
         {activeTab === "roster" && (
           <>
             {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CardSkeleton />
-                <CardSkeleton />
+              <div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <CardSkeleton />
+                  <CardSkeleton />
+                </div>
+                {slowLoad && (
+                  <p className="mt-3 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                    Taking longer than usual — this is a first look at this event, so it&apos;s
+                    asking Best Coast Pairings directly.
+                  </p>
+                )}
               </div>
             ) : isTeamEvent ? (
               sortedTeamNames.length === 0 ? (

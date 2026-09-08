@@ -3,6 +3,8 @@ import React from "react";
 import { fetchMyStats, type MyStats, type PlacingWithField } from "../../lib/myStats";
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
 import ItcBadge from "../shared/itcBadge";
+import Spinner from "../shared/spinner";
+import { useDelayedFlag } from "../../lib/useDelayedFlag";
 import { logClientEvent } from "../../lib/clientLog";
 
 type PlayerStatsPanelProps = {
@@ -114,7 +116,31 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
     };
   }, [stats?.mostRecentGameSystemId, bcpUserId]);
 
+  // stats is only ever null before the first fetchMyStats resolution —
+  // it always resolves to a real MyStats (with linked: false, not null,
+  // for an account with nothing to show) once it does.
+  const loading = stats === null && !error;
+  const slowLoad = useDelayedFlag(loading);
+
   if (error) return null; // fails quietly — the event tabs below are the important part of this page
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex items-center gap-2">
+          <Spinner size="sm" />
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading player stats…</span>
+        </div>
+        {slowLoad && (
+          <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+            Taking longer than usual — this app hasn&apos;t seen some of your events before, so
+            it&apos;s asking Best Coast Pairings for them the first time.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   if (!stats || !stats.linked || stats.totalEvents === 0) return null;
 
   return (

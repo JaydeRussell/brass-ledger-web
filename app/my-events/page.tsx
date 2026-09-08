@@ -5,6 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
+import Spinner from "../components/shared/spinner";
+import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { googleSignInUrl, useCurrentUser } from "../lib/auth";
 import { fetchMyEvents, type MyEvent, type MyEvents } from "../lib/myEvents";
 import { logClientEvent } from "../lib/clientLog";
@@ -69,6 +71,7 @@ function MyEventsContent() {
   const [loading, setLoading] = React.useState(false);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [changingProfile, setChangingProfile] = React.useState(false);
+  const slowLoad = useDelayedFlag(loading);
 
   React.useEffect(() => {
     if (!bcpUserId) {
@@ -175,7 +178,18 @@ function MyEventsContent() {
             </div>
 
             {loading && (
-              <div className="text-sm text-zinc-500 dark:text-zinc-400">Loading…</div>
+              <div>
+                <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                  <Spinner size="sm" />
+                  <span>Loading…</span>
+                </div>
+                {slowLoad && (
+                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                    Taking longer than usual — this app hasn&apos;t seen some of your events
+                    before, so it&apos;s asking Best Coast Pairings for them the first time.
+                  </p>
+                )}
+              </div>
             )}
             {loadError && (
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">

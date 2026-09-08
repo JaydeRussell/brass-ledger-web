@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 // ranking), so a static SSR pass (no DOM to let effects run; see
 // app/lib/testUtils.ts) can only ever show the very first render, before
 // fetchMyStats has resolved. What's verified here is that first render —
-// nothing shown yet, no premature reach into the ITC lookups — same
+// a loading spinner, no premature reach into the ITC lookups — same
 // pattern and same limitation as bcpProfileLinker.test.ts.
 mock.module("../../lib/myStats.ts", { namedExports: { fetchMyStats: async () => ({ linked: false, totalEvents: 0, factions: [] }) } });
 mock.module("../../lib/bcp.ts", {
@@ -31,7 +31,12 @@ mock.module("../../lib/bcp.ts", {
 mock.module("../../lib/clientLog.ts", { namedExports: { logClientEvent: () => {} } });
 const { default: PlayerStatsPanel } = await import("./playerStatsPanel.tsx");
 
-test("renders nothing on first paint, before stats have loaded", () => {
+test("shows a loading spinner on first paint, before stats have loaded", () => {
   const html = renderToStaticMarkup(React.createElement(PlayerStatsPanel, { bcpUserId: "u1" }));
-  assert.equal(html, "");
+  assert.match(html, /Loading player stats…/);
+  assert.match(html, /animate-spin/);
+  // useDelayedFlag starts false — the "taking longer than usual" hint
+  // only appears once the 3-second threshold has actually elapsed, never
+  // on the very first render.
+  assert.ok(!html.includes("Taking longer than usual"));
 });

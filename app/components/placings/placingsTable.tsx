@@ -1,5 +1,7 @@
 "use client";
 import type { PlacingEntry } from "../../lib/bcp";
+import Spinner from "../shared/spinner";
+import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type PlacingsTableProps = {
   entries: PlacingEntry[];
@@ -26,6 +28,7 @@ export default function PlacingsTable({
   emptyMessage,
 }: PlacingsTableProps) {
   const metricNames = entries[0]?.metrics.map((m) => m.name) ?? [];
+  const slowLoad = useDelayedFlag(loading);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -41,7 +44,17 @@ export default function PlacingsTable({
         )}
 
         {!error && loading && (
-          <p className="p-2 text-sm text-zinc-500 dark:text-zinc-400">Loading placings…</p>
+          <div className="p-2">
+            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <Spinner size="sm" />
+              <span>Loading placings…</span>
+            </div>
+            {slowLoad && (
+              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                Taking longer than usual — first look at this event.
+              </p>
+            )}
+          </div>
         )}
 
         {!error && !loading && entries.length === 0 && (

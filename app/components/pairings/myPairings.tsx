@@ -9,6 +9,8 @@ import {
 } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
+import Spinner from "../shared/spinner";
+import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type BoardsState = {
   loading: boolean;
@@ -89,6 +91,7 @@ export default function MyPairings({
     {}
   );
   const requestedItcIdsRef = React.useRef<Set<string>>(new Set());
+  const slowLoad = useDelayedFlag(loading);
 
   const loadItcFor = React.useCallback(
     (matchups: TeamBoardMatchup[]) => {
@@ -188,9 +191,17 @@ export default function MyPairings({
         )}
 
         {!error && loading && (
-          <p className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Checking published rounds…
-          </p>
+          <div className="p-2">
+            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <Spinner size="sm" />
+              <span>Checking published rounds…</span>
+            </div>
+            {slowLoad && (
+              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                Taking longer than usual — first look at this event.
+              </p>
+            )}
+          </div>
         )}
 
         {!error && !loading && upToRound === 0 && (
@@ -279,9 +290,10 @@ export default function MyPairings({
                   {isExpanded && (
                     <div className="flex flex-col gap-1 border-t border-zinc-100 px-2.5 pb-2.5 pt-1.5 dark:border-zinc-800">
                       {boardState?.loading && (
-                        <p className="px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
-                          Loading boards…
-                        </p>
+                        <div className="flex items-center gap-1.5 px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          <Spinner size="sm" />
+                          <span>Loading boards…</span>
+                        </div>
                       )}
                       {boardState?.error && (
                         <p className="px-1 py-1 text-xs text-rose-600 dark:text-rose-400">

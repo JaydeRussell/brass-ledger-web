@@ -1,5 +1,7 @@
 "use client";
 import type { EventInfo, MyPairing } from "../../lib/bcp";
+import Spinner from "../shared/spinner";
+import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type FollowedSummary = {
   label: string;
@@ -61,6 +63,7 @@ export default function OverviewPanel({
   onGoToPairings,
 }: OverviewPanelProps) {
   const dateRange = eventInfo ? formatDateRange(eventInfo.startDate, eventInfo.endDate) : undefined;
+  const slowLoad = useDelayedFlag(!eventInfo);
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,7 +103,18 @@ export default function OverviewPanel({
             )}
           </>
         ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading event…</p>
+          <div>
+            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <Spinner size="sm" />
+              <span>Loading event…</span>
+            </div>
+            {slowLoad && (
+              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                Taking longer than usual — this is a first look at this event, so it&apos;s asking
+                Best Coast Pairings directly.
+              </p>
+            )}
+          </div>
         )}
       </div>
 
