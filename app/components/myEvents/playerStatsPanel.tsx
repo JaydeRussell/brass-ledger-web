@@ -1,0 +1,151 @@
+"use client";
+import React from "react";
+import { fetchMyStats, type MyStats } from "../../lib/myStats";
+import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
+import ItcBadge from "../shared/itcBadge";
+import { logClientEvent } from "../../lib/clientLog";
+
+type PlayerStatsPanelProps = {
+  bcpUserId: string;
+};
+
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-[6rem] flex-1 flex-col items-center rounded-xl bg-zinc-50 px-3 py-2 text-center dark:bg-zinc-800/60">
+      <span className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{value}</span>
+      <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+    </div>
+  );
+}
+
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
+  }
+}
+
+/**
+ * A compact "player stats" summary card for the signed-in account's
+ * linked BCP profile — best placing (overall, and split GT vs Teams vs
+ * RTT) plus
+ * a per-faction breakdown, all straight from internal/api/stats.go's
+ * aggregation of BCP's own already-published placing history, and a
+ * current ITC score/rank badge once a game system can be resolved.
+ * Deliberately just one card, not a whole page: see the scope note in
+ * app/page.tsx before adding anything that scores or ranks rather than
+ * displays already-published numbers.
+ */
+export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
+  const [stats, setStats] = React.useState<MyStats | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [itcLeagueId, setItcLeagueId] = React.useState<string | undefined>(undefined);
+  const [itcRanking, setItcRanking] = React.useState<ItcRanking | null | undefined>(undefined);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetchMyStats()
+      .then((data) => {
+        if (cancelled) return;
+        setStats(data);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
+        logClientEvent("error", "player stats: failed to load", { error: message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bcpUserId]);
+
+  // A separate effect: only once a game system is known (from `stats`)
+  // does it make sense to look up an ITC ranking, same "don't fetch more
+  // than a feature needs" reasoning as everywhere else this app talks to
+  // BCP.
+  React.useEffect(() => {
+    const gameSystemId = stats?.mostRecentGameSystemId;
+    if (!gameSystemId) return;
+    let cancelled = false;
+    fetchCurrentItcLeagueId(gameSystemId)
+      .then((leagueId) => {
+        if (cancelled || !leagueId) return;
+        setItcLeagueId(leagueId);
+        return fetchItcRanking(bcpUserId, leagueId);
+      })
+      .then((ranking) => {
+        if (cancelled || ranking === undefined) return;
+        setItcRanking(ranking);
+      })
+      .catch(() => {
+        // An ITC lookup failing just means no badge — not worth
+        // surfacing as an error alongside the placing/faction stats
+        // above, which already loaded fine.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stats?.mostRecentGameSystemId, bcpUserId]);
+
+  if (error) return null; // fails quietly — the event tabs below are the important part of this page
+  if (!stats || !stats.linked || stats.totalEvents === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Player stats</h2>
+        {itcRanking && (
+          <ItcBadge
+            ranking={itcRanking}
+            bcpUserId={bcpUserId}
+            leagueId={itcLeagueId}
+            title="View your full ITC history on BCP"
+          />
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <StatTile label="Events played" value={String(stats.totalEvents)} />
+        <StatTile
+          label="Best placing"
+          value={stats.bestPlacing !== undefined ? ordinal(stats.bestPlacing) : "—"}
+        />
+        <StatTile
+          label="Best GT placing"
+          value={stats.bestPlacingGt !== undefined ? ordinal(stats.bestPlacingGt) : "—"}
+        />
+        <StatTile
+          label="Best Teams placing"
+          value={stats.bestPlacingTeams !== undefined ? ordinal(stats.bestPlacingTeams) : "—"}
+        />
+        <StatTile
+          label="Best RTT placing"
+          value={stats.bestPlacingRtt !== undefined ? ordinal(stats.bestPlacingRtt) : "—"}
+        />
+      </div>
+
+      {stats.factions.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+          {stats.factions.map((f) => (
+            <span
+              key={f.faction}
+              className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300"
+            >
+              {f.faction} · {f.eventCount} event{f.eventCount === 1 ? "" : "s"}
+              {f.bestPlacing !== undefined && ` · best ${ordinal(f.bestPlacing)}`}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

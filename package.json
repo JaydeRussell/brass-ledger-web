@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-loader=./scripts/tsx-test-loader.mjs --experimental-test-module-mocks --test"
+    "test": "node --experimental-strip-types --experimental-loader=./scripts/tsx-test-loader.mjs --experimental-test-module-mocks --test"
   },
   "dependencies": {
     "next": "16.1.0",
