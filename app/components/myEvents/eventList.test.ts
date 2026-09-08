@@ -40,6 +40,38 @@ test("omits placing detail for an event with no published placing yet", () => {
   assert.ok(!html.includes("#"));
 });
 
+// isoOffset gives a real timestamp (not just a date) offset from now by
+// the given number of days, so these cases work regardless of what day
+// they actually run on.
+function isoOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+}
+
+test("shows a 'Live now' badge for an event whose date range covers today", () => {
+  const events: MyEvent[] = [
+    { eventId: "e1", eventName: "Ongoing Event", startDate: isoOffset(-1), endDate: isoOffset(1) },
+  ];
+  const html = renderToStaticMarkup(React.createElement(EventList, { events, emptyMessage: "n/a" }));
+  assert.match(html, /Live now/);
+});
+
+test("shows a 'Starts in' countdown for an event that hasn't started yet", () => {
+  const events: MyEvent[] = [{ eventId: "e1", eventName: "Future Event", startDate: isoOffset(5) }];
+  const html = renderToStaticMarkup(React.createElement(EventList, { events, emptyMessage: "n/a" }));
+  assert.match(html, /Starts in \d+d/);
+});
+
+test("shows no countdown badge for an already-concluded event", () => {
+  const events: MyEvent[] = [
+    { eventId: "e1", eventName: "Past Event", startDate: isoOffset(-10), endDate: isoOffset(-9) },
+  ];
+  const html = renderToStaticMarkup(React.createElement(EventList, { events, emptyMessage: "n/a" }));
+  assert.ok(!html.includes("Live now"));
+  assert.ok(!html.includes("Starts in"));
+});
+
 // Each card starts collapsed (see eventList.tsx's EventCard doc comment)
 // — the expanded overview/"View event page" link only appear after a
 // click, which this SSR-only render can't simulate (no DOM to dispatch

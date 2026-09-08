@@ -19,6 +19,36 @@ function formatDateRange(start?: string, end?: string): string | undefined {
   return `${fmt(startDate)} – ${fmt(endDate)}`;
 }
 
+/**
+ * "Live now" for an event whose own date range covers this moment,
+ * "Starts in Xd/Xh/Xm" counting down to one that hasn't started yet, or
+ * undefined for one that's already over. Deliberately computed purely
+ * from the event's own StartDate/EndDate rather than which
+ * past/present/future bucket a page happened to fetch it into, so it
+ * works the same regardless of which list renders it (My Events'
+ * Ongoing/Future tabs, the Calendar page's combined upcoming list) —
+ * and naturally returns undefined for an already-concluded event
+ * without needing to know it came from the Past bucket at all.
+ */
+function formatCountdown(startDate?: string, endDate?: string): string | undefined {
+  if (!startDate) return undefined;
+  const start = new Date(startDate);
+  if (Number.isNaN(start.getTime())) return undefined;
+
+  const now = new Date();
+  if (endDate) {
+    const end = new Date(endDate);
+    if (!Number.isNaN(end.getTime()) && now > end) return undefined; // already over
+  }
+  if (now >= start) return "Live now";
+
+  const diffMin = Math.max(1, Math.round((start.getTime() - now.getTime()) / 60000));
+  if (diffMin < 60) return `Starts in ${diffMin}m`;
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `Starts in ${diffHour}h`;
+  return `Starts in ${Math.round(diffHour / 24)}d`;
+}
+
 // One (label, value) row of the expanded overview below — skipped
 // entirely when there's no value, same as the collapsed summary line's
 // conditional spans.
@@ -49,6 +79,7 @@ function EventCard({ event }: { event: MyEvent }) {
     event.placing != null
       ? `#${event.placing}${event.points != null ? ` · ${event.points} pts` : ""}`
       : undefined;
+  const countdown = formatCountdown(event.startDate, event.endDate);
 
   return (
     <li className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
@@ -62,6 +93,11 @@ function EventCard({ event }: { event: MyEvent }) {
           {event.eventName}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-zinc-500 dark:text-zinc-400">
+          {countdown && (
+            <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+              {countdown}
+            </span>
+          )}
           {dateRange && <span>{dateRange}</span>}
           {placingDetail && <span>{placingDetail}</span>}
           {event.faction && <span>{event.faction}</span>}
@@ -72,6 +108,7 @@ function EventCard({ event }: { event: MyEvent }) {
       {expanded && (
         <div className="border-t border-zinc-100 px-3 pb-3 pt-2 dark:border-zinc-800">
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+            <OverviewRow label="Status" value={countdown} />
             <OverviewRow label="Dates" value={dateRange} />
             <OverviewRow label="Result" value={placingDetail} />
             <OverviewRow label="Faction" value={event.faction} />

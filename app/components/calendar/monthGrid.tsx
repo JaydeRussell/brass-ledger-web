@@ -35,10 +35,11 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
-type DayRange = { start: number; end: number };
+type DayRange = { start: number; end: number; name: string };
 
-/** One inclusive [start, end] day-number range per event with a usable
- * start date — an event with no end date covers just its start day. */
+/** One inclusive [start, end] day-number range (plus the event's own
+ * name, for labeling the cells it covers) per event with a usable start
+ * date — an event with no end date covers just its start day. */
 function eventDayRanges(events: MyEvent[]): DayRange[] {
   const ranges: DayRange[] = [];
   for (const event of events) {
@@ -47,19 +48,69 @@ function eventDayRanges(events: MyEvent[]): DayRange[] {
     const start = dayNumber(startParts);
     const endParts = parseDateParts(event.endDate);
     const end = endParts ? dayNumber(endParts) : start;
-    ranges.push({ start, end: Math.max(start, end) });
+    ranges.push({ start, end: Math.max(start, end), name: event.eventName });
   }
   return ranges;
 }
 
+/** Every event name covering day-number dNum, in the order they were
+ * passed in. */
+function namesForDay(ranges: DayRange[], dNum: number): string[] {
+  return ranges.filter((r) => dNum >= r.start && dNum <= r.end).map((r) => r.name);
+}
+
+/**
+ * One day cell: the day number, plus (if any event covers it) its name
+ * as a small truncated tag — the tag's own `title` carries the full
+ * name for whenever it's cut off. A second-or-later event on the same
+ * day collapses to a "+N more" line rather than stacking every name,
+ * since a real player's schedule essentially never double-books a day
+ * and this isn't worth much layout complexity for that rare case.
+ */
+function DayCell({ day, isToday, names }: { day: number; isToday: boolean; names: string[] }) {
+  return (
+    <div
+      className={`min-h-[4.5rem] rounded-lg p-1 text-sm ${
+        isToday ? "bg-indigo-50 dark:bg-indigo-950/40" : ""
+      }`}
+    >
+      <span
+        className={
+          isToday
+            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+            : "text-zinc-700 dark:text-zinc-300"
+        }
+      >
+        {day}
+      </span>
+      {names.length > 0 && (
+        <div className="mt-0.5 flex flex-col gap-0.5">
+          <span
+            title={names[0]}
+            className="truncate rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-medium leading-tight text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
+          >
+            {names[0]}
+          </span>
+          {names.length > 1 && (
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              +{names.length - 1} more
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * A hand-rolled month grid (no calendar library — this app has none,
- * and one dot-marked grid isn't worth adding one for) marking each day
- * that falls within any event's inclusive date range, so a multi-day GT
- * highlights every day it spans rather than just its start. Defaults to
- * the current month; prev/next buttons navigate. Event *details* aren't
- * shown per-cell — the caller pairs this with the existing EventList
- * (app/components/myEvents/eventList.tsx) below it for that.
+ * and one small labeled grid isn't worth adding one for) labeling each
+ * day that falls within any event's inclusive date range with that
+ * event's name, so a multi-day GT is visibly tagged across every day it
+ * spans, not just its start. Defaults to the current month; prev/next
+ * buttons navigate. Full event detail (dates, placing, faction, a link
+ * to the event page) still lives in the paired EventList
+ * (app/components/myEvents/eventList.tsx) alongside this, not per-cell.
  */
 export default function MonthGrid({ events }: { events: MyEvent[] }) {
   const today = new Date();
@@ -129,21 +180,7 @@ export default function MonthGrid({ events }: { events: MyEvent[] }) {
         {cells.map((day, i) => {
           if (day == null) return <div key={i} />;
           const dNum = dayNumber({ year, month, day });
-          const hasEvent = ranges.some((r) => dNum >= r.start && dNum <= r.end);
-          const isToday = dNum === todayNum;
-          return (
-            <div
-              key={i}
-              className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm ${
-                isToday
-                  ? "bg-indigo-50 font-semibold text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400"
-                  : "text-zinc-700 dark:text-zinc-300"
-              }`}
-            >
-              <span>{day}</span>
-              {hasEvent && <span aria-hidden className="mt-0.5 h-1.5 w-1.5 rounded-full bg-indigo-500" />}
-            </div>
-          );
+          return <DayCell key={i} day={day} isToday={dNum === todayNum} names={namesForDay(ranges, dNum)} />;
         })}
       </div>
     </div>

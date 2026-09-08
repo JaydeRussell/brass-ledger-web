@@ -37,29 +37,41 @@ test("renders the weekday header row and the current month's label", () => {
   assert.ok(html.includes(expectedLabel), `expected month label ${expectedLabel} in output`);
 });
 
-test("marks a day within the current month when an event covers it", () => {
+test("labels a day within the current month with the event's name when it covers it", () => {
   const events: MyEvent[] = [{ eventId: "e1", eventName: "Mid-month Event", startDate: isoDayThisMonth(10) }];
   const html = render(events);
-  assert.match(html, /bg-indigo-500/); // the dot marker
+  assert.match(html, />Mid-month Event</);
 });
 
-test("marks every day within a multi-day event's inclusive range", () => {
+test("labels every day within a multi-day event's inclusive range", () => {
   const events: MyEvent[] = [
     { eventId: "e1", eventName: "Multi-day GT", startDate: isoDayThisMonth(10), endDate: isoDayThisMonth(12) },
   ];
   const html = render(events);
-  const dotCount = (html.match(/bg-indigo-500/g) ?? []).length;
-  assert.equal(dotCount, 3, `expected exactly 3 marked days for a 3-day event, got ${dotCount}`);
+  const labelCount = (html.match(/>Multi-day GT</g) ?? []).length;
+  assert.equal(labelCount, 3, `expected the name on exactly 3 days for a 3-day event, got ${labelCount}`);
 });
 
-test("does not mark any day for an event outside the displayed (current) month", () => {
+test("a second event on the same day collapses to a '+N more' line instead of stacking names", () => {
+  const day = isoDayThisMonth(10);
+  const events: MyEvent[] = [
+    { eventId: "e1", eventName: "First Event", startDate: day },
+    { eventId: "e2", eventName: "Second Event", startDate: day },
+  ];
+  const html = render(events);
+  assert.match(html, />First Event</);
+  assert.ok(!html.includes(">Second Event<"), "expected the second same-day event not to render its own tag");
+  assert.match(html, /\+1 more/);
+});
+
+test("does not label any day for an event outside the displayed (current) month", () => {
   const events: MyEvent[] = [{ eventId: "e1", eventName: "Next Year's Event", startDate: isoDateNextYear() }];
   const html = render(events);
-  assert.ok(!html.includes("bg-indigo-500"), "expected no dot for an event outside the current month");
+  assert.ok(!html.includes("Next Year's Event"), "expected no label for an event outside the current month");
 });
 
-test("an event with no start date is simply not marked, not an error", () => {
+test("an event with no start date is simply not labeled, not an error", () => {
   const events: MyEvent[] = [{ eventId: "e1", eventName: "No Date" }];
   const html = render(events); // should not throw
-  assert.ok(!html.includes("bg-indigo-500"));
+  assert.ok(!html.includes("No Date"));
 });
