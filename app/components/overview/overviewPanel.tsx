@@ -2,6 +2,7 @@
 import type { EventInfo, MyPairing } from "../../lib/bcp";
 import Spinner from "../shared/spinner";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
+import { formatDateRange } from "../../lib/eventDates";
 
 type FollowedSummary = {
   label: string;
@@ -19,19 +20,6 @@ function statusLine(info: EventInfo): string {
   if (!info.started) return "Hasn't started yet";
   if (info.ended) return `Ended — ${info.numberOfRounds} round${info.numberOfRounds === 1 ? "" : "s"}`;
   return `Round ${info.currentRound} of ${info.numberOfRounds || "?"} — in progress`;
-}
-
-function formatDateRange(start?: string, end?: string): string | undefined {
-  if (!start) return undefined;
-  const startDate = new Date(start);
-  if (Number.isNaN(startDate.getTime())) return undefined;
-  const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  if (!end) return fmt(startDate);
-  const endDate = new Date(end);
-  if (Number.isNaN(endDate.getTime())) return fmt(startDate);
-  if (fmt(startDate) === fmt(endDate)) return fmt(startDate);
-  return `${fmt(startDate)} – ${fmt(endDate)}`;
 }
 
 /**

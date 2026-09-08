@@ -2,22 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import type { MyEvent } from "../../lib/myEvents";
-
-// Same date-range formatting as overviewPanel.tsx's formatDateRange —
-// duplicated rather than shared, since it's a small pure helper and this
-// app doesn't have a shared "lib/dates.ts" yet.
-function formatDateRange(start?: string, end?: string): string | undefined {
-  if (!start) return undefined;
-  const startDate = new Date(start);
-  if (Number.isNaN(startDate.getTime())) return undefined;
-  const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  if (!end) return fmt(startDate);
-  const endDate = new Date(end);
-  if (Number.isNaN(endDate.getTime())) return fmt(startDate);
-  if (fmt(startDate) === fmt(endDate)) return fmt(startDate);
-  return `${fmt(startDate)} – ${fmt(endDate)}`;
-}
+import { formatDateRange } from "../../lib/eventDates";
 
 /**
  * "Live now" for an event whose own date range covers this moment,

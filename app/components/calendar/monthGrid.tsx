@@ -1,27 +1,9 @@
 "use client";
 import React from "react";
 import type { MyEvent } from "../../lib/myEvents";
+import { eventDateParts, type DateParts } from "../../lib/eventDates";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-type DateParts = { year: number; month: number; day: number }; // month is 1-12
-
-/**
- * Parses a bare "YYYY-MM-DD" (what MyEvent.startDate/endDate actually
- * are — see internal/bcp's EventInfo doc comment) into its numeric
- * parts by splitting the string, deliberately NOT via `new Date(str)`.
- * The Date constructor parses a date-only ISO string as UTC midnight,
- * which can render as the *previous* day once converted to a
- * negative-UTC-offset local timezone — a real, user-visible off-by-one
- * bug for a day-granularity calendar. Returns null for anything that
- * doesn't match (missing/malformed date).
- */
-function parseDateParts(dateStr: string | undefined): DateParts | null {
-  if (!dateStr) return null;
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return null;
-  return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
-}
 
 // A plain incrementing day-number for range comparisons — Date.UTC used
 // purely as integer arithmetic here (divided down to whole days), never
@@ -43,10 +25,10 @@ type DayRange = { start: number; end: number; name: string };
 function eventDayRanges(events: MyEvent[]): DayRange[] {
   const ranges: DayRange[] = [];
   for (const event of events) {
-    const startParts = parseDateParts(event.startDate);
+    const startParts = eventDateParts(event.startDate);
     if (!startParts) continue;
     const start = dayNumber(startParts);
-    const endParts = parseDateParts(event.endDate);
+    const endParts = eventDateParts(event.endDate);
     const end = endParts ? dayNumber(endParts) : start;
     ranges.push({ start, end: Math.max(start, end), name: event.eventName });
   }
