@@ -6,10 +6,9 @@ import { NavProvider } from "../components/nav/navContext.tsx";
 
 // Same mocking approach as app/my-events/page.test.ts: this page leans
 // on this app's own lib/auth + lib/myEvents (both do real fetches on
-// mount) plus, uniquely to this page, lib/calendar.ts (CalendarSubscribe
-// fetches the .ics URL on mount). One shared mutable object per mocked
-// module, set per test, rather than re-calling mock.module() per test —
-// see navDrawer.test.ts's note on why.
+// mount). One shared mutable object per mocked module, set per test,
+// rather than re-calling mock.module() per test — see navDrawer.test.ts's
+// note on why.
 let authState: { user: unknown; checked: boolean; setUser: (u: unknown) => void } = {
   user: null,
   checked: false,
@@ -30,11 +29,6 @@ mock.module("../lib/myEvents.ts", {
   namedExports: {
     fetchMyEvents: async () => ({ linked: true, past: [], present: [], future: [] }),
     linkBcpProfile: async () => "u1",
-  },
-});
-mock.module("../lib/calendar.ts", {
-  namedExports: {
-    fetchCalendarUrl: async () => "http://localhost:8080/api/calendar/abc123.ics",
   },
 });
 mock.module("../lib/clientLog.ts", { namedExports: { logClientEvent: () => {} } });
@@ -71,15 +65,15 @@ test("prompts linking a BCP profile for a signed-in account with none linked", (
   assert.match(html, /Link your Best Coast Pairings profile/);
 });
 
-test("shows the month grid, subscribe widget, and change-profile link for a fully linked account", () => {
+test("shows the month grid, upcoming-events list, and change-profile link for a fully linked account", () => {
   authState = {
     checked: true,
     setUser: () => {},
     user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1" },
   };
   const html = renderPage();
-  assert.match(html, /Subscribe/);
   assert.match(html, /Change profile/);
+  assert.match(html, /Upcoming events/);
   // The month grid renders the current month's weekday header row
   // regardless of fetch timing (it doesn't wait on events to render its
   // own shell) — Sun is present in every month.

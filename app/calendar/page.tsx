@@ -5,7 +5,6 @@ import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
 import MonthGrid from "../components/calendar/monthGrid";
-import CalendarSubscribe from "../components/calendar/calendarSubscribe";
 import Spinner from "../components/shared/spinner";
 import SignInPrompt from "../components/shared/signInPrompt";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
@@ -15,15 +14,13 @@ import { logClientEvent } from "../lib/clientLog";
 
 /**
  * The Calendar page: a month-grid view of the signed-in account's own
- * upcoming (present/future) events, plus a link to subscribe to the
- * same events from a phone/desktop calendar app. Deliberately Present +
- * Future only, matching the "upcoming" framing — Past is a concluded,
- * immutable result already fully covered by /my-events' Past tab, not
- * something worth marking on a forward-looking calendar. Reuses the
- * same fetchMyEvents() data source as /my-events (no new "list"
- * endpoint needed for the in-app view — only the .ics subscribe link
- * is a new backend route, see CalendarSubscribe) and the same
- * sign-in/link-profile gating structure as that page.
+ * upcoming (present/future) events, with the same list of events
+ * alongside it for full detail. Deliberately Present + Future only,
+ * matching the "upcoming" framing — Past is a concluded, immutable
+ * result already fully covered by /my-events' Past tab, not something
+ * worth marking on a forward-looking calendar. Reuses the same
+ * fetchMyEvents() data source as /my-events (no new endpoint needed)
+ * and the same sign-in/link-profile gating structure as that page.
  */
 export default function CalendarPage() {
   const { user, checked, setUser } = useCurrentUser();
@@ -70,14 +67,14 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
+      <header className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
         <HamburgerButton />
         <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
           Calendar
         </h1>
       </header>
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
         {!checked ? null : !user ? (
           <SignInPrompt message="see your upcoming events on a calendar." />
         ) : !bcpUserId || changingProfile ? (
@@ -110,8 +107,6 @@ export default function CalendarPage() {
               </button>
             </div>
 
-            <CalendarSubscribe />
-
             {loading && (
               <div>
                 <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -132,10 +127,17 @@ export default function CalendarPage() {
               </div>
             )}
             {!loading && !loadError && (
-              <>
-                <MonthGrid events={upcoming} />
-                <EventList events={upcoming} emptyMessage="No upcoming events found." />
-              </>
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+                <div className="lg:flex-1">
+                  <MonthGrid events={upcoming} />
+                </div>
+                <div className="lg:w-80 lg:shrink-0">
+                  <h2 className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                    Upcoming events
+                  </h2>
+                  <EventList events={upcoming} emptyMessage="No upcoming events found." />
+                </div>
+              </div>
             )}
           </>
         )}
