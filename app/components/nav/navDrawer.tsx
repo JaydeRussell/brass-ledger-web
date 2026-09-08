@@ -7,6 +7,7 @@ import AccountSection from "./accountSection";
 const LINKS = [
   { href: "/", label: "Event" },
   { href: "/my-events", label: "My Events" },
+  { href: "/calendar", label: "Calendar" },
   { href: "/stats", label: "Player Stats" },
 ];
 
