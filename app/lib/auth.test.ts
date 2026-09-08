@@ -34,6 +34,14 @@ test("googleSignInUrl: points at the backend's login route", () => {
   assert.ok(url.endsWith("/auth/google/login"), `URL was ${url}`);
 });
 
+test("googleSignInUrl: with a returnTo, appends it as an encoded return_to param", () => {
+  const url = googleSignInUrl("/stats?tab=past");
+  assert.ok(
+    url.endsWith("/auth/google/login?return_to=%2Fstats%3Ftab%3Dpast"),
+    `URL was ${url}`
+  );
+});
+
 test("fetchCurrentUser", async () => {
   const cases: {
     name: string;

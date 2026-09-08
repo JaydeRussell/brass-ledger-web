@@ -30,9 +30,18 @@ export type CurrentUser = {
  * navigation (e.g. `window.location.href = googleSignInUrl()`) — the
  * backend redirects to Google, Google redirects back to the backend's
  * own callback, and the backend redirects the browser to this app.
+ *
+ * `returnTo` (typically `usePathname()` at the call site) is where a
+ * *returning, already-linked* account lands back after signing in —
+ * e.g. signing back in from /stats returns you to /stats instead of
+ * always the homepage. Ignored server-side for an account that's never
+ * linked a BCP profile, which always goes through /welcome first
+ * regardless — see internal/api/auth.go's callback for why.
  */
-export function googleSignInUrl(): string {
-  return `${BACKEND_API_BASE}/auth/google/login`;
+export function googleSignInUrl(returnTo?: string): string {
+  const url = `${BACKEND_API_BASE}/auth/google/login`;
+  if (!returnTo) return url;
+  return `${url}?return_to=${encodeURIComponent(returnTo)}`;
 }
 
 /**

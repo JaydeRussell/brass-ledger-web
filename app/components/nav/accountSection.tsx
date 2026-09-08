@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import { googleSignInUrl, signOut, useCurrentUser } from "../../lib/auth";
 import { logClientEvent } from "../../lib/clientLog";
 
@@ -15,6 +16,7 @@ import { logClientEvent } from "../../lib/clientLog";
 export default function AccountSection() {
   const { user, checked, setUser } = useCurrentUser();
   const [signingOut, setSigningOut] = useState(false);
+  const pathname = usePathname();
 
   // Reserve the same height while the initial /api/me check is in
   // flight, so the drawer doesn't visibly jump once it resolves.
@@ -26,7 +28,7 @@ export default function AccountSection() {
     return (
       <div className="border-b border-zinc-100 p-3 dark:border-zinc-800">
         <a
-          href={googleSignInUrl()}
+          href={googleSignInUrl(pathname)}
           className="flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           Sign in with Google

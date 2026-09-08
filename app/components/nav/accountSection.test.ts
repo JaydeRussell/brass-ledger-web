@@ -16,9 +16,16 @@ let mockState: { user: unknown; checked: boolean; setUser: (u: unknown) => void 
 mock.module("../../lib/auth.ts", {
   namedExports: {
     useCurrentUser: () => mockState,
-    googleSignInUrl: () => "http://localhost:8080/auth/google/login",
+    googleSignInUrl: (returnTo?: string) =>
+      `http://localhost:8080/auth/google/login${returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : ""}`,
     signOut: async () => {},
   },
+});
+// usePathname needs a real Next.js App Router context to work outside of
+// one (as here, a plain react-dom/server pass) it throws — same mocking
+// approach as navDrawer.test.ts.
+mock.module("next/navigation", {
+  namedExports: { usePathname: () => "/stats" },
 });
 const { default: AccountSection } = await import("./accountSection.tsx");
 
@@ -29,11 +36,11 @@ test("reserves height without content while the initial check is in flight", () 
   assert.match(html, /h-\[65px\]/);
 });
 
-test("shows a sign-in link once checked and signed out", () => {
+test("shows a sign-in link once checked and signed out, carrying the current path as return_to", () => {
   mockState = { user: null, checked: true, setUser: () => {} };
   const html = renderToStaticMarkup(React.createElement(AccountSection));
   assert.match(html, /Sign in with Google/);
-  assert.match(html, /href="http:\/\/localhost:8080\/auth\/google\/login"/);
+  assert.match(html, /href="http:\/\/localhost:8080\/auth\/google\/login\?return_to=%2Fstats"/);
 });
 
 test("shows the signed-in user's name, email, and initials avatar when there's no avatar URL", () => {
