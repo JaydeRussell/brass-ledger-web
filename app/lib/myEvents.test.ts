@@ -82,6 +82,7 @@ test("fetchMyEvents: sends credentials and returns the parsed body", async () =>
     past: [{ eventId: "evt-1", eventName: "Old Event", placing: 4 }],
     present: [],
     future: [{ eventId: "evt-2", eventName: "Upcoming" }],
+    upcomingFetchedAt: "2026-01-01T00:00:00Z",
   };
   const { calls } = installFetch(() => ({ status: 200, body: wantBody }));
 
@@ -91,6 +92,18 @@ test("fetchMyEvents: sends credentials and returns the parsed body", async () =>
   assert.equal(calls.length, 1);
   assert.ok(calls[0].url.endsWith("/api/me/events"));
   assert.equal(calls[0].init?.credentials, "include");
+});
+
+test("fetchMyEvents: refresh=true appends the query param", async () => {
+  const { calls } = installFetch(() => ({
+    status: 200,
+    body: { linked: true, past: [], present: [], future: [] },
+  }));
+
+  await fetchMyEvents(true);
+
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].url.endsWith("/api/me/events?refresh=true"));
 });
 
 test("fetchMyEvents: not linked resolves with linked: false", async () => {

@@ -46,6 +46,25 @@ function countForTab(events: MyEvents | null, tab: EventsTabKey): number | undef
   return eventsForTab(events, tab).length;
 }
 
+/**
+ * "just now" / "5m ago" / "3h ago" / "2d ago" — deliberately coarse
+ * (nothing more precise than minutes) since this is about "is this
+ * roughly fresh," not an exact clock. Empty string if iso can't be
+ * parsed, so a caller can just skip rendering rather than show garbage.
+ */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffSec = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (diffSec < 10) return "just now";
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}h ago`;
+  return `${Math.round(diffHour / 24)}d ago`;
+}
+
 function MyEventsContent() {
   const { user, checked, setUser } = useCurrentUser();
   const searchParams = useSearchParams();
@@ -73,6 +92,8 @@ function MyEventsContent() {
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [changingProfile, setChangingProfile] = React.useState(false);
   const slowLoad = useDelayedFlag(loading);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshError, setRefreshError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!bcpUserId) {
@@ -105,6 +126,32 @@ function MyEventsContent() {
       cancelled = true;
     };
   }, [bcpUserId]);
+
+  // An explicit "check again now" for Ongoing/Future only — Past never
+  // needs this, since an already-concluded event's placing can't change.
+  // See internal/api/me.go's ?refresh=true and the doc comment on
+  // MyEvents.upcomingFetchedAt in lib/myEvents.ts for why this is scoped
+  // the way it is, and CLAUDE.md's "fetch only what's needed" for why
+  // this isn't something to trigger automatically/on a timer.
+  const handleRefresh = () => {
+    if (!bcpUserId || refreshing) return;
+    setRefreshing(true);
+    setRefreshError(null);
+    fetchMyEvents(true)
+      .then((data) => {
+        setEvents(data);
+        logClientEvent("info", "my events: refreshed", {
+          present: data.present.length,
+          future: data.future.length,
+        });
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        setRefreshError(message);
+        logClientEvent("error", "my events: refresh failed", { error: message });
+      })
+      .finally(() => setRefreshing(false));
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -169,6 +216,30 @@ function MyEventsContent() {
                 Change profile
               </button>
             </div>
+
+            {!loading && !loadError && events && activeTab !== "past" && (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 dark:text-zinc-500">
+                <span>
+                  {events.upcomingFetchedAt
+                    ? `Last checked ${formatRelativeTime(events.upcomingFetchedAt)} — new sign-ups or an event starting won't show up until you check again.`
+                    : "Not checked yet."}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 px-2 py-1 text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  {refreshing && <Spinner size="sm" />}
+                  {refreshing ? "Checking…" : "Check for updates"}
+                </button>
+              </div>
+            )}
+            {refreshError && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+                Couldn&apos;t check for updates: {refreshError}
+              </div>
+            )}
 
             {loading && (
               <div>

@@ -99,14 +99,30 @@ export type MyEvent = {
  * `linked` is false — with all three sections empty — for an account
  * that hasn't pasted a BCP profile yet, which is a normal state for a
  * new account, not an error.
+ *
+ * upcomingFetchedAt is when Present/Future were last actually checked
+ * against BCP — not Past, which (once an event's concluded) never goes
+ * stale the way "did I just register for something new" can. Surfaced
+ * so the UI can show a "last updated" hint alongside a way to ask for a
+ * fresher check (see fetchMyEvents' refresh param).
  */
 export type MyEvents = {
   linked: boolean;
   past: MyEvent[];
   present: MyEvent[];
   future: MyEvent[];
+  upcomingFetchedAt?: string;
 };
 
-export async function fetchMyEvents(): Promise<MyEvents> {
-  return getJSON<MyEvents>("/api/me/events");
+/**
+ * refresh=true asks the backend to bypass its own cache and check BCP
+ * again right now for Present/Future (never Past — an already-concluded
+ * event's placing can't change, so there's nothing there worth
+ * re-checking). Backed by a short server-side floor against rapid
+ * re-clicking (see brass-ledger-api's bcp.Cache.Invalidate) — not meant
+ * to be called on every page load, only in response to an explicit
+ * "check again" action.
+ */
+export async function fetchMyEvents(refresh = false): Promise<MyEvents> {
+  return getJSON<MyEvents>(`/api/me/events${refresh ? "?refresh=true" : ""}`);
 }
