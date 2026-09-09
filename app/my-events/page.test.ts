@@ -70,18 +70,30 @@ test("prompts linking a BCP profile for a signed-in account with none linked", (
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "", role: "user", status: "approved" },
   };
   searchParamsValue = new URLSearchParams();
   const html = renderPage();
   assert.match(html, /Link your Best Coast Pairings profile/);
 });
 
+test("shows a pending-approval message instead of content for a signed-in, not-yet-approved account", () => {
+  authState = {
+    checked: true,
+    setUser: () => {},
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "pending" },
+  };
+  searchParamsValue = new URLSearchParams();
+  const html = renderPage();
+  assert.match(html, /pending approval/);
+  assert.ok(!html.includes("Link your Best Coast Pairings profile"));
+});
+
 test("shows the Past/Ongoing/Future tabs for a fully linked account, defaulting to Ongoing", () => {
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
   };
   searchParamsValue = new URLSearchParams();
   const html = renderPage();
@@ -101,7 +113,7 @@ test("respects a ?tab= query param for which tab starts active", () => {
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
   };
   searchParamsValue = new URLSearchParams("tab=past");
   const html = renderPage();

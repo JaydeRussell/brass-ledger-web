@@ -22,6 +22,19 @@ export type CurrentUser = {
   // "" if this account hasn't linked a Best Coast Pairings profile yet
   // (see app/lib/myEvents.ts's linkBcpProfile).
   bcpUserId: string;
+  // "user" or "admin" — see the backend's internal/user.Role* constants
+  // (migration 0007). Only meaningfully used by the admin panel today.
+  role: "user" | "admin";
+  // "pending", "approved", or "rejected" (internal/user.Status*,
+  // migration 0007). A valid session alone gets you this far (you can
+  // always see your own /api/me), but every real feature — the BCP
+  // proxy, My Events, Stats, follows sync — needs "approved" on the
+  // backend too (see api.RequireApproved), so the frontend gates its
+  // own content the same way rather than showing a broken page that
+  // 403s on every fetch. See app/components/shared/accessStatusMessage.tsx,
+  // the shared "you're signed in but not approved yet" UI every gated
+  // page shows for anything other than "approved".
+  status: "pending" | "approved" | "rejected";
 };
 
 /**

@@ -14,6 +14,7 @@ import FollowingPill from "./components/tabs/followingPill";
 import HamburgerButton from "./components/nav/hamburgerButton";
 import SearchBar from "./components/search/searchBar";
 import SignInPrompt from "./components/shared/signInPrompt";
+import AccessStatusMessage from "./components/shared/accessStatusMessage";
 import {
   fetchBcpEventInfo,
   fetchBcpPlayers,
@@ -279,7 +280,12 @@ function HomeContent() {
       setEventId(storedEventId);
       if (eventParam) writeLocalStorage(EVENT_ID_STORAGE_KEY, eventParam);
 
-      if (user) {
+      // Server-side sync (fetchFollows/fetchRecentEventsFromServer) needs
+      // an approved account on the backend (api.RequireApproved) — a
+      // pending/rejected account falls back to the same guest-mode
+      // localStorage path as signed-out below, rather than firing a
+      // request that can only 403.
+      if (user && user.status === "approved") {
         const [follows, recents] = await Promise.all([
           fetchFollows(storedEventId).catch((err: unknown) => {
             logClientEvent("warn", "fetching synced follows failed, starting empty", {
@@ -330,18 +336,19 @@ function HomeContent() {
   // callbacks — never synchronously in the effect body itself.
   useEffect(() => {
     if (!hydrated) return;
-    // The backend now requires a session on every BCP route (the whole
-    // app is behind sign-in, not just the account-specific features) —
-    // skip the fetch entirely rather than let it 401. Safe to read from
-    // closure without adding `user` to this effect's deps: `hydrated`
-    // only ever flips true after the sign-in check has already resolved
-    // (see the effect above), so `user`'s value is already settled by
-    // the time this effect's dependency actually changes. Below that,
-    // `user` is also read from this same closure for a best-effort
-    // write-through sync call — not worth re-running the whole
-    // event/player fetch over signing in without also changing events,
-    // which is an acceptable gap for a nice-to-have sync path.
-    if (!user) return;
+    // The backend now requires an approved session on every BCP route
+    // (the whole app is behind sign-in *and* approval, not just the
+    // account-specific features) — skip the fetch entirely rather than
+    // let it 401/403. Safe to read from closure without adding `user`
+    // to this effect's deps: `hydrated` only ever flips true after the
+    // sign-in check has already resolved (see the effect above), so
+    // `user`'s value is already settled by the time this effect's
+    // dependency actually changes. Below that, `user` is also read from
+    // this same closure for a best-effort write-through sync call — not
+    // worth re-running the whole event/player fetch over signing in
+    // without also changing events, which is an acceptable gap for a
+    // nice-to-have sync path.
+    if (!user || user.status !== "approved") return;
     let cancelled = false;
 
     Promise.all([fetchBcpEventInfo(eventId), fetchBcpPlayers(eventId)])
@@ -786,6 +793,10 @@ function HomeContent() {
       {!authChecked ? null : !user ? (
         <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
           <SignInPrompt message="view event rosters, pairings, and placings." />
+        </main>
+      ) : user.status !== "approved" ? (
+        <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+          <AccessStatusMessage status={user.status} />
         </main>
       ) : (
         <>

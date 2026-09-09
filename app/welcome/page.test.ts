@@ -68,7 +68,7 @@ test("prompts linking a profile for a signed-in account with none linked", () =>
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "", role: "user", status: "approved" },
   };
   const html = renderPage();
   assert.match(html, /Connect your Best Coast Pairings profile/);
@@ -86,7 +86,7 @@ test("an already-linked account's first render shows no onboarding content (the 
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
   };
   const html = renderPage();
   assert.ok(!html.includes("Connect your Best Coast Pairings profile"));

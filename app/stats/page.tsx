@@ -5,6 +5,7 @@ import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import PlayerStatsPanel from "../components/myEvents/playerStatsPanel";
 import SignInPrompt from "../components/shared/signInPrompt";
+import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import { useCurrentUser } from "../lib/auth";
 
 /**
@@ -34,6 +35,8 @@ export default function StatsPage() {
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
         {!checked ? null : !user ? (
           <SignInPrompt message="see your player stats." />
+        ) : user.status !== "approved" ? (
+          <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <BcpProfileLinker

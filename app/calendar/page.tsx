@@ -7,6 +7,7 @@ import EventList from "../components/myEvents/eventList";
 import MonthGrid from "../components/calendar/monthGrid";
 import Spinner from "../components/shared/spinner";
 import SignInPrompt from "../components/shared/signInPrompt";
+import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { useCurrentUser } from "../lib/auth";
 import { fetchMyEvents, type MyEvent, type MyEvents } from "../lib/myEvents";
@@ -33,7 +34,13 @@ export default function CalendarPage() {
   const slowLoad = useDelayedFlag(loading);
 
   React.useEffect(() => {
-    if (!bcpUserId) {
+    // GET /api/me/events requires an approved account on the backend
+    // (api.RequireApproved) — skip the fetch entirely rather than let
+    // it 403 for a pending/rejected account that's already linked a
+    // profile (SetBcpProfile itself doesn't require approval — see
+    // brass-ledger-api's me.go — so bcpUserId can be set here before
+    // approval).
+    if (!bcpUserId || user?.status !== "approved") {
       setEvents(null);
       return;
     }
@@ -61,7 +68,7 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
-  }, [bcpUserId]);
+  }, [bcpUserId, user?.status]);
 
   const upcoming: MyEvent[] = events ? [...events.present, ...events.future] : [];
 
@@ -77,6 +84,8 @@ export default function CalendarPage() {
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
         {!checked ? null : !user ? (
           <SignInPrompt message="see your upcoming events on a calendar." />
+        ) : user.status !== "approved" ? (
+          <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <BcpProfileLinker
