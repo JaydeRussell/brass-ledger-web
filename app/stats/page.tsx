@@ -25,10 +25,10 @@ export default function StatsPage() {
   const bcpUserId = user?.bcpUserId ?? "";
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen bg-surface-0">
       <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
         <HamburgerButton />
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
           Player Stats
         </h1>
       </header>
@@ -37,7 +37,7 @@ export default function StatsPage() {
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
             <BcpProfileLinker
               onLinked={(id) => {
                 setUser((prev) => (prev ? { ...prev, bcpUserId: id } : prev));
@@ -48,7 +48,7 @@ export default function StatsPage() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(false)}
-                className="mt-2 text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="mt-2 text-xs text-text-secondary hover:underline"
               >
                 Cancel
               </button>
@@ -60,7 +60,7 @@ export default function StatsPage() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(true)}
-                className="text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="text-xs text-text-secondary hover:underline"
               >
                 Change profile
               </button>

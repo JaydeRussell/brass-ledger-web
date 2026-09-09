@@ -13,10 +13,10 @@ type PlayerStatsPanelProps = {
 
 function StatTile({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="flex min-w-[6rem] flex-1 flex-col items-center rounded-xl bg-zinc-50 px-3 py-2 text-center dark:bg-zinc-800/60">
-      <span className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{value}</span>
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
-      {detail && <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{detail}</span>}
+    <div className="flex min-w-[6rem] flex-1 flex-col items-center rounded-lg bg-surface-2 px-3 py-2 text-center">
+      <span className="text-lg font-semibold text-text-primary">{value}</span>
+      <span className="text-xs text-text-secondary">{label}</span>
+      {detail && <span className="text-[10px] text-text-tertiary">{detail}</span>}
     </div>
   );
 }
@@ -126,13 +126,13 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div role="status" aria-live="polite" className="rounded-lg border border-surface-border bg-surface-1 p-4 shadow-sm">
         <div className="flex items-center gap-2">
           <Spinner size="sm" />
-          <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading player stats…</span>
+          <span className="text-sm text-text-secondary">Loading player stats…</span>
         </div>
         {slowLoad && (
-          <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="mt-2 text-xs text-text-tertiary">
             Taking longer than usual — this app hasn&apos;t seen some of your events before, so
             it&apos;s asking Best Coast Pairings for them the first time.
           </p>
@@ -144,12 +144,12 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
   if (!stats || !stats.linked || stats.totalEvents === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-lg border border-surface-border bg-surface-1 p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Player stats</h2>
+          <h2 className="text-sm font-semibold text-text-primary">Player stats</h2>
           {formatMonthYear(stats.competingSince) && (
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-text-tertiary">
               Competing since {formatMonthYear(stats.competingSince)}
             </p>
           )}
@@ -189,11 +189,11 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
       </div>
 
       {stats.factions.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-surface-border pt-3">
           {stats.factions.map((f) => (
             <span
               key={f.faction}
-              className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300"
+              className="rounded-full border border-surface-border bg-surface-2 px-2.5 py-1 text-xs text-text-secondary"
             >
               {f.faction} · {f.eventCount} event{f.eventCount === 1 ? "" : "s"}
               {f.bestPlacing !== undefined && ` · best ${ordinal(f.bestPlacing)}`}

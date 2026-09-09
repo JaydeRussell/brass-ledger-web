@@ -41,8 +41,8 @@ function OverviewRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <>
-      <dt className="text-zinc-400 dark:text-zinc-500">{label}</dt>
-      <dd className="truncate text-zinc-700 dark:text-zinc-300">{value}</dd>
+      <dt className="text-text-tertiary">{label}</dt>
+      <dd className="min-w-0 truncate text-text-secondary">{value}</dd>
     </>
   );
 }
@@ -67,19 +67,19 @@ function EventCard({ event }: { event: MyEvent }) {
   const countdown = formatCountdown(event.startDate, event.endDate);
 
   return (
-    <li className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <li className="rounded-lg border border-surface-border bg-surface-1">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         className="w-full p-3 text-left"
       >
-        <div className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+        <div className="truncate text-sm font-medium text-text-primary">
           {event.eventName}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
           {countdown && (
-            <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+            <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-600 dark:text-brass-400">
               {countdown}
             </span>
           )}
@@ -91,7 +91,7 @@ function EventCard({ event }: { event: MyEvent }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-zinc-100 px-3 pb-3 pt-2 dark:border-zinc-800">
+        <div className="border-t border-surface-border px-3 pb-3 pt-2">
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
             <OverviewRow label="Status" value={countdown} />
             <OverviewRow label="Dates" value={dateRange} />
@@ -101,7 +101,7 @@ function EventCard({ event }: { event: MyEvent }) {
           </dl>
           <Link
             href={`/?event=${encodeURIComponent(event.eventId)}`}
-            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
           >
             View event page →
           </Link>
@@ -126,7 +126,7 @@ export default function EventList({
 }) {
   if (events.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+      <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
         {emptyMessage}
       </p>
     );

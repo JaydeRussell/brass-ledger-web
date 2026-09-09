@@ -52,29 +52,21 @@ function namesForDay(ranges: DayRange[], dNum: number): string[] {
 function DayCell({ day, isToday, names }: { day: number; isToday: boolean; names: string[] }) {
   return (
     <div
-      className={`min-h-[4.5rem] rounded-lg p-1 text-sm ${
-        isToday ? "bg-indigo-50 dark:bg-indigo-950/40" : ""
-      }`}
+      className={`min-h-[4.5rem] rounded-md p-1 text-sm ${isToday ? "bg-brass-500/15" : ""}`}
     >
-      <span
-        className={
-          isToday
-            ? "font-semibold text-indigo-600 dark:text-indigo-400"
-            : "text-zinc-700 dark:text-zinc-300"
-        }
-      >
+      <span className={isToday ? "font-semibold text-brass-600 dark:text-brass-400" : "text-text-secondary"}>
         {day}
       </span>
       {names.length > 0 && (
         <div className="mt-0.5 flex flex-col gap-0.5">
           <span
             title={names[0]}
-            className="truncate rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-medium leading-tight text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
+            className="truncate rounded-sm bg-brass-500/20 px-1 py-0.5 text-[10px] font-medium leading-tight text-brass-600 dark:text-brass-400"
           >
             {names[0]}
           </span>
           {names.length > 1 && (
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span className="text-[10px] text-text-tertiary">
               +{names.length - 1} more
             </span>
           )}
@@ -131,28 +123,28 @@ export default function MonthGrid({ events }: { events: MyEvent[] }) {
   };
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
           onClick={goPrev}
           aria-label="Previous month"
-          className="rounded-lg px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          className="rounded-md px-2 py-1 text-text-secondary hover:bg-surface-2"
         >
           ‹
         </button>
-        <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{monthLabel}</span>
+        <span className="text-sm font-semibold text-text-primary">{monthLabel}</span>
         <button
           type="button"
           onClick={goNext}
           aria-label="Next month"
-          className="rounded-lg px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          className="rounded-md px-2 py-1 text-text-secondary hover:bg-surface-2"
         >
           ›
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-zinc-400 dark:text-zinc-500">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs text-text-tertiary">
         {WEEKDAY_LABELS.map((label) => (
           <div key={label}>{label}</div>
         ))}

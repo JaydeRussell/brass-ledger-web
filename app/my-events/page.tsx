@@ -163,10 +163,10 @@ function MyEventsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen bg-surface-0">
       <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
         <HamburgerButton />
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
           My Events
         </h1>
       </header>
@@ -175,7 +175,7 @@ function MyEventsContent() {
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
             <BcpProfileLinker
               onLinked={(id) => {
                 setUser((prev) => (prev ? { ...prev, bcpUserId: id } : prev));
@@ -186,7 +186,7 @@ function MyEventsContent() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(false)}
-                className="mt-2 text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="mt-2 text-xs text-text-secondary hover:underline"
               >
                 Cancel
               </button>
@@ -219,7 +219,7 @@ function MyEventsContent() {
             </div>
 
             {!loading && !loadError && events && activeTab !== "past" && (
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 dark:text-zinc-500">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-tertiary">
                 <span>
                   {events.upcomingFetchedAt
                     ? `Last checked ${formatRelativeTime(events.upcomingFetchedAt)} — new sign-ups or an event starting won't show up until you check again.`
@@ -229,7 +229,7 @@ function MyEventsContent() {
                   type="button"
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 px-2 py-1 text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-surface-border px-2 py-1 text-text-secondary hover:bg-surface-2 disabled:opacity-50"
                 >
                   {refreshing && <Spinner size="sm" />}
                   {refreshing ? "Checking…" : "Check for updates"}
@@ -237,19 +237,19 @@ function MyEventsContent() {
               </div>
             )}
             {refreshError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              <div role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-600 dark:text-danger-400">
                 Couldn&apos;t check for updates: {refreshError}
               </div>
             )}
 
             {loading && (
-              <div>
-                <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <div role="status" aria-live="polite">
+                <div className="flex items-center gap-2 text-sm text-text-secondary">
                   <Spinner size="sm" />
                   <span>Loading…</span>
                 </div>
                 {slowLoad && (
-                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-1 text-xs text-text-tertiary">
                     Taking longer than usual — this app hasn&apos;t seen some of your events
                     before, so it&apos;s asking Best Coast Pairings for them the first time.
                   </p>
@@ -257,7 +257,7 @@ function MyEventsContent() {
               </div>
             )}
             {loadError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              <div role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-600 dark:text-danger-400">
                 Couldn&apos;t load events: {loadError}
               </div>
             )}

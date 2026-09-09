@@ -74,10 +74,10 @@ export default function CalendarPage() {
   const upcoming: MyEvent[] = events ? [...events.present, ...events.future] : [];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen bg-surface-0">
       <header className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
         <HamburgerButton />
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
           Calendar
         </h1>
       </header>
@@ -86,7 +86,7 @@ export default function CalendarPage() {
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
             <BcpProfileLinker
               onLinked={(id) => {
                 setUser((prev) => (prev ? { ...prev, bcpUserId: id } : prev));
@@ -97,7 +97,7 @@ export default function CalendarPage() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(false)}
-                className="mt-2 text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="mt-2 text-xs text-text-secondary hover:underline"
               >
                 Cancel
               </button>
@@ -109,20 +109,20 @@ export default function CalendarPage() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(true)}
-                className="text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="text-xs text-text-secondary hover:underline"
               >
                 Change profile
               </button>
             </div>
 
             {loading && (
-              <div>
-                <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <div role="status" aria-live="polite">
+                <div className="flex items-center gap-2 text-sm text-text-secondary">
                   <Spinner size="sm" />
                   <span>Loading…</span>
                 </div>
                 {slowLoad && (
-                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-1 text-xs text-text-tertiary">
                     Taking longer than usual — this app hasn&apos;t seen some of your events
                     before, so it&apos;s asking Best Coast Pairings for them the first time.
                   </p>
@@ -130,7 +130,7 @@ export default function CalendarPage() {
               </div>
             )}
             {loadError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              <div role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-600 dark:text-danger-400">
                 Couldn&apos;t load events: {loadError}
               </div>
             )}
@@ -140,7 +140,7 @@ export default function CalendarPage() {
                   <MonthGrid events={upcoming} />
                 </div>
                 <div className="lg:w-80 lg:shrink-0">
-                  <h2 className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                  <h2 className="mb-2 text-sm font-semibold text-text-primary">
                     Upcoming events
                   </h2>
                   <EventList events={upcoming} emptyMessage="No upcoming events found." />
