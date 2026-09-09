@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { googleSignInUrl, signOut, useCurrentUser } from "../../lib/auth";
 import { logClientEvent } from "../../lib/clientLog";
+import ThemeToggle from "../ui/themeToggle";
 
 /**
  * The signed-in-account bit of the nav drawer — sits at the top, above
@@ -26,13 +27,14 @@ export default function AccountSection() {
 
   if (!user) {
     return (
-      <div className="border-b border-zinc-100 p-3 dark:border-zinc-800">
+      <div className="flex flex-col gap-2 border-b border-zinc-100 p-3 dark:border-zinc-800">
         <a
           href={googleSignInUrl(pathname)}
           className="flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           Sign in with Google
         </a>
+        <ThemeToggle />
       </div>
     );
   }
@@ -74,7 +76,7 @@ export default function AccountSection() {
   };
 
   return (
-    <div className="border-b border-zinc-100 p-3 dark:border-zinc-800">
+    <div className="flex flex-col gap-2 border-b border-zinc-100 p-3 dark:border-zinc-800">
       <div className="flex items-center gap-2">
         {user.avatarUrl ? (
           // An arbitrary external Google avatar URL, not one of this
@@ -106,6 +108,7 @@ export default function AccountSection() {
           {signingOut ? "…" : "Sign out"}
         </button>
       </div>
+      <ThemeToggle />
     </div>
   );
 }
