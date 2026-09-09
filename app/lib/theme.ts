@@ -6,12 +6,14 @@
 // applied before first paint (a useEffect here would only run after paint,
 // causing a flash on every load, not just first visit).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { logClientEvent } from "./clientLog.ts";
 
 export type Theme = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
 const THEME_STORAGE_KEY = "theme";
+const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 /** Narrows an arbitrary stored/read value down to a real Theme, defaulting
  * to "system" for anything else (unset, corrupted, or a future/older value
@@ -55,8 +57,51 @@ export function applyTheme(theme: Theme) {
 }
 
 /**
+ * Decides how to reconcile a freshly-signed-in account's saved theme
+ * against whatever this device already had locally, the first time
+ * they're compared for a given sign-in. Pure — no DOM/network access —
+ * so the "push local up instead of discarding it" rule (see useTheme's
+ * doc comment for the full reasoning) is directly unit-testable.
+ */
+export function reconcileAccountTheme(
+  accountTheme: Theme,
+  localTheme: Theme
+): { resolved: Theme; pushLocalUp: boolean } {
+  const pushLocalUp = accountTheme === "system" && localTheme !== "system";
+  return { resolved: pushLocalUp ? localTheme : accountTheme, pushLocalUp };
+}
+
+/**
+ * Saves a signed-in account's theme choice server-side (see
+ * internal/api/me.go's SetTheme, POST /api/me/theme) so it follows them
+ * across devices instead of staying stuck in one browser's localStorage.
+ * Same getJSON/postJSON-less minimal fetch shape myEvents.ts's postJSON
+ * uses, kept as its own small copy here rather than a shared import — the
+ * established convention across this app's app/lib/*.ts modules.
+ */
+export async function setAccountTheme(theme: Theme): Promise<void> {
+  const res = await fetch(`${BACKEND_API_BASE}/api/me/theme`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ theme }),
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: HTTP ${res.status}`);
+  }
+}
+
+/**
  * Current theme choice ("light"/"dark"/"system", not the resolved
  * light-or-dark value) plus a setter that also applies it immediately.
+ *
+ * `account` is the signed-in account's saved preference, or `null` for a
+ * signed-out guest — pass `user && checked ? { themePreference: user.themePreference } : null`
+ * from a component that already calls useCurrentUser() (e.g.
+ * accountSection.tsx), rather than this hook calling useCurrentUser()
+ * itself, which would mean a second independent /api/me fetch alongside
+ * whatever the caller already made (useCurrentUser() is explicitly NOT
+ * shared state — see auth.ts's doc comment).
  *
  * Starts at "system" — matching what a server-rendered pass always sees
  * (there's no `localStorage` to read on the server) — then syncs to the
@@ -70,13 +115,30 @@ export function applyTheme(theme: Theme) {
  * opened. The <html> class itself never has this problem — the inline
  * script in layout.tsx's <head> sets it before hydration even begins.
  *
+ * Once `account` is known (non-null), it wins over whatever this device
+ * had locally — the same "server wins once signed in" rule this app
+ * already uses for follows/recent-events (see page.tsx's hydration
+ * effect) — with one deliberate addition: if the account has never
+ * actually set a preference (still at the backend's own "system"
+ * default) but this device already has a real, different local choice,
+ * that local choice is pushed up once instead of being silently
+ * discarded — follows/recent-events don't need this (there's no
+ * meaningful "guest data" to preserve there), but overwriting someone's
+ * already-made dark-mode choice the moment they sign in for the first
+ * time would be a real, visible regression for exactly the visitors this
+ * feature is supposed to help. Runs once per sign-in (guarded by a ref),
+ * not on every render — a later manual toggle change is never clobbered
+ * by this effect re-firing, since `account` doesn't change again until
+ * the next full sign-in.
+ *
  * While `theme === "system"`, listens for the OS-level preference
  * changing live — same `matchMedia` listener idiom as
  * itcBadge.tsx's usePrefersDarkMode — so flipping the OS setting updates
  * the page immediately rather than only on next load.
  */
-export function useTheme() {
+export function useTheme(account?: { themePreference: Theme } | null) {
   const [theme, setThemeState] = useState<Theme>("system");
+  const syncedFromAccountRef = useRef(false);
 
   useEffect(() => {
     // Wrapped in a resolved-promise callback, like every effect in this
@@ -85,10 +147,37 @@ export function useTheme() {
     Promise.resolve().then(() => setThemeState(readStoredTheme()));
   }, []);
 
-  const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
-    applyTheme(next);
-  }, []);
+  useEffect(() => {
+    if (!account || syncedFromAccountRef.current) return;
+    syncedFromAccountRef.current = true;
+    Promise.resolve().then(() => {
+      const { resolved, pushLocalUp } = reconcileAccountTheme(account.themePreference, readStoredTheme());
+      setThemeState(resolved);
+      applyTheme(resolved);
+      if (pushLocalUp) {
+        setAccountTheme(resolved).catch((err: unknown) => {
+          logClientEvent("warn", "pushing local theme choice to account failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+    });
+  }, [account]);
+
+  const setTheme = useCallback(
+    (next: Theme) => {
+      setThemeState(next);
+      applyTheme(next);
+      if (account) {
+        setAccountTheme(next).catch((err: unknown) => {
+          logClientEvent("warn", "saving theme choice to account failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+    },
+    [account]
+  );
 
   useEffect(() => {
     if (theme !== "system") return;

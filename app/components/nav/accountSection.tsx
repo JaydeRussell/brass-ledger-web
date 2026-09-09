@@ -34,7 +34,7 @@ export default function AccountSection() {
         >
           Sign in with Google
         </a>
-        <ThemeToggle />
+        <ThemeToggle account={null} />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export default function AccountSection() {
           {signingOut ? "…" : "Sign out"}
         </button>
       </div>
-      <ThemeToggle />
+      <ThemeToggle account={{ themePreference: user.themePreference }} />
     </div>
   );
 }
