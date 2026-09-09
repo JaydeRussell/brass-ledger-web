@@ -16,6 +16,11 @@ const eslintConfig = defineConfig([
     "types/routes.d.ts",
     "types/validator.ts",
     "types/cache-life.d.ts",
+    // vinext/Vite's build output (see `npm run build:vinext`) — not
+    // hand-written, and gitignored already, but not caught by any of
+    // eslint-config-next's own defaults above since those predate the
+    // Cloudflare deploy setup.
+    "dist/**",
   ]),
 ]);
 

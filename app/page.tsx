@@ -13,6 +13,7 @@ import TabBar, { type TabKey } from "./components/tabs/tabBar";
 import FollowingPill from "./components/tabs/followingPill";
 import HamburgerButton from "./components/nav/hamburgerButton";
 import SearchBar from "./components/search/searchBar";
+import SignInPrompt from "./components/shared/signInPrompt";
 import {
   fetchBcpEventInfo,
   fetchBcpPlayers,
@@ -329,14 +330,20 @@ function HomeContent() {
   // callbacks — never synchronously in the effect body itself.
   useEffect(() => {
     if (!hydrated) return;
+    // The backend now requires a session on every BCP route (the whole
+    // app is behind sign-in, not just the account-specific features) —
+    // skip the fetch entirely rather than let it 401. Safe to read from
+    // closure without adding `user` to this effect's deps: `hydrated`
+    // only ever flips true after the sign-in check has already resolved
+    // (see the effect above), so `user`'s value is already settled by
+    // the time this effect's dependency actually changes. Below that,
+    // `user` is also read from this same closure for a best-effort
+    // write-through sync call — not worth re-running the whole
+    // event/player fetch over signing in without also changing events,
+    // which is an acceptable gap for a nice-to-have sync path.
+    if (!user) return;
     let cancelled = false;
 
-    // `user` is read from closure here rather than added to this effect's
-    // deps — it only affects a best-effort write-through sync call below,
-    // not what data actually gets fetched, so it isn't worth re-running
-    // the whole event/player fetch over. This means signing in without
-    // also changing events won't sync *this* view until the next event
-    // change, which is an acceptable gap for a nice-to-have sync path.
     Promise.all([fetchBcpEventInfo(eventId), fetchBcpPlayers(eventId)])
       .then(([info, playerList]) => {
         if (cancelled) return;
@@ -776,19 +783,25 @@ function HomeContent() {
         </div>
       </header>
 
-      {error && (
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-            Couldn&apos;t load event data: {error}
+      {!authChecked ? null : !user ? (
+        <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+          <SignInPrompt message="view event rosters, pairings, and placings." />
+        </main>
+      ) : (
+        <>
+          {error && (
+            <div className="mx-auto max-w-5xl px-4">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+                Couldn&apos;t load event data: {error}
+              </div>
+            </div>
+          )}
+
+          <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 pt-2 backdrop-blur dark:border-zinc-800 dark:bg-black/80">
+            <TabBar active={activeTab} onChange={changeTab} />
           </div>
-        </div>
-      )}
 
-      <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 pt-2 backdrop-blur dark:border-zinc-800 dark:bg-black/80">
-        <TabBar active={activeTab} onChange={changeTab} />
-      </div>
-
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+          <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
         {(activeTab === "roster" || activeTab === "pairings" || activeTab === "placings") && (
           <SearchBar
             value={searchQuery}
@@ -942,7 +955,9 @@ function HomeContent() {
             }
           />
         )}
-      </main>
+          </main>
+        </>
+      )}
     </div>
   );
 }
