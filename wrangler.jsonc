@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brass-ledger-web",
+  "compatibility_date": "2026-09-09",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "vinext/server/fetch-handler",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "cache": {
+    "enabled": true
+  },
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
+
+  // Provisions DNS + TLS for this hostname automatically on first
+  // deploy, since the zone is already on Cloudflare — no manual DNS
+  // record needed.
+  "routes": [
+    { "pattern": "brass-ledger.app", "custom_domain": true }
+  ]
+}

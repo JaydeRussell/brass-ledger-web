@@ -1,0 +1,47 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # Sanity-checks the plain (non-Cloudflare) Next.js build still
+      # works — the actual deploy build below is vinext's, but this is
+      # the cheapest way to catch a regular Next.js regression too.
+      - run: npm run build
+
+  # Only on a real push to main, not PRs — a PR from a fork wouldn't
+  # have access to the deploy secrets anyway, and we don't want every PR
+  # touching production.
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # NEXT_PUBLIC_* vars are inlined into the browser bundle at build
+    # time (see .env.production, which isn't committed) — set explicitly
+    # here since CI doesn't have that local file.
+    env:
+      NEXT_PUBLIC_BACKEND_URL: https://api.brass-ledger.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build:vinext
+      - run: npm run deploy:vinext
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

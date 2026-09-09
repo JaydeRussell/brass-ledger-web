@@ -48,3 +48,6 @@ next-env.d.ts
 /types/routes.d.ts
 /types/validator.ts
 /types/cache-life.d.ts
+/dist/
+.vinext/
+.wrangler/

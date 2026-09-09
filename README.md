@@ -174,6 +174,34 @@ which builds and starts this frontend, the backend, and Postgres
 together. This repo's own Dockerfile only matters on its own if you're
 building/running just the frontend container by hand.
 
+# Deploying to Cloudflare
+
+This app deploys to Cloudflare Workers via [vinext](https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/)
+(`vinext init` already ran — see `wrangler.jsonc`, `vite.config.ts`, and
+the `*:vinext` scripts in `package.json`). The backend
+(`brass-ledger-api`) deploys separately as a Cloudflare Container — see
+its README's "Deploying to Cloudflare" section; both need to be deployed
+for the site to actually work, since this app is a pure client that
+calls that backend directly from the browser (see `.env.example`'s
+`NEXT_PUBLIC_BACKEND_URL`).
+
+`.env.production` (not committed — see `.gitignore`'s `.env*` rule) sets
+`NEXT_PUBLIC_BACKEND_URL` to the real backend's public URL, since
+Next.js inlines `NEXT_PUBLIC_*` vars into the browser bundle at build
+time. Update it there if the backend's domain ever changes.
+
+```bash
+npm install                # installs vinext/vite/wrangler
+npx wrangler login          # authenticate the CLI once, one time only
+
+npm run build:vinext        # builds against .env.production
+npm run deploy:vinext       # deploys to Cloudflare Workers
+```
+
+`wrangler.jsonc`'s `routes` entry provisions DNS + TLS for
+`brass-ledger.app` automatically on first deploy, since the zone is
+already on Cloudflare — no manual DNS record needed.
+
 # TODO
 [x] Mobile Support — responsive pass done (scrollable tab bar instead of
     squishing on narrow screens, a viewport-safe settings dropdown, bigger
