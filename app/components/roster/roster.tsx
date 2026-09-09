@@ -1,5 +1,6 @@
 "use client";
 import type { ItcRanking } from "../../lib/bcp";
+import DispositionBadge from "../shared/dispositionBadge";
 import ItcBadge from "../shared/itcBadge";
 
 function initials(name: string) {
@@ -104,7 +105,12 @@ export default function TeamRoster({
                   </p>
                   <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                     {player.faction}
-                    {player.subFaction && ` — ${player.subFaction}`}
+                    {/* When subFaction holds a Force Disposition value
+                        (see types/player.d.ts), it's shown as the badge
+                        instead — repeating it here as "faction — Purge
+                        the Foe" would mislabel a disposition as a
+                        sub-faction. */}
+                    {player.subFaction && player.subFaction !== player.disposition && ` — ${player.subFaction}`}
                   </p>
                 </div>
                 {player.list && (
@@ -117,6 +123,7 @@ export default function TeamRoster({
                     list
                   </a>
                 )}
+                <DispositionBadge disposition={player.disposition} />
                 <ItcBadge
                   ranking={ranking}
                   bcpUserId={player.bcpUserId}

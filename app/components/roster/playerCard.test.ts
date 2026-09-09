@@ -31,6 +31,27 @@ test("shows a subfaction suffix only when present", () => {
   assert.match(html, /Orks — Goffs/);
 });
 
+test("shows a disposition badge only when present", () => {
+  const noBadge = renderToStaticMarkup(React.createElement(PlayerCard, { player: basePlayer }));
+  assert.ok(!noBadge.includes("Purge the Foe"));
+
+  const withBadge = renderToStaticMarkup(
+    React.createElement(PlayerCard, { player: { ...basePlayer, disposition: "Purge the Foe" } })
+  );
+  assert.match(withBadge, /Purge the Foe/);
+});
+
+test("doesn't repeat the disposition as a subfaction suffix when BCP reused that field for it", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(PlayerCard, {
+      player: { ...basePlayer, subFaction: "Purge the Foe", disposition: "Purge the Foe" },
+    })
+  );
+  assert.ok(!html.includes("Orks — Purge the Foe"));
+  // The badge itself still renders the text once.
+  assert.equal((html.match(/Purge the Foe/g) ?? []).length, 1);
+});
+
 test("shows a link to the army list only when one is published", () => {
   const noList = renderToStaticMarkup(React.createElement(PlayerCard, { player: basePlayer }));
   assert.ok(!noList.includes(">list<"));
