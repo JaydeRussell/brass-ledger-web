@@ -45,3 +45,16 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      # Catches a bad deploy immediately rather than silently. The
+      # backend's own health/auth wiring is covered by its own
+      # pipeline's smoke test (brass-ledger-api's scripts/smoke-test.sh)
+      # — this just confirms the frontend itself is actually serving.
+      - name: Smoke test production
+        run: |
+          sleep 5
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://brass-ledger.app/)"
+          if [ "$code" != "200" ]; then
+            echo "FAIL  frontend root (https://brass-ledger.app/ -> $code, want 200)" >&2
+            exit 1
+          fi
+          echo "ok    frontend root (https://brass-ledger.app/ -> $code)"
