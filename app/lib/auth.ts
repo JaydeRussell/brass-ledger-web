@@ -83,19 +83,28 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * Shared "who's signed in" state — used by the nav drawer's account
- * section and the My Events page, so both agree on the same signed-in
- * user without each running its own independent /api/me fetch-on-mount
- * (this was previously duplicated inline in AuthStatus before the nav
- * was a separate drawer from the page content).
+ * The reusable "who's signed in" hook — the same shape/logic used by
+ * the nav drawer's account section and every gated page (root event
+ * viewer, /calendar, /my-events, /stats), instead of each duplicating
+ * its own /api/me fetch-on-mount inline (this was literally duplicated
+ * in AuthStatus before the nav was a separate drawer from the page
+ * content).
+ *
+ * NOT shared state, despite living in one place: every call site gets
+ * its own independent `user`/`checked`, each with its own /api/me
+ * fetch-on-mount — the nav drawer's instance and a page's instance
+ * don't know about each other. That's why signing out
+ * (accountSection.tsx's handleSignOut) forces a full page reload after
+ * `setUser(null)` rather than trusting that call alone to update
+ * what's rendered underneath the drawer.
  *
  * `checked` is false only until the very first lookup resolves — render
  * nothing (or a skeleton) until then, same as the old AuthStatus did, to
  * avoid a flash of "signed out" for someone who's actually signed in.
  * `setUser` is exposed directly so a caller that already knows the
  * result of an action (signing out, or /api/me/bcp-profile linking a
- * profile) can update local state immediately rather than waiting on
- * `refresh()` to round-trip to the backend again.
+ * profile) can update its own local state immediately rather than
+ * waiting on `refresh()` to round-trip to the backend again.
  */
 export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(null);
