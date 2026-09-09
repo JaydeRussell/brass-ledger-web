@@ -4,8 +4,9 @@ import { usePathname } from "next/navigation";
 import { useNav } from "./navContext";
 import AccountSection from "./accountSection";
 import { Dialog, DialogClose } from "../ui/dialog";
+import { useCurrentUser } from "../../lib/auth";
 
-const LINKS = [
+const BASE_LINKS = [
   { href: "/", label: "Event" },
   { href: "/my-events", label: "My Events" },
   { href: "/calendar", label: "Calendar" },
@@ -37,6 +38,13 @@ const LINKS = [
 export default function NavDrawer() {
   const { isOpen, close } = useNav();
   const pathname = usePathname();
+  // A second, independent useCurrentUser() instance — see auth.ts's doc
+  // comment: this hook is deliberately not shared state, so every
+  // consumer (this drawer, AccountSection below, any gated page) fetches
+  // /api/me on its own rather than one instance being threaded through
+  // props. Only used here to role-gate the Admin link.
+  const { user } = useCurrentUser();
+  const links = user?.role === "admin" ? [...BASE_LINKS, { href: "/admin", label: "Admin" }] : BASE_LINKS;
 
   return (
     <Dialog
@@ -69,7 +77,7 @@ export default function NavDrawer() {
       <AccountSection />
 
       <nav className="flex flex-col gap-1 p-2">
-        {LINKS.map((link) => {
+        {links.map((link) => {
           const active = pathname === link.href;
           return (
             <Link
