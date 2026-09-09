@@ -26,11 +26,16 @@ type TabsProps<T extends string> = {
  * `"overview"|"roster"|"pairings"|"placings"` and /my-events's
  * `"past"|"ongoing"|"future"` can be rebuilt on this same primitive
  * without either widening to a shared `string` type.
+ *
+ * Deliberately has no outer centering/max-width/padding of its own —
+ * TabBar (a standalone full-width bar) and /my-events's tab row (sitting
+ * inline next to a "Change profile" button) need different outer layout,
+ * so each caller wraps this in whatever container fits its own context.
  */
 export function Tabs<T extends string>({ value, onValueChange, tabs, label }: TabsProps<T>) {
   return (
     <RadixTabs.Root value={value} onValueChange={(v) => onValueChange(v as T)}>
-      <RadixTabs.List aria-label={label} className="scrollbar-none mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
+      <RadixTabs.List aria-label={label} className="scrollbar-none flex gap-1 overflow-x-auto">
         {tabs.map((tab) => (
           <RadixTabs.Trigger
             key={tab.value}

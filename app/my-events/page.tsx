@@ -7,6 +7,7 @@ import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
 import Spinner from "../components/shared/spinner";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
+import { Tabs, type TabItem } from "../components/ui/tabs";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
@@ -193,33 +194,25 @@ function MyEventsContent() {
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800">
-              <nav className="flex gap-1">
-                {TAB_KEYS.map((tab) => {
-                  const isActive = tab === activeTab;
-                  const count = countForTab(events, tab);
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => changeTab(tab)}
-                      aria-current={isActive ? "page" : undefined}
-                      className={`shrink-0 whitespace-nowrap rounded-t-lg border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                          : "border-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                      }`}
-                    >
-                      {TAB_LABELS[tab]}
-                      {count !== undefined ? ` (${count})` : ""}
-                    </button>
-                  );
-                })}
-              </nav>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border">
+              <Tabs
+                value={activeTab}
+                onValueChange={changeTab}
+                label="My events range"
+                tabs={TAB_KEYS.map(
+                  (tab): TabItem<EventsTabKey> => ({
+                    value: tab,
+                    label: (() => {
+                      const count = countForTab(events, tab);
+                      return count !== undefined ? `${TAB_LABELS[tab]} (${count})` : TAB_LABELS[tab];
+                    })(),
+                  })
+                )}
+              />
               <button
                 type="button"
                 onClick={() => setChangingProfile(true)}
-                className="pb-2 text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="pb-2 text-xs text-text-secondary hover:underline"
               >
                 Change profile
               </button>
