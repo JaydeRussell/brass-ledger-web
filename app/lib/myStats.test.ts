@@ -34,7 +34,7 @@ test("fetchMyStats: sends credentials and returns the parsed body", async () => 
     bestPlacingRtt: { placing: 1 },
     bestPlacingTeams: { placing: 5, fieldSize: 12 },
     factions: [{ faction: "World Eaters", eventCount: 3, bestPlacing: 2 }],
-    mostRecentGameSystemId: "gs-40k",
+    mostRecentEventId: "evt-gt",
     competingSince: "2025-11-01T00:00:00.000Z",
   };
   const { calls } = installFetch(() => ({ status: 200, body: wantBody }));

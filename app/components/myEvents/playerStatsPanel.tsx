@@ -88,15 +88,17 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
     };
   }, [bcpUserId]);
 
-  // A separate effect: only once a game system is known (from `stats`)
-  // does it make sense to look up an ITC ranking, same "don't fetch more
-  // than a feature needs" reasoning as everywhere else this app talks to
-  // BCP.
+  // A separate effect: only once the player's most recent event is known
+  // (from `stats`) does it make sense to look up an ITC ranking, same
+  // "don't fetch more than a feature needs" reasoning as everywhere else
+  // this app talks to BCP. Anchored on that event's own known leagues,
+  // not a bare game system id — see fetchCurrentItcLeagueId's doc
+  // comment in lib/bcp.ts for why.
   React.useEffect(() => {
-    const gameSystemId = stats?.mostRecentGameSystemId;
-    if (!gameSystemId) return;
+    const mostRecentEventId = stats?.mostRecentEventId;
+    if (!mostRecentEventId) return;
     let cancelled = false;
-    fetchCurrentItcLeagueId(gameSystemId)
+    fetchCurrentItcLeagueId(mostRecentEventId)
       .then((leagueId) => {
         if (cancelled || !leagueId) return;
         setItcLeagueId(leagueId);
@@ -114,7 +116,7 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [stats?.mostRecentGameSystemId, bcpUserId]);
+  }, [stats?.mostRecentEventId, bcpUserId]);
 
   // stats is only ever null before the first fetchMyStats resolution —
   // it always resolves to a real MyStats (with linked: false, not null,

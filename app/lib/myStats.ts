@@ -51,11 +51,12 @@ export type PlacingWithField = {
  * every other field empty/zero — for an account that hasn't pasted a BCP
  * profile yet, same as fetchMyEvents' MyEvents.linked.
  *
- * mostRecentGameSystemId, when present, is this app's cue for which game
- * system to look up an ITC ranking for (via lib/bcp.ts's
- * fetchCurrentItcLeagueId/fetchItcRanking) — deliberately not fetched by
- * this endpoint itself, so a page that doesn't want an ITC badge doesn't
- * pay for one.
+ * mostRecentEventId, when present, is this app's cue for which event's
+ * own known leagues to resolve an ITC ranking league from (via
+ * lib/bcp.ts's fetchCurrentItcLeagueId/fetchItcRanking — anchored on an
+ * event id, not a bare game system id, see fetchCurrentItcLeagueId's
+ * doc comment for why) — deliberately not fetched by this endpoint
+ * itself, so a page that doesn't want an ITC badge doesn't pay for one.
  *
  * competingSince is the earliest event date in the player's history.
  */
@@ -67,7 +68,7 @@ export type MyStats = {
   bestPlacingGt?: PlacingWithField;
   bestPlacingTeams?: PlacingWithField;
   factions: FactionStat[];
-  mostRecentGameSystemId?: string;
+  mostRecentEventId?: string;
   competingSince?: string;
 };
 
