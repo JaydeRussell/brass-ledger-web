@@ -46,7 +46,7 @@ export default function PlayerCard({
       >
         {initials(player.name)}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-36 flex-1">
         <p className="truncate text-sm font-medium text-text-primary">
           {player.name}
           {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}

@@ -92,7 +92,7 @@ export default function TeamRoster({
                 className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-surface-border p-2.5"
               >
                 <Avatar name={player.name} />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-36 flex-1">
                   <p className="truncate text-sm font-medium text-text-primary">
                     {player.name}
                     {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}
