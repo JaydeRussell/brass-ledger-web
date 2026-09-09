@@ -32,6 +32,12 @@ mock.module("../lib/myEvents.ts", {
   },
 });
 mock.module("../lib/clientLog.ts", { namedExports: { logClientEvent: () => {} } });
+mock.module("next/navigation", {
+  namedExports: {
+    usePathname: () => "/calendar",
+    useRouter: () => ({ replace: () => {} }),
+  },
+});
 
 const { default: CalendarPage } = await import("./page.tsx");
 
@@ -48,11 +54,11 @@ test("shows nothing but the header while the sign-in check is in flight", () => 
   assert.ok(!html.includes("Sign in to see"));
 });
 
-test("prompts sign-in once checked and signed out", () => {
+test("shows nothing once checked and signed out (useRedirectToLoginIfSignedOut takes it from here)", () => {
   authState = { user: null, checked: true, setUser: () => {} };
   const html = renderPage();
-  assert.match(html, /Sign in to see your upcoming events on a calendar\./);
-  assert.match(html, /href="http:\/\/localhost:8080\/auth\/google\/login"/);
+  assert.match(html, /Calendar/);
+  assert.ok(!html.includes("Link your Best Coast Pairings profile"));
 });
 
 test("shows a pending-approval message instead of content for a signed-in, not-yet-approved account", () => {

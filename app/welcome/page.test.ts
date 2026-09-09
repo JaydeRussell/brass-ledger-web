@@ -5,11 +5,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { NavProvider } from "../components/nav/navContext.tsx";
 
 // Same mocking approach as my-events/page.test.ts and stats/page.test.ts:
-// this page leans on lib/auth (real fetch on mount) and renders
-// BcpProfileLinker (via lib/myEvents, lib/bcp, lib/recentEvents) and
-// SignInPrompt (via next/navigation's usePathname) — every export any of
-// those touch has to be covered, since mocking a module replaces its
-// exports wholesale for every importer.
+// this page leans on lib/auth (real fetch on mount), renders
+// BcpProfileLinker (via lib/myEvents, lib/bcp, lib/recentEvents), and
+// calls useRedirectToLoginIfSignedOut (via next/navigation's
+// usePathname/useRouter) — every export any of those touch has to be
+// covered, since mocking a module replaces its exports wholesale for
+// every importer.
 let authState: { user: unknown; checked: boolean; setUser: (u: unknown) => void } = {
   user: null,
   checked: false,
@@ -58,10 +59,11 @@ test("shows nothing but the header while the sign-in check is in flight", () => 
   assert.ok(!html.includes("Connect your Best Coast Pairings profile"));
 });
 
-test("prompts sign-in once checked and signed out", () => {
+test("shows nothing once checked and signed out (useRedirectToLoginIfSignedOut takes it from here)", () => {
   authState = { user: null, checked: true, setUser: () => {} };
   const html = renderPage();
-  assert.match(html, /Sign in to get started\./);
+  assert.match(html, /Welcome to Brass Ledger/);
+  assert.ok(!html.includes("Connect your Best Coast Pairings profile"));
 });
 
 test("prompts linking a profile for a signed-in account with none linked", () => {

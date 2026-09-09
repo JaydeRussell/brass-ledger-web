@@ -13,8 +13,8 @@ import TabBar, { type TabKey } from "./components/tabs/tabBar";
 import FollowingPill from "./components/tabs/followingPill";
 import HamburgerButton from "./components/nav/hamburgerButton";
 import SearchBar from "./components/search/searchBar";
-import SignInPrompt from "./components/shared/signInPrompt";
 import AccessStatusMessage from "./components/shared/accessStatusMessage";
+import { useRedirectToLoginIfSignedOut } from "./lib/useRedirectToLoginIfSignedOut";
 import {
   fetchBcpEventInfo,
   fetchBcpPlayers,
@@ -157,6 +157,7 @@ function HomeContent() {
   // signed-in visitor's guest-mode localStorage briefly shows before the
   // real, synced list replaces it.
   const { user, checked: authChecked } = useCurrentUser();
+  useRedirectToLoginIfSignedOut(user, authChecked);
 
   // The active tab and the search filter both live in the URL's query
   // string (`?tab=...&q=...`) instead of plain component state. Unlike
@@ -790,11 +791,7 @@ function HomeContent() {
         </div>
       </header>
 
-      {!authChecked ? null : !user ? (
-        <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-          <SignInPrompt message="view event rosters, pairings, and placings." />
-        </main>
-      ) : user.status !== "approved" ? (
+      {!authChecked || !user ? null : user.status !== "approved" ? (
         <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
           <AccessStatusMessage status={user.status} />
         </main>
