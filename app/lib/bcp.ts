@@ -33,9 +33,15 @@ const BCP_SITE_BASE = "https://www.bestcoastpairings.com";
  * back to a generic message if the body isn't parseable JSON), and treats
  * an empty 200 body as `null` rather than trying (and failing) to parse
  * it — the backend uses an empty body for "no ITC ranking found."
+ *
+ * `credentials: "include"` matters now that these routes require a
+ * session (see internal/api.RequireSession on the backend) — without it,
+ * the browser never sends the session cookie cross-origin (this app's
+ * own domain vs. api.brass-ledger.app in production), and every call
+ * here would 401 even for a genuinely signed-in visitor.
  */
 async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_API_BASE}${path}`);
+  const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include" });
   const text = await res.text();
 
   if (!res.ok) {
