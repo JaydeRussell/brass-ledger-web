@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import TeamRoster from "./components/roster/roster";
+import TeamCompare from "./components/roster/teamCompare";
 import PlayerCard from "./components/roster/playerCard";
 import EventSettings from "./components/settings/eventSettings";
 import MyPairings from "./components/pairings/myPairings";
@@ -173,6 +174,13 @@ function HomeContent() {
 
   const activeTab: TabKey = isTabKey(searchParams.get("tab")) ? (searchParams.get("tab") as TabKey) : "overview";
   const searchQuery = searchParams.get("q") ?? "";
+  // Head-to-head team compare (Roster tab only) — a mode within the tab,
+  // not a tab of its own, so it doesn't disturb TabBar's deliberate mirror
+  // of BCP's own Overview/Roster/Pairings/Placings layout. Kept in the URL
+  // like tab/q above so a specific comparison is a shareable link.
+  const compareMode = searchParams.get("compare") === "1";
+  const compareTeamAParam = searchParams.get("teamA");
+  const compareTeamBParam = searchParams.get("teamB");
 
   // Applies one or more query-param changes at once (never omit a field
   // that's changing in the same call — see the two call sites below that
@@ -182,7 +190,7 @@ function HomeContent() {
   // Uses router.replace (not push) so switching tabs/typing a search never
   // piles up back-button history entries.
   const updateQuery = React.useCallback(
-    (patch: { tab?: TabKey; q?: string }) => {
+    (patch: { tab?: TabKey; q?: string; compare?: boolean; teamA?: string | null; teamB?: string | null }) => {
       const params = new URLSearchParams(searchParams.toString());
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
@@ -191,6 +199,26 @@ function HomeContent() {
       if ("q" in patch) {
         if (!patch.q) params.delete("q");
         else params.set("q", patch.q);
+      }
+      if ("compare" in patch) {
+        if (!patch.compare) {
+          // Turning compare off drops whichever teams were picked too,
+          // rather than leaving them to resurface stale the next time
+          // compare mode is turned back on.
+          params.delete("compare");
+          params.delete("teamA");
+          params.delete("teamB");
+        } else {
+          params.set("compare", "1");
+        }
+      }
+      if ("teamA" in patch) {
+        if (!patch.teamA) params.delete("teamA");
+        else params.set("teamA", patch.teamA);
+      }
+      if ("teamB" in patch) {
+        if (!patch.teamB) params.delete("teamB");
+        else params.set("teamB", patch.teamB);
       }
       // `event` (see the hydration effect below, which is what actually
       // reads and consumes it — search for "?event=") is a one-shot
@@ -718,6 +746,13 @@ function HomeContent() {
     if (aRank !== undefined && bRank !== undefined) return aRank - bRank;
     return a.localeCompare(b);
   });
+
+  // A team name picked before switching events (or before this event's
+  // roster finished loading) shouldn't linger in Compare mode pointing at
+  // a team that isn't actually in this roster — fall back to "unpicked"
+  // rather than showing an empty roster panel labeled with a stale name.
+  const compareTeamA = compareTeamAParam && sortedTeamNames.includes(compareTeamAParam) ? compareTeamAParam : null;
+  const compareTeamB = compareTeamBParam && sortedTeamNames.includes(compareTeamBParam) ? compareTeamBParam : null;
   const sortedPlayers = [...players].sort((a, b) => {
     const aRank = playerFollowedRank(a);
     const bRank = playerFollowedRank(b);
@@ -810,7 +845,7 @@ function HomeContent() {
           </div>
 
           <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-        {(activeTab === "roster" || activeTab === "pairings" || activeTab === "placings") && (
+        {((activeTab === "roster" && !compareMode) || activeTab === "pairings" || activeTab === "placings") && (
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -838,7 +873,29 @@ function HomeContent() {
 
         {activeTab === "roster" && (
           <>
-            {loading ? (
+            {!loading && isTeamEvent && sortedTeamNames.length >= 2 && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => updateQuery({ compare: !compareMode })}
+                  className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  {compareMode ? "← Back to roster" : "Compare two teams"}
+                </button>
+              </div>
+            )}
+            {!loading && compareMode && isTeamEvent ? (
+              <TeamCompare
+                teamNames={sortedTeamNames}
+                teams={teams}
+                itcLeagueId={itcLeagueId}
+                itcRankings={itcRankings}
+                selectedA={compareTeamA}
+                selectedB={compareTeamB}
+                onSelectA={(team) => updateQuery({ teamA: team })}
+                onSelectB={(team) => updateQuery({ teamB: team })}
+              />
+            ) : loading ? (
               <div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <CardSkeleton />
