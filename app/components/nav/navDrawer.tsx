@@ -3,8 +3,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useNav } from "./navContext";
 import AccountSection from "./accountSection";
+import { Dialog, DialogClose } from "../ui/dialog";
+import { useCurrentUser } from "../../lib/auth";
 
-const LINKS = [
+const BASE_LINKS = [
   { href: "/", label: "Event" },
   { href: "/my-events", label: "My Events" },
   { href: "/calendar", label: "Calendar" },
@@ -12,8 +14,19 @@ const LINKS = [
 ];
 
 /**
- * The left-hand hamburger menu itself: a backdrop + slide-in panel,
- * mounted once in app/layout.tsx so it's available from every page.
+ * The left-hand hamburger menu itself, mounted once in app/layout.tsx so
+ * it's available from every page. Built on ui/dialog.tsx's Radix-backed
+ * Dialog — gains real focus-trapping and Escape-to-close for free, which
+ * the hand-rolled backdrop+panel pair this replaced never had (its
+ * role="dialog"/aria-modal were already correct, but nothing enforced
+ * keyboard focus actually staying inside the drawer while open).
+ *
+ * `hideTitle` is set because this drawer already shows its own visible
+ * "Brass Ledger" heading in the header row below — Dialog's own
+ * accessible Title still gets rendered (visually hidden) so screen
+ * readers get the same aria-labelledby wiring Radix requires, without a
+ * second, visually-duplicate heading.
+ *
  * Holds the account section (sign-in/out — see accountSection.tsx) near
  * the top, above the nav links, per the explicit design call made when
  * this was built: the account is the one thing that's true regardless of
@@ -25,60 +38,63 @@ const LINKS = [
 export default function NavDrawer() {
   const { isOpen, close } = useNav();
   const pathname = usePathname();
+  // A second, independent useCurrentUser() instance — see auth.ts's doc
+  // comment: this hook is deliberately not shared state, so every
+  // consumer (this drawer, AccountSection below, any gated page) fetches
+  // /api/me on its own rather than one instance being threaded through
+  // props. Only used here to role-gate the Admin link.
+  const { user } = useCurrentUser();
+  const links = user?.role === "admin" ? [...BASE_LINKS, { href: "/admin", label: "Admin" }] : BASE_LINKS;
 
   return (
-    <>
-      <div
-        aria-hidden
-        onClick={close}
-        className={`fixed inset-0 z-30 bg-black/30 transition-opacity ${
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r border-zinc-200 bg-white shadow-xl transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-900 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Brass Ledger</span>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        // Opening happens externally (HamburgerButton calling useNav()'s
+        // open() directly, outside this Dialog's own tree) — this only
+        // ever needs to handle Radix-initiated close requests: Escape,
+        // an outside/backdrop click, or DialogClose below.
+        if (!open) close();
+      }}
+      title="Brass Ledger"
+      hideTitle
+    >
+      <div className="flex items-center justify-between border-b border-surface-border px-4 py-3">
+        <span className="text-sm font-semibold text-text-primary">Brass Ledger</span>
+        <DialogClose asChild>
           <button
             type="button"
-            onClick={close}
             aria-label="Close menu"
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="rounded-md p-1.5 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
           >
             <svg aria-hidden viewBox="0 0 20 20" fill="none" className="h-5 w-5">
               <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
-        </div>
-
-        <AccountSection />
-
-        <nav className="flex flex-col gap-1 p-2">
-          {LINKS.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={close}
-                className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                  active
-                    ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400"
-                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        </DialogClose>
       </div>
-    </>
+
+      <AccountSection />
+
+      <nav className="flex flex-col gap-1 p-2">
+        {links.map((link) => {
+          const active = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={close}
+              className={`rounded-md px-3 py-2 text-sm font-medium ${
+                active
+                  ? "bg-brass-500/15 text-brass-600 dark:text-brass-400"
+                  : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </Dialog>
   );
 }

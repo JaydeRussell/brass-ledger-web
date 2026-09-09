@@ -15,6 +15,7 @@ import FollowingPill from "./components/tabs/followingPill";
 import HamburgerButton from "./components/nav/hamburgerButton";
 import SearchBar from "./components/search/searchBar";
 import AccessStatusMessage from "./components/shared/accessStatusMessage";
+import Button from "./components/ui/button";
 import { useRedirectToLoginIfSignedOut } from "./lib/useRedirectToLoginIfSignedOut";
 import {
   fetchBcpEventInfo,
@@ -123,13 +124,13 @@ function groupByTeam(players: Player[]): Map<string, Player[]> {
 
 function CardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="border-b border-zinc-100 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-        <div className="h-4 w-1/3 rounded bg-zinc-200 dark:bg-zinc-800" />
+    <div className="animate-pulse overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm">
+      <div className="border-b border-surface-border bg-surface-2 px-4 py-3">
+        <div className="h-4 w-1/3 rounded-sm bg-surface-border" />
       </div>
       <div className="space-y-2 p-3">
-        <div className="h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800/60" />
-        <div className="h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800/60" />
+        <div className="h-12 rounded-md bg-surface-2" />
+        <div className="h-12 rounded-md bg-surface-2" />
       </div>
     </div>
   );
@@ -795,15 +796,15 @@ function HomeContent() {
   const filteredPlacings = placings.filter((entry) => matchesSearch(entry.name, searchQuery));
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen bg-surface-0">
       <header className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-4 px-4 pt-4 pb-2 sm:pt-8">
         <div className="flex items-start gap-3">
           <HamburgerButton />
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+            <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
               Brass Ledger
             </h1>
-            <p className="mt-1 hidden text-sm text-zinc-500 dark:text-zinc-400 sm:block">
+            <p className="mt-1 hidden text-sm text-text-secondary sm:block">
               Pulls roster, published-pairing, and placings data straight from Best Coast
               Pairings for reference — it doesn&apos;t score or suggest pairings.
             </p>
@@ -834,13 +835,16 @@ function HomeContent() {
         <>
           {error && (
             <div className="mx-auto max-w-5xl px-4">
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              <div
+                role="alert"
+                className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-3 text-sm text-danger-600 dark:text-danger-400"
+              >
                 Couldn&apos;t load event data: {error}
               </div>
             </div>
           )}
 
-          <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 pt-2 backdrop-blur dark:border-zinc-800 dark:bg-black/80">
+          <div className="sticky top-0 z-10 border-b border-surface-border bg-surface-0/90 pt-2 backdrop-blur">
             <TabBar active={activeTab} onChange={changeTab} />
           </div>
 
@@ -875,13 +879,9 @@ function HomeContent() {
           <>
             {!loading && isTeamEvent && sortedTeamNames.length >= 2 && (
               <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => updateQuery({ compare: !compareMode })}
-                  className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                >
+                <Button variant="ghost" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
                   {compareMode ? "← Back to roster" : "Compare two teams"}
-                </button>
+                </Button>
               </div>
             )}
             {!loading && compareMode && isTeamEvent ? (
@@ -902,7 +902,7 @@ function HomeContent() {
                   <CardSkeleton />
                 </div>
                 {slowLoad && (
-                  <p className="mt-3 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                  <p aria-live="polite" className="mt-3 text-center text-xs text-text-tertiary">
                     Taking longer than usual — this is a first look at this event, so it&apos;s
                     asking Best Coast Pairings directly.
                   </p>
@@ -910,11 +910,11 @@ function HomeContent() {
               </div>
             ) : isTeamEvent ? (
               sortedTeamNames.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
                   No rosters published for this event yet.
                 </p>
               ) : filteredTeamNames.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
                   No teams or players match &ldquo;{searchQuery}&rdquo;.
                 </p>
               ) : (
@@ -933,11 +933,11 @@ function HomeContent() {
                 </div>
               )
             ) : sortedPlayers.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+              <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
                 No players published for this event yet.
               </p>
             ) : filteredPlayers.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+              <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
                 No players match &ldquo;{searchQuery}&rdquo;.
               </p>
             ) : (

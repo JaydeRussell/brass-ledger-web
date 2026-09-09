@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import type { RecentEvent } from "../../lib/recentEvents";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdownMenu";
 
 type EventSettingsProps = {
   eventId: string;
@@ -17,6 +18,16 @@ function parseEventId(input: string): string {
   return match ? match[1] : trimmed;
 }
 
+/**
+ * Built on ui/dropdownMenu.tsx's Radix-backed DropdownMenu — real
+ * outside-click/Escape/focus-return handling for free, which the
+ * hand-rolled useState(open) + conditional <div> panel this replaced
+ * never had. The panel's content (an <input>, a filtered list, plain
+ * buttons) is arbitrary rich content, not DropdownMenu.Item entries, so
+ * it drops into DropdownMenuContent largely unchanged — see that file's
+ * own comment on why Content/Item are composed separately rather than
+ * one over-abstracted component.
+ */
 export default function EventSettings({
   eventId,
   eventName,
@@ -43,81 +54,85 @@ export default function EventSettings({
   });
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => {
-          // Starts empty, not prefilled with the current event's id — the
-          // same text also drives the recent-events dropdown below, and a
-          // non-empty starting value (matching nothing else) would filter
-          // every recent event out the moment the panel opens.
-          setDraft("");
-          setOpen((v) => !v);
-        }}
-        className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-      >
-        <span className="max-w-[10rem] truncate sm:max-w-[14rem]">{eventName ?? "Loading event…"}</span>
-        <span aria-hidden className="text-zinc-400">⚙</span>
-      </button>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        // Starts empty, not prefilled with the current event's id — the
+        // same text also drives the recent-events dropdown below, and a
+        // non-empty starting value (matching nothing else) would filter
+        // every recent event out the moment the panel opens.
+        if (next) setDraft("");
+      }}
+    >
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-md border border-surface-border bg-surface-1 px-3 py-2 text-sm text-text-secondary shadow-sm hover:bg-surface-2"
+        >
+          <span className="max-w-[10rem] truncate sm:max-w-[14rem]">{eventName ?? "Loading event…"}</span>
+          <span aria-hidden className="text-text-tertiary">⚙</span>
+        </button>
+      </DropdownMenuTrigger>
 
-      {open && (
-        // Capped by viewport width (not just a fixed w-80) so this can't
-        // spill off the left edge of a narrow phone screen — right-0 keeps
-        // it anchored to the gear button, so any shrinking comes off the
-        // dropdown's own left side rather than pushing it off-screen.
-        <div className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            BCP event URL or ID
-          </label>
-          <div className="relative mt-1">
-            <input
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="Paste a URL/ID, or pick a recent event below…"
-              className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-            />
+      <DropdownMenuContent align="end" className="w-80 p-3">
+        <label className="block text-xs font-medium text-text-secondary">BCP event URL or ID</label>
+        <div className="relative mt-1">
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submit();
+              // DropdownMenu.Content listens for arrow-key/type-ahead item
+              // navigation by default (meant for DropdownMenu.Item rows,
+              // none of which this panel has) — stop propagation so
+              // ordinary typing/arrow-key editing in this text input isn't
+              // intercepted by that listener.
+              e.stopPropagation();
+            }}
+            placeholder="Paste a URL/ID, or pick a recent event below…"
+            className="w-full rounded-md border border-surface-border bg-surface-0 px-2 py-2 text-sm text-text-primary outline-none focus:border-brass-500"
+          />
 
-            {/* A dropdown of recently-viewed events, narrowed by whatever's
-                typed above — lets you pick one instead of finding and
-                pasting its URL again. Floats over the buttons below it,
-                like any other dropdown, rather than pushing them down. */}
-            {filteredRecent.length > 0 && (
-              <ul className="absolute inset-x-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
-                {filteredRecent.map((event) => (
-                  <li key={event.id}>
-                    <button
-                      type="button"
-                      onClick={() => submit(event.id)}
-                      className="block w-full truncate px-2 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                    >
-                      {event.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => submit()}
-              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-            >
-              Switch event
-            </button>
-          </div>
+          {/* A dropdown of recently-viewed events, narrowed by whatever's
+              typed above — lets you pick one instead of finding and
+              pasting its URL again. Floats over the buttons below it,
+              like any other dropdown, rather than pushing them down. */}
+          {filteredRecent.length > 0 && (
+            <ul className="absolute inset-x-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-surface-border bg-surface-1 py-1 shadow-lg">
+              {filteredRecent.map((event) => (
+                <li key={event.id}>
+                  <button
+                    type="button"
+                    onClick={() => submit(event.id)}
+                    className="block w-full truncate px-2 py-1.5 text-left text-sm text-text-primary hover:bg-surface-2"
+                  >
+                    {event.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
-    </div>
+
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded-md px-3 py-2 text-sm text-text-secondary hover:bg-surface-1"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => submit()}
+            className="rounded-md bg-brass-500 px-3 py-2 text-sm text-[oklch(0.16_0.006_260)] hover:bg-brass-600"
+          >
+            Switch event
+          </button>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

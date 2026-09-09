@@ -4,6 +4,7 @@ import { fetchBcpPlayers } from "../../lib/bcp";
 import { linkBcpProfile } from "../../lib/myEvents";
 import { loadRecentEvents, type RecentEvent } from "../../lib/recentEvents";
 import { logClientEvent } from "../../lib/clientLog";
+import Button from "../ui/button";
 
 // Same approach as eventSettings.tsx's parseEventId, duplicated rather
 // than imported (that one's module-private) — pulls a BCP event id out
@@ -76,7 +77,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
 
   return (
     <div>
-      <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+      <p className="text-[11px] text-text-tertiary">
         Open an event you played in, then click your own name below.
       </p>
 
@@ -87,7 +88,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
               key={event.id}
               type="button"
               onClick={() => loadRoster(event.id)}
-              className="max-w-full truncate rounded-full border border-zinc-300 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="max-w-full truncate rounded-full border border-surface-border px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
             >
               {event.name}
             </button>
@@ -101,19 +102,18 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
           onChange={(e) => setEventDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && loadRoster(eventDraft)}
           placeholder="Or paste an event URL/ID…"
-          className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          className="min-w-0 flex-1 rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
         />
-        <button
-          type="button"
-          onClick={() => loadRoster(eventDraft)}
-          disabled={loading || !eventDraft.trim()}
-          className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-        >
+        <Button onClick={() => loadRoster(eventDraft)} disabled={loading || !eventDraft.trim()} className="shrink-0">
           {loading ? "Loading…" : "Load"}
-        </button>
+        </Button>
       </div>
 
-      {error && <div className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</div>}
+      {error && (
+        <div role="alert" className="mt-1 text-xs text-danger-600 dark:text-danger-400">
+          {error}
+        </div>
+      )}
 
       {players && (
         <div className="mt-1.5">
@@ -122,10 +122,10 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Find your name…"
-            className="mb-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            className="mb-1 w-full rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
           />
           {filtered.length === 0 ? (
-            <div className="py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="py-1.5 text-xs text-text-secondary">
               {linkable.length === 0
                 ? "No linkable players found in that roster."
                 : "No name matches — try a different spelling."}
@@ -137,10 +137,10 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
                   <button
                     type="button"
                     onClick={() => onPick(p.bcpUserId as string, p.name)}
-                    className="block w-full truncate rounded-lg px-2 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    className="block w-full truncate rounded-md px-2 py-1.5 text-left text-sm text-text-secondary hover:bg-surface-2"
                   >
                     {p.name}
-                    <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">{p.faction}</span>
+                    <span className="ml-2 text-xs text-text-tertiary">{p.faction}</span>
                   </button>
                 </li>
               ))}
@@ -154,7 +154,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
                 setLoadedEventId(null);
                 setQuery("");
               }}
-              className="mt-1 text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+              className="mt-1 text-xs text-text-secondary hover:underline"
             >
               Try a different event
             </button>
@@ -200,13 +200,13 @@ export default function BcpProfileLinker({ onLinked }: { onLinked: (bcpUserId: s
   return (
     <div>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <label className="text-xs font-medium text-text-secondary">
           Link your Best Coast Pairings profile
         </label>
         <button
           type="button"
           onClick={() => setLinkMode((m) => (m === "roster" ? "manual" : "roster"))}
-          className="text-[11px] text-zinc-500 hover:underline dark:text-zinc-400"
+          className="text-[11px] text-text-secondary hover:underline"
         >
           {linkMode === "roster" ? "Paste a link/id instead" : "Pick from a roster instead"}
         </button>
@@ -224,20 +224,19 @@ export default function BcpProfileLinker({ onLinked }: { onLinked: (bcpUserId: s
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && performLink(draft, "manual")}
             placeholder="Profile URL or id…"
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            className="min-w-0 flex-1 rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
           />
-          <button
-            type="button"
-            onClick={() => performLink(draft, "manual")}
-            disabled={linking || !draft.trim()}
-            className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-          >
+          <Button onClick={() => performLink(draft, "manual")} disabled={linking || !draft.trim()} className="shrink-0">
             {linking ? "Linking…" : "Link"}
-          </button>
+          </Button>
         </div>
       )}
 
-      {linkError && <div className="mt-1 text-xs text-red-600 dark:text-red-400">{linkError}</div>}
+      {linkError && (
+        <div role="alert" className="mt-1 text-xs text-danger-600 dark:text-danger-400">
+          {linkError}
+        </div>
+      )}
     </div>
   );
 }

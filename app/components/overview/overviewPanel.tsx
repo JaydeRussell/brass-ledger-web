@@ -1,6 +1,8 @@
 "use client";
 import type { EventInfo, MyPairing } from "../../lib/bcp";
 import Spinner from "../shared/spinner";
+import Card from "../ui/card";
+import Button from "../ui/button";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 import { formatDateRange } from "../../lib/eventDates";
 
@@ -31,8 +33,8 @@ function FactRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <div className="flex items-baseline gap-2 text-sm">
-      <span className="w-24 shrink-0 text-zinc-400 dark:text-zinc-500">{label}</span>
-      <span className="text-zinc-700 dark:text-zinc-200">{value}</span>
+      <span className="w-24 shrink-0 text-text-tertiary">{label}</span>
+      <span className="text-text-primary">{value}</span>
     </div>
   );
 }
@@ -55,22 +57,18 @@ export default function OverviewPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="p-4 shadow-sm">
         {eventInfo ? (
           <>
             {eventInfo.gameSystem && (
-              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">
-                {eventInfo.gameSystem}
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brass-500">{eventInfo.gameSystem}</p>
             )}
-            <p className="mt-0.5 font-semibold text-zinc-900 dark:text-zinc-50">
-              {eventInfo.name}
-            </p>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 font-semibold text-text-primary">{eventInfo.name}</p>
+            <p className="mt-1 text-sm text-text-secondary">
               {eventInfo.teamEvent ? "Team event" : "Singles event"} · {statusLine(eventInfo)}
             </p>
 
-            <div className="mt-3 flex flex-col gap-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+            <div className="mt-3 flex flex-col gap-1 border-t border-surface-border pt-3">
               <FactRow label="Dates" value={dateRange} />
               <FactRow label="Location" value={eventInfo.location} />
               <FactRow label="Organizer" value={eventInfo.organizer} />
@@ -85,71 +83,56 @@ export default function OverviewPanel({
             </div>
 
             {eventInfo.description && (
-              <p className="mt-3 whitespace-pre-wrap border-t border-zinc-100 pt-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
+              <p className="mt-3 whitespace-pre-wrap border-t border-surface-border pt-3 text-sm text-text-secondary">
                 {eventInfo.description}
               </p>
             )}
           </>
         ) : (
-          <div>
-            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <div aria-live="polite">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
               <Spinner size="sm" />
               <span>Loading event…</span>
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              <p className="mt-1 text-xs text-text-tertiary">
                 Taking longer than usual — this is a first look at this event, so it&apos;s asking
                 Best Coast Pairings directly.
               </p>
             )}
           </div>
         )}
-      </div>
+      </Card>
 
       {following.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="font-semibold text-zinc-900 dark:text-zinc-50">Not following anyone</p>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <Card className="p-4 shadow-sm">
+          <p className="font-semibold text-text-primary">Not following anyone</p>
+          <p className="mt-1 text-sm text-text-secondary">
             Head to the Roster tab and hit &quot;Follow&quot; on any team or player — you can
             follow as many as you like.
           </p>
-          <button
-            type="button"
-            onClick={onGoToRoster}
-            className="mt-2 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-          >
+          <Button variant="ghost" size="sm" className="mt-2 -ml-2.5" onClick={onGoToRoster}>
             Go to Roster →
-          </button>
-        </div>
+          </Button>
+        </Card>
       ) : (
         following.map((entry) => {
           const latestPairing = [...entry.pairings].reverse().find((p) => p.published);
           return (
-            <div
-              key={entry.label}
-              className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <p className="font-semibold text-zinc-900 dark:text-zinc-50">
-                Following {entry.label}
-              </p>
+            <Card key={entry.label} className="p-4 shadow-sm">
+              <p className="font-semibold text-text-primary">Following {entry.label}</p>
               {latestPairing ? (
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                <p className="mt-1 text-sm text-text-secondary">
                   Round {latestPairing.round}: vs {latestPairing.opponentName}
                   {latestPairing.table && ` (table ${latestPairing.table})`}
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  No pairings published yet.
-                </p>
+                <p className="mt-1 text-sm text-text-secondary">No pairings published yet.</p>
               )}
-              <button
-                type="button"
-                onClick={onGoToPairings}
-                className="mt-2 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-              >
+              <Button variant="ghost" size="sm" className="mt-2 -ml-2.5" onClick={onGoToPairings}>
                 View full pairings →
-              </button>
-            </div>
+              </Button>
+            </Card>
           );
         })
       )}

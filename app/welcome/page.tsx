@@ -38,18 +38,18 @@ export default function WelcomePage() {
   }, [checked, user, bcpUserId, router]);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen bg-surface-0">
       <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
         <HamburgerButton />
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
           Welcome to Brass Ledger
         </h1>
       </header>
 
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
         {!checked || !user || bcpUserId ? null : (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
+          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
+            <p className="mb-4 text-sm text-text-secondary">
               You&apos;re signed in — one more step. Connect your Best Coast Pairings profile and
               we&apos;ll pull in your full event history and player stats right away.
             </p>

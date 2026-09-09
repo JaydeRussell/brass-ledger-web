@@ -23,7 +23,7 @@ export default function Spinner({ size = "md", className = "" }: SpinnerProps) {
       aria-hidden
       viewBox="0 0 24 24"
       fill="none"
-      className={`animate-spin text-zinc-400 dark:text-zinc-500 ${SIZE_CLASSES[size]} ${className}`}
+      className={`animate-spin text-text-tertiary ${SIZE_CLASSES[size]} ${className}`}
     >
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
       <path

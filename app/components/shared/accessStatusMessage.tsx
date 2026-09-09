@@ -22,13 +22,16 @@ type AccessStatusMessageProps = {
 export default function AccessStatusMessage({ status }: AccessStatusMessageProps) {
   if (status === "rejected") {
     return (
-      <div className="rounded-xl border border-dashed border-rose-300 p-6 text-center text-sm text-rose-600 dark:border-rose-900 dark:text-rose-400">
+      <div
+        role="status"
+        className="rounded-lg border border-dashed border-danger-500/40 p-6 text-center text-sm text-danger-600 dark:text-danger-400"
+      >
         <p>Your access request wasn&apos;t approved.</p>
       </div>
     );
   }
   return (
-    <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+    <div role="status" className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
       <p>Your account is pending approval — check back soon.</p>
     </div>
   );

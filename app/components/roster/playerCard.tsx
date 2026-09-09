@@ -36,28 +36,22 @@ export default function PlayerCard({
 }: PlayerCardProps) {
   return (
     <div
-      className={`flex items-center gap-3 overflow-hidden rounded-2xl border bg-white p-3 shadow-sm dark:bg-zinc-900 ${
-        tracked
-          ? "border-indigo-300 ring-1 ring-indigo-200 dark:border-indigo-800 dark:ring-indigo-900"
-          : "border-zinc-200 dark:border-zinc-800"
+      className={`flex flex-wrap items-center gap-x-3 gap-y-2 overflow-hidden rounded-lg border bg-surface-1 p-3 shadow-sm ${
+        tracked ? "border-brass-500/50 ring-1 ring-brass-500/30" : "border-surface-border"
       }`}
     >
       <div
         aria-hidden
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-text-secondary"
       >
         {initials(player.name)}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+      <div className="min-w-36 flex-1">
+        <p className="truncate text-sm font-medium text-text-primary">
           {player.name}
-          {player.homeClub && (
-            <span className="ml-1.5 font-normal text-zinc-400 dark:text-zinc-500">
-              ({player.homeClub})
-            </span>
-          )}
+          {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}
         </p>
-        <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="truncate text-xs text-text-secondary">
           {player.faction}
           {/* When subFaction holds a Force Disposition value (see
               types/player.d.ts), it's shown as the badge below instead —
@@ -71,7 +65,7 @@ export default function PlayerCard({
           href={player.list}
           target="_blank"
           rel="noreferrer"
-          className="shrink-0 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+          className="shrink-0 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
         >
           list
         </a>
@@ -88,10 +82,10 @@ export default function PlayerCard({
           type="button"
           onClick={onTrack}
           title={tracked ? "Following this player's pairings" : "Follow this player's pairings"}
-          className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
             tracked
-              ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300"
-              : "border-zinc-200 text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              ? "border-brass-500/40 bg-brass-500/15 text-brass-600 dark:text-brass-400"
+              : "border-surface-border text-text-secondary hover:bg-surface-2"
           }`}
         >
           {tracked ? "Following ✓" : "Follow"}

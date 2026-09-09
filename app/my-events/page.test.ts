@@ -100,13 +100,17 @@ test("shows the Past/Ongoing/Future tabs for a fully linked account, defaulting 
   assert.match(html, />Past</);
   assert.match(html, />Ongoing</);
   assert.match(html, />Future</);
-  // "Ongoing" is the default tab (no ?tab= in the URL) and should carry
-  // the active-tab highlight class; the other two shouldn't.
+  // "Ongoing" is the default tab (no ?tab= in the URL) and should be the
+  // one Radix marks selected (data-state="active"/aria-selected="true");
+  // the other two shouldn't. This tab row is now built on
+  // ui/tabs.tsx's Radix-backed Tabs primitive — see tabBar.test.ts's note
+  // on why this checks Radix's own state attributes rather than a
+  // hardcoded active-tab class.
   const buttons = html.split("<button").slice(1);
   const ongoing = buttons.find((b) => b.includes(">Ongoing<"));
   const past = buttons.find((b) => b.includes(">Past<"));
-  assert.ok(ongoing?.includes("border-indigo-500"));
-  assert.ok(!past?.includes("border-indigo-500"));
+  assert.ok(ongoing?.includes('aria-selected="true"'));
+  assert.ok(past?.includes('aria-selected="false"'));
 });
 
 test("respects a ?tab= query param for which tab starts active", () => {
@@ -119,5 +123,5 @@ test("respects a ?tab= query param for which tab starts active", () => {
   const html = renderPage();
   const buttons = html.split("<button").slice(1);
   const past = buttons.find((b) => b.includes(">Past<"));
-  assert.ok(past?.includes("border-indigo-500"));
+  assert.ok(past?.includes('aria-selected="true"'));
 });

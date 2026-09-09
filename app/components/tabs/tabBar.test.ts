@@ -1,36 +1,45 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import TabBar, { type TabKey } from "./tabBar.tsx";
-import { findAll } from "../../lib/testUtils.ts";
+import React from "react";
+import TabBar from "./tabBar.tsx";
+import { renderStatic } from "../../lib/testUtils.ts";
 
-// TabBar has no hooks of its own, so it can be called directly as a plain
-// function — the returned element tree still has real onClick callbacks we
-// can invoke, giving genuine interaction coverage without a DOM. See
-// app/lib/testUtils.ts for why this project doesn't have jsdom/RTL yet.
+// TabBar is now built on ui/tabs.tsx's Radix-backed Tabs primitive, which
+// uses hooks internally — it can no longer be called directly as a plain
+// function and walked (see testUtils.ts's note on walk/find only working
+// for hookless components). Rendered via renderStatic (real SSR) instead.
+// Unlike Dialog/DropdownMenu, Radix's Tabs has no Portal, so its real
+// output — including the data-state/aria-selected attributes driven by
+// the `active` prop — is fully inspectable this way. What's NOT covered
+// here: actual click/arrow-key interaction (no DOM to dispatch real
+// events into) — verified via a real browser during this migration
+// instead; see CLAUDE.md on jsdom/@testing-library/react not yet being
+// wired up for automated coverage of that.
 
-test("TabBar renders one button per tab in a fixed order", () => {
-  const tree = TabBar({ active: "overview", onChange: () => {} });
-  const buttons = findAll(tree, (el) => el.type === "button");
-  assert.deepEqual(
-    buttons.map((b) => b.props.children),
-    ["Overview", "Roster", "Pairings", "Placings"]
-  );
+test("TabBar renders one tab per section in a fixed order", () => {
+  const html = renderStatic(React.createElement(TabBar, { active: "overview", onChange: () => {} }));
+  const order = ["Overview", "Roster", "Pairings", "Placings"];
+  let lastIndex = -1;
+  for (const label of order) {
+    assert.match(html, new RegExp(`>${label}<`));
+    const index = html.indexOf(`>${label}<`);
+    assert.ok(index > lastIndex, `expected ${label} to appear after the previous tab`);
+    lastIndex = index;
+  }
 });
 
-test("TabBar marks only the active tab with aria-current", () => {
-  const tree = TabBar({ active: "pairings", onChange: () => {} });
-  const buttons = findAll(tree, (el) => el.type === "button");
-  const current = buttons.filter((b) => b.props["aria-current"] === "page");
-  assert.equal(current.length, 1);
-  assert.equal(current[0].props.children, "Pairings");
+test("TabBar marks only the active tab as selected", () => {
+  const html = renderStatic(React.createElement(TabBar, { active: "pairings", onChange: () => {} }));
+  const buttons = html.split("<button").slice(1);
+  assert.equal(buttons.length, 4);
+  const pairingsButton = buttons.find((b) => b.includes(">Pairings<"));
+  const otherButtons = buttons.filter((b) => !b.includes(">Pairings<"));
+  assert.equal(otherButtons.length, 3);
+  assert.ok(pairingsButton?.includes('aria-selected="true"'));
+  otherButtons.forEach((b) => assert.ok(b.includes('aria-selected="false"')));
 });
 
-test("clicking a tab calls onChange with that tab's key", () => {
-  const calls: TabKey[] = [];
-  const tree = TabBar({ active: "overview", onChange: (tab) => calls.push(tab) });
-  const buttons = findAll(tree, (el) => el.type === "button");
-  const rosterButton = buttons.find((b) => b.props.children === "Roster");
-  assert.ok(rosterButton, "expected a Roster tab button");
-  rosterButton!.props.onClick();
-  assert.deepEqual(calls, ["roster"]);
+test("the tab list has an accessible name", () => {
+  const html = renderStatic(React.createElement(TabBar, { active: "overview", onChange: () => {} }));
+  assert.match(html, /aria-label="Event sections"/);
 });
