@@ -52,6 +52,15 @@ export default function AccountSection() {
       await signOut();
       setUser(null);
       logClientEvent("info", "sign-out: succeeded");
+      // useCurrentUser() isn't shared state — the page underneath this
+      // drawer (page.tsx/calendar/my-events/stats) has its own
+      // independent instance, with its own `user`, that setUser(null)
+      // above never touches. Without a full reload, the page keeps
+      // rendering as if still signed in (stale event data, wrong gate)
+      // until something else happens to remount it. A reload is the
+      // simplest fix that's actually correct everywhere this drawer can
+      // be opened from, rather than wiring up real shared auth state.
+      window.location.reload();
     } catch (err) {
       // Best-effort — if this failed the session cookie is presumably
       // still there server-side, so leave the UI as signed-in rather

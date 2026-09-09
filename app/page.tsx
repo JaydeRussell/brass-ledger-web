@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import TeamRoster from "./components/roster/roster";
+import TeamCompare from "./components/roster/teamCompare";
 import PlayerCard from "./components/roster/playerCard";
 import EventSettings from "./components/settings/eventSettings";
 import MyPairings from "./components/pairings/myPairings";
@@ -13,7 +14,8 @@ import TabBar, { type TabKey } from "./components/tabs/tabBar";
 import FollowingPill from "./components/tabs/followingPill";
 import HamburgerButton from "./components/nav/hamburgerButton";
 import SearchBar from "./components/search/searchBar";
-import SignInPrompt from "./components/shared/signInPrompt";
+import AccessStatusMessage from "./components/shared/accessStatusMessage";
+import { useRedirectToLoginIfSignedOut } from "./lib/useRedirectToLoginIfSignedOut";
 import {
   fetchBcpEventInfo,
   fetchBcpPlayers,
@@ -156,6 +158,7 @@ function HomeContent() {
   // signed-in visitor's guest-mode localStorage briefly shows before the
   // real, synced list replaces it.
   const { user, checked: authChecked } = useCurrentUser();
+  useRedirectToLoginIfSignedOut(user, authChecked);
 
   // The active tab and the search filter both live in the URL's query
   // string (`?tab=...&q=...`) instead of plain component state. Unlike
@@ -171,6 +174,13 @@ function HomeContent() {
 
   const activeTab: TabKey = isTabKey(searchParams.get("tab")) ? (searchParams.get("tab") as TabKey) : "overview";
   const searchQuery = searchParams.get("q") ?? "";
+  // Head-to-head team compare (Roster tab only) — a mode within the tab,
+  // not a tab of its own, so it doesn't disturb TabBar's deliberate mirror
+  // of BCP's own Overview/Roster/Pairings/Placings layout. Kept in the URL
+  // like tab/q above so a specific comparison is a shareable link.
+  const compareMode = searchParams.get("compare") === "1";
+  const compareTeamAParam = searchParams.get("teamA");
+  const compareTeamBParam = searchParams.get("teamB");
 
   // Applies one or more query-param changes at once (never omit a field
   // that's changing in the same call — see the two call sites below that
@@ -180,7 +190,7 @@ function HomeContent() {
   // Uses router.replace (not push) so switching tabs/typing a search never
   // piles up back-button history entries.
   const updateQuery = React.useCallback(
-    (patch: { tab?: TabKey; q?: string }) => {
+    (patch: { tab?: TabKey; q?: string; compare?: boolean; teamA?: string | null; teamB?: string | null }) => {
       const params = new URLSearchParams(searchParams.toString());
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
@@ -189,6 +199,26 @@ function HomeContent() {
       if ("q" in patch) {
         if (!patch.q) params.delete("q");
         else params.set("q", patch.q);
+      }
+      if ("compare" in patch) {
+        if (!patch.compare) {
+          // Turning compare off drops whichever teams were picked too,
+          // rather than leaving them to resurface stale the next time
+          // compare mode is turned back on.
+          params.delete("compare");
+          params.delete("teamA");
+          params.delete("teamB");
+        } else {
+          params.set("compare", "1");
+        }
+      }
+      if ("teamA" in patch) {
+        if (!patch.teamA) params.delete("teamA");
+        else params.set("teamA", patch.teamA);
+      }
+      if ("teamB" in patch) {
+        if (!patch.teamB) params.delete("teamB");
+        else params.set("teamB", patch.teamB);
       }
       // `event` (see the hydration effect below, which is what actually
       // reads and consumes it — search for "?event=") is a one-shot
@@ -279,7 +309,12 @@ function HomeContent() {
       setEventId(storedEventId);
       if (eventParam) writeLocalStorage(EVENT_ID_STORAGE_KEY, eventParam);
 
-      if (user) {
+      // Server-side sync (fetchFollows/fetchRecentEventsFromServer) needs
+      // an approved account on the backend (api.RequireApproved) — a
+      // pending/rejected account falls back to the same guest-mode
+      // localStorage path as signed-out below, rather than firing a
+      // request that can only 403.
+      if (user && user.status === "approved") {
         const [follows, recents] = await Promise.all([
           fetchFollows(storedEventId).catch((err: unknown) => {
             logClientEvent("warn", "fetching synced follows failed, starting empty", {
@@ -330,18 +365,19 @@ function HomeContent() {
   // callbacks — never synchronously in the effect body itself.
   useEffect(() => {
     if (!hydrated) return;
-    // The backend now requires a session on every BCP route (the whole
-    // app is behind sign-in, not just the account-specific features) —
-    // skip the fetch entirely rather than let it 401. Safe to read from
-    // closure without adding `user` to this effect's deps: `hydrated`
-    // only ever flips true after the sign-in check has already resolved
-    // (see the effect above), so `user`'s value is already settled by
-    // the time this effect's dependency actually changes. Below that,
-    // `user` is also read from this same closure for a best-effort
-    // write-through sync call — not worth re-running the whole
-    // event/player fetch over signing in without also changing events,
-    // which is an acceptable gap for a nice-to-have sync path.
-    if (!user) return;
+    // The backend now requires an approved session on every BCP route
+    // (the whole app is behind sign-in *and* approval, not just the
+    // account-specific features) — skip the fetch entirely rather than
+    // let it 401/403. Safe to read from closure without adding `user`
+    // to this effect's deps: `hydrated` only ever flips true after the
+    // sign-in check has already resolved (see the effect above), so
+    // `user`'s value is already settled by the time this effect's
+    // dependency actually changes. Below that, `user` is also read from
+    // this same closure for a best-effort write-through sync call — not
+    // worth re-running the whole event/player fetch over signing in
+    // without also changing events, which is an acceptable gap for a
+    // nice-to-have sync path.
+    if (!user || user.status !== "approved") return;
     let cancelled = false;
 
     Promise.all([fetchBcpEventInfo(eventId), fetchBcpPlayers(eventId)])
@@ -710,6 +746,13 @@ function HomeContent() {
     if (aRank !== undefined && bRank !== undefined) return aRank - bRank;
     return a.localeCompare(b);
   });
+
+  // A team name picked before switching events (or before this event's
+  // roster finished loading) shouldn't linger in Compare mode pointing at
+  // a team that isn't actually in this roster — fall back to "unpicked"
+  // rather than showing an empty roster panel labeled with a stale name.
+  const compareTeamA = compareTeamAParam && sortedTeamNames.includes(compareTeamAParam) ? compareTeamAParam : null;
+  const compareTeamB = compareTeamBParam && sortedTeamNames.includes(compareTeamBParam) ? compareTeamBParam : null;
   const sortedPlayers = [...players].sort((a, b) => {
     const aRank = playerFollowedRank(a);
     const bRank = playerFollowedRank(b);
@@ -783,9 +826,9 @@ function HomeContent() {
         </div>
       </header>
 
-      {!authChecked ? null : !user ? (
+      {!authChecked || !user ? null : user.status !== "approved" ? (
         <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-          <SignInPrompt message="view event rosters, pairings, and placings." />
+          <AccessStatusMessage status={user.status} />
         </main>
       ) : (
         <>
@@ -802,7 +845,7 @@ function HomeContent() {
           </div>
 
           <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-        {(activeTab === "roster" || activeTab === "pairings" || activeTab === "placings") && (
+        {((activeTab === "roster" && !compareMode) || activeTab === "pairings" || activeTab === "placings") && (
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -830,7 +873,29 @@ function HomeContent() {
 
         {activeTab === "roster" && (
           <>
-            {loading ? (
+            {!loading && isTeamEvent && sortedTeamNames.length >= 2 && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => updateQuery({ compare: !compareMode })}
+                  className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  {compareMode ? "← Back to roster" : "Compare two teams"}
+                </button>
+              </div>
+            )}
+            {!loading && compareMode && isTeamEvent ? (
+              <TeamCompare
+                teamNames={sortedTeamNames}
+                teams={teams}
+                itcLeagueId={itcLeagueId}
+                itcRankings={itcRankings}
+                selectedA={compareTeamA}
+                selectedB={compareTeamB}
+                onSelectA={(team) => updateQuery({ teamA: team })}
+                onSelectB={(team) => updateQuery({ teamB: team })}
+              />
+            ) : loading ? (
               <div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <CardSkeleton />

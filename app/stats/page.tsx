@@ -4,21 +4,23 @@ import React from "react";
 import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import PlayerStatsPanel from "../components/myEvents/playerStatsPanel";
-import SignInPrompt from "../components/shared/signInPrompt";
+import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import { useCurrentUser } from "../lib/auth";
+import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 
 /**
  * A dedicated page for the signed-in account's player stats — moved
  * here from a compact card on /my-events (see that page's git history)
  * once there was more than a "don't overcrowd the dashboard" amount of
  * stats to show. Same sign-in / link-a-BCP-profile gating as
- * /my-events: the sign-in half is shared (see SignInPrompt — this used
- * to be near-duplicated inline markup on both pages), while the
- * link-a-profile half stays inline here since BcpProfileLinker's own
- * onLinked callback needs page-specific state either way.
+ * /my-events: the sign-in half is shared (see
+ * useRedirectToLoginIfSignedOut), while the link-a-profile half stays
+ * inline here since BcpProfileLinker's own onLinked callback needs
+ * page-specific state either way.
  */
 export default function StatsPage() {
   const { user, checked, setUser } = useCurrentUser();
+  useRedirectToLoginIfSignedOut(user, checked);
   const [changingProfile, setChangingProfile] = React.useState(false);
   const bcpUserId = user?.bcpUserId ?? "";
 
@@ -32,8 +34,8 @@ export default function StatsPage() {
       </header>
 
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-        {!checked ? null : !user ? (
-          <SignInPrompt message="see your player stats." />
+        {!checked || !user ? null : user.status !== "approved" ? (
+          <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <BcpProfileLinker

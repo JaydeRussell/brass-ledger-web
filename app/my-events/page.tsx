@@ -6,9 +6,10 @@ import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
 import Spinner from "../components/shared/spinner";
-import SignInPrompt from "../components/shared/signInPrompt";
+import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { useCurrentUser } from "../lib/auth";
+import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 import { fetchMyEvents, type MyEvent, type MyEvents } from "../lib/myEvents";
 import { logClientEvent } from "../lib/clientLog";
 
@@ -67,6 +68,7 @@ function formatRelativeTime(iso: string): string {
 
 function MyEventsContent() {
   const { user, checked, setUser } = useCurrentUser();
+  useRedirectToLoginIfSignedOut(user, checked);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,7 +98,13 @@ function MyEventsContent() {
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!bcpUserId) {
+    // GET /api/me/events requires an approved account on the backend
+    // (api.RequireApproved) — skip the fetch entirely rather than let
+    // it 403 for a pending/rejected account that's already linked a
+    // profile (SetBcpProfile itself doesn't require approval — see
+    // brass-ledger-api's me.go — so bcpUserId can be set here before
+    // approval).
+    if (!bcpUserId || user?.status !== "approved") {
       setEvents(null);
       return;
     }
@@ -125,7 +133,7 @@ function MyEventsContent() {
     return () => {
       cancelled = true;
     };
-  }, [bcpUserId]);
+  }, [bcpUserId, user?.status]);
 
   // An explicit "check again now" for Ongoing/Future only — Past never
   // needs this, since an already-concluded event's placing can't change.
@@ -163,8 +171,8 @@ function MyEventsContent() {
       </header>
 
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-        {!checked ? null : !user ? (
-          <SignInPrompt message="see your Best Coast Pairings event history." />
+        {!checked || !user ? null : user.status !== "approved" ? (
+          <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <BcpProfileLinker

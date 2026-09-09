@@ -221,9 +221,13 @@ already on Cloudflare — no manual DNS record needed.
     uncaught errors) are sent to a server-side log file via
     `app/lib/clientLog.ts`/`app/api/log/route.ts`, not just the browser
     console. See "Logging" above.
-[ ] Deployment — the Dockerfiles are what a real deploy would build from
-    either way.
-[ ] CI/CD
+[x] Deployment — live at brass-ledger.app (Cloudflare Pages/Workers via
+    vinext) and api.brass-ledger.app (the backend, as a Cloudflare
+    Container), both behind a login gate. See brass-ledger-api's
+    README's "Deploying to Cloudflare" section.
+[x] CI/CD — GitHub Actions on both repos: tests gate a deploy on every
+    push to main, and main itself is protected (PR + passing checks
+    required, enforced even for admins). See .github/workflows/ci.yml.
 [x] User support (sign-in) — Google sign-in via the backend
     (`app/lib/auth.ts`), with server-side sessions instead of anything
     stored per-browser. The account itself (avatar/name/email, sign

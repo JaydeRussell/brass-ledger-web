@@ -47,7 +47,7 @@ test("shows the signed-in user's name, email, and initials avatar when there's n
   mockState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "ada@example.com", name: "Ada Lovelace", avatarUrl: "", bcpUserId: "" },
+    user: { id: 1, email: "ada@example.com", name: "Ada Lovelace", avatarUrl: "", bcpUserId: "", role: "user", status: "approved" },
   };
   const html = renderToStaticMarkup(React.createElement(AccountSection));
   assert.match(html, /Ada Lovelace/);
@@ -66,7 +66,7 @@ test("shows an <img> avatar when the user has one", () => {
       email: "ada@example.com",
       name: "Ada Lovelace",
       avatarUrl: "https://example.com/avatar.png",
-      bcpUserId: "",
+      bcpUserId: "", role: "user", status: "approved",
     },
   };
   const html = renderToStaticMarkup(React.createElement(AccountSection));

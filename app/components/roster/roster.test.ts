@@ -28,6 +28,28 @@ test("lists every player with their faction", () => {
   assert.match(html, /Necrons — Novokh/);
 });
 
+test("shows a disposition badge only for players who have one", () => {
+  const withDisposition: Player[] = [
+    ...players,
+    { id: "p3", name: "Cara Chen", faction: "Aeldari", disposition: "Reconnaissance" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(TeamRoster, { teamName: "Team A", players: withDisposition })
+  );
+  assert.match(html, /Reconnaissance/);
+});
+
+test("doesn't repeat the disposition as a subfaction suffix when BCP reused that field for it", () => {
+  const withDisposition: Player[] = [
+    { id: "p3", name: "Cara Chen", faction: "Aeldari", subFaction: "Reconnaissance", disposition: "Reconnaissance" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(TeamRoster, { teamName: "Team A", players: withDisposition })
+  );
+  assert.ok(!html.includes("Aeldari — Reconnaissance"));
+  assert.equal((html.match(/Reconnaissance/g) ?? []).length, 1);
+});
+
 test("shows a placeholder message when the team has no players yet", () => {
   const html = renderToStaticMarkup(React.createElement(TeamRoster, { teamName: "Empty", players: [] }));
   assert.match(html, /No players with a submitted list found/);

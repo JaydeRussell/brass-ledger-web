@@ -58,30 +58,42 @@ test("shows nothing but the header while the sign-in check is in flight", () => 
   assert.ok(!html.includes("Sign in to see"));
 });
 
-test("prompts sign-in once checked and signed out", () => {
+test("shows nothing once checked and signed out (useRedirectToLoginIfSignedOut takes it from here)", () => {
   authState = { user: null, checked: true, setUser: () => {} };
   searchParamsValue = new URLSearchParams();
   const html = renderPage();
-  assert.match(html, /Sign in to see your Best Coast Pairings event history\./);
-  assert.match(html, /href="http:\/\/localhost:8080\/auth\/google\/login"/);
+  assert.match(html, /My Events/);
+  assert.ok(!html.includes("Link your Best Coast Pairings profile"));
 });
 
 test("prompts linking a BCP profile for a signed-in account with none linked", () => {
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "", role: "user", status: "approved" },
   };
   searchParamsValue = new URLSearchParams();
   const html = renderPage();
   assert.match(html, /Link your Best Coast Pairings profile/);
 });
 
+test("shows a pending-approval message instead of content for a signed-in, not-yet-approved account", () => {
+  authState = {
+    checked: true,
+    setUser: () => {},
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "pending" },
+  };
+  searchParamsValue = new URLSearchParams();
+  const html = renderPage();
+  assert.match(html, /pending approval/);
+  assert.ok(!html.includes("Link your Best Coast Pairings profile"));
+});
+
 test("shows the Past/Ongoing/Future tabs for a fully linked account, defaulting to Ongoing", () => {
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
   };
   searchParamsValue = new URLSearchParams();
   const html = renderPage();
@@ -101,7 +113,7 @@ test("respects a ?tab= query param for which tab starts active", () => {
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1" },
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
   };
   searchParamsValue = new URLSearchParams("tab=past");
   const html = renderPage();
