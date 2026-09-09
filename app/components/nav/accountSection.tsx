@@ -22,15 +22,15 @@ export default function AccountSection() {
   // Reserve the same height while the initial /api/me check is in
   // flight, so the drawer doesn't visibly jump once it resolves.
   if (!checked) {
-    return <div className="h-[65px] border-b border-zinc-100 dark:border-zinc-800" />;
+    return <div className="h-[65px] border-b border-surface-border" />;
   }
 
   if (!user) {
     return (
-      <div className="flex flex-col gap-2 border-b border-zinc-100 p-3 dark:border-zinc-800">
+      <div className="flex flex-col gap-2 border-b border-surface-border p-3">
         <a
           href={googleSignInUrl(pathname)}
-          className="flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="flex items-center justify-center gap-2 rounded-md border border-surface-border bg-surface-2 px-3 py-2 text-sm text-text-secondary shadow-sm hover:bg-surface-1"
         >
           Sign in with Google
         </a>
@@ -76,7 +76,7 @@ export default function AccountSection() {
   };
 
   return (
-    <div className="flex flex-col gap-2 border-b border-zinc-100 p-3 dark:border-zinc-800">
+    <div className="flex flex-col gap-2 border-b border-surface-border p-3">
       <div className="flex items-center gap-2">
         {user.avatarUrl ? (
           // An arbitrary external Google avatar URL, not one of this
@@ -91,19 +91,19 @@ export default function AccountSection() {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-text-secondary">
             {initials || "?"}
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">{user.name}</div>
-          <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</div>
+          <div className="truncate text-sm font-medium text-text-primary">{user.name}</div>
+          <div className="truncate text-xs text-text-secondary">{user.email}</div>
         </div>
         <button
           type="button"
           onClick={handleSignOut}
           disabled={signingOut}
-          className="shrink-0 rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          className="shrink-0 rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-surface-2 disabled:opacity-50"
         >
           {signingOut ? "…" : "Sign out"}
         </button>
