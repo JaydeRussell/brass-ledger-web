@@ -136,20 +136,20 @@ export default function RoundBoard({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-zinc-100 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-        <p className="font-semibold text-zinc-900 dark:text-zinc-50">Round pairings</p>
+    <div className="overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-surface-border bg-surface-2 px-4 py-3">
+        <p className="font-semibold text-text-primary">Round pairings</p>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => onRoundChange(round - 1)}
             disabled={round <= minRound}
             aria-label="Previous round"
-            className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm text-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300"
+            className="rounded-md border border-surface-border px-2.5 py-1.5 text-sm text-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             ‹
           </button>
-          <span className="min-w-[5.5rem] text-center text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <span className="min-w-[5.5rem] text-center text-sm font-medium text-text-primary">
             Round {round}
           </span>
           <button
@@ -157,7 +157,7 @@ export default function RoundBoard({
             onClick={() => onRoundChange(round + 1)}
             disabled={round >= maxRound}
             aria-label="Next round"
-            className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm text-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300"
+            className="rounded-md border border-surface-border px-2.5 py-1.5 text-sm text-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             ›
           </button>
@@ -166,19 +166,19 @@ export default function RoundBoard({
 
       <div className="max-h-80 overflow-y-auto p-3">
         {error && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 p-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+          <p className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-2 text-sm text-danger-600 dark:text-danger-400">
             Couldn&apos;t load round {round}: {error}
           </p>
         )}
 
         {!error && loading && (
           <div className="p-2">
-            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
               <Spinner size="sm" />
               <span>Loading round {round}…</span>
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              <p className="mt-1 text-xs text-text-tertiary">
                 Taking longer than usual — first look at this round.
               </p>
             )}
@@ -186,7 +186,7 @@ export default function RoundBoard({
         )}
 
         {!error && !loading && entries.length === 0 && (
-          <p className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="p-2 text-sm text-text-secondary">
             {emptyMessage ?? `No pairings published yet for round ${round}.`}
           </p>
         )}
@@ -216,10 +216,8 @@ export default function RoundBoard({
               return (
                 <li
                   key={entry.id}
-                  className={`rounded-xl border text-sm ${
-                    isFollowed
-                      ? "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30"
-                      : "border-zinc-200 dark:border-zinc-800"
+                  className={`rounded-md border text-sm ${
+                    isFollowed ? "border-brass-500/40 bg-brass-500/10" : "border-surface-border"
                   }`}
                 >
                   <div
@@ -238,20 +236,20 @@ export default function RoundBoard({
                     }
                     className={`flex items-center gap-3 p-2 ${canExpand ? "cursor-pointer" : ""}`}
                   >
-                    <span className="w-12 shrink-0 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                    <span className="w-12 shrink-0 text-xs font-medium text-text-tertiary">
                       {entry.table ? `Tbl ${entry.table}` : ""}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-zinc-700 dark:text-zinc-200">
+                    <span className="min-w-0 flex-1 truncate text-text-primary">
                       <span className={side1Followed ? "font-semibold" : undefined}>
                         {entry.side1Name}
                       </span>
-                      <span className="mx-1.5 text-zinc-400 dark:text-zinc-500">vs</span>
+                      <span className="mx-1.5 text-text-tertiary">vs</span>
                       <span className={side2Followed ? "font-semibold" : undefined}>
                         {entry.side2Name}
                       </span>
                     </span>
                     {!entry.published ? (
-                      <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                      <span className="shrink-0 text-xs text-text-tertiary">
                         unpublished
                       </span>
                     ) : entry.isDone ? (
@@ -262,19 +260,19 @@ export default function RoundBoard({
                           {entry.side1Score}–{entry.side2Score}
                         </span>
                       ) : (
-                        <span className="shrink-0 text-xs text-emerald-600 dark:text-emerald-400">
+                        <span className="shrink-0 text-xs text-success-600 dark:text-success-400">
                           done
                         </span>
                       )
                     ) : (
-                      <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+                      <span className="shrink-0 text-xs text-warning-600 dark:text-warning-400">
                         in progress
                       </span>
                     )}
                     {canExpand && (
                       <span
                         aria-hidden
-                        className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500"
+                        className="shrink-0 text-xs text-text-tertiary"
                       >
                         {isExpanded ? "▲" : "▼"}
                       </span>
@@ -282,33 +280,33 @@ export default function RoundBoard({
                   </div>
 
                   {isExpanded && (
-                    <div className="flex flex-col gap-1 border-t border-zinc-100 px-2 pb-2 pt-1.5 dark:border-zinc-800">
+                    <div className="flex flex-col gap-1 border-t border-surface-border px-2 pb-2 pt-1.5">
                       {boardState?.loading && (
-                        <div className="flex items-center gap-1.5 px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        <div className="flex items-center gap-1.5 px-1 py-1 text-xs text-text-secondary">
                           <Spinner size="sm" />
                           <span>Loading boards…</span>
                         </div>
                       )}
                       {boardState?.error && (
-                        <p className="px-1 py-1 text-xs text-rose-600 dark:text-rose-400">
+                        <p className="px-1 py-1 text-xs text-danger-600 dark:text-danger-400">
                           Couldn&apos;t load boards: {boardState.error}
                         </p>
                       )}
                       {boardState && !boardState.loading && !boardState.error &&
                         boardState.matchups.length === 0 && (
-                          <p className="px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          <p className="px-1 py-1 text-xs text-text-secondary">
                             No individual boards published for this matchup yet.
                           </p>
                         )}
                       {boardState?.matchups.map((m, mi) => (
                         <div
                           key={mi}
-                          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-zinc-50 px-2 py-1.5 text-xs dark:bg-zinc-950/40"
+                          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-surface-2 px-2 py-1.5 text-xs"
                         >
-                          <span className="w-8 shrink-0 text-zinc-400 dark:text-zinc-500">
+                          <span className="w-8 shrink-0 text-text-tertiary">
                             {m.table ? `Bd ${m.table}` : ""}
                           </span>
-                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
                             <span className="truncate">{m.player1Name}</span>
                             <ItcBadge
                               ranking={m.player1UserId ? itcByUserId[m.player1UserId] : undefined}
@@ -318,8 +316,8 @@ export default function RoundBoard({
                               size="xs"
                             />
                           </span>
-                          <span className="text-zinc-400 dark:text-zinc-500">vs</span>
-                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300">
+                          <span className="text-text-tertiary">vs</span>
+                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
                             <span className="truncate">{m.player2Name}</span>
                             <ItcBadge
                               ranking={m.player2UserId ? itcByUserId[m.player2UserId] : undefined}

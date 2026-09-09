@@ -65,6 +65,6 @@ test("highlights a followed row", () => {
   const rows = html.split("<tr").slice(1);
   const team1Row = rows.find((r) => r.includes("Team One"));
   const team2Row = rows.find((r) => r.includes("Team Two"));
-  assert.ok(!team1Row?.includes("bg-indigo-50"));
-  assert.ok(team2Row?.includes("bg-indigo-50"));
+  assert.ok(!team1Row?.includes("bg-brass-500/10"));
+  assert.ok(team2Row?.includes("bg-brass-500/10"));
 });

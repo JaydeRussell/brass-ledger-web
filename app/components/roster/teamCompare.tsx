@@ -19,16 +19,16 @@ function TeamPicker({
   const filtered = teamNames.filter((name) => name.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
-    <div className="flex flex-col rounded-2xl border border-dashed border-zinc-300 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
+    <div className="flex flex-col rounded-lg border border-dashed border-surface-border bg-surface-1 p-3">
+      <p className="text-sm font-medium text-text-secondary">{label}</p>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Find a team…"
-        className="mt-2 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+        className="mt-2 w-full rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
       />
       {filtered.length === 0 ? (
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">No teams match.</p>
+        <p className="mt-2 text-xs text-text-secondary">No teams match.</p>
       ) : (
         <ul className="mt-2 max-h-64 overflow-y-auto">
           {filtered.map((name) => (
@@ -36,7 +36,7 @@ function TeamPicker({
               <button
                 type="button"
                 onClick={() => onPick(name)}
-                className="block w-full truncate rounded-lg px-2 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                className="block w-full truncate rounded-md px-2 py-1.5 text-left text-sm text-text-primary hover:bg-surface-2"
               >
                 {name}
               </button>
@@ -101,7 +101,7 @@ export default function TeamCompare({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="self-start text-xs font-medium text-zinc-500 hover:underline dark:text-zinc-400"
+          className="self-start text-xs font-medium text-text-secondary hover:underline"
         >
           ← Change team
         </button>

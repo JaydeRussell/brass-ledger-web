@@ -33,15 +33,19 @@ export function classifyScore(reference: number, other: number): ScoreOutcome {
   return isClose ? "closeLoss" : "loss";
 }
 
-// A red (loss) -> orange -> amber (draw) -> lime -> green (win) spectrum —
-// keeps the existing rose/emerald win-loss colors used elsewhere in the
-// app and fills in the two "close" steps between them.
+// A red (loss) -> orange -> amber (draw) -> lime -> green (win) spectrum.
+// The two ends are this app's real semantic danger/success tokens (see
+// globals.css) rather than raw Tailwind colors, matching every other
+// win/loss-adjacent state in the redesign; the two "close" steps and the
+// draw stay literal orange/lime/amber Tailwind classes deliberately — see
+// globals.css's token comment: this is one-off five-way score grading, not
+// a themed UI surface, so it doesn't need its own token family.
 export const SCORE_OUTCOME_CLASSES: Record<ScoreOutcome, string> = {
-  loss: "text-rose-600 dark:text-rose-400",
+  loss: "text-danger-600 dark:text-danger-400",
   closeLoss: "text-orange-600 dark:text-orange-400",
   draw: "text-amber-600 dark:text-amber-400",
   closeWin: "text-lime-600 dark:text-lime-400",
-  win: "text-emerald-600 dark:text-emerald-400",
+  win: "text-success-600 dark:text-success-400",
 };
 
 // --- ITC ranking gradient ---------------------------------------------------
@@ -71,14 +75,14 @@ const LIGHT_GRADIENT_STOPS = [
 ];
 
 // A dimmer counterpart for dark mode — starting the gradient at pure white
-// reads as glaring against a black card, so this starts from a mid gray
+// reads as glaring against a charcoal card, so this starts from a mid gray
 // instead and uses somewhat deeper yellow/orange/red, while keeping the
 // same "weak to strong" direction. Kept fairly vivid/high-saturation
 // rather than dark-and-muted throughout: blending a gray straight into a
 // dull, low-saturation yellow/orange lands on a muddy brown in the middle
 // of the ramp — staying vivid avoids that "mud" zone.
 const DARK_GRADIENT_STOPS = [
-  { r: 113, g: 113, b: 122 }, // zinc-500
+  { r: 101, g: 105, b: 112 }, // globals.css's --text-tertiary (dark mode), converted from oklch(0.52 0.012 260) — a real token from this app's own palette rather than an arbitrary gray, chosen because it lands at nearly the same lightness as the zinc-500 this replaced. surface-2/surface-border were tried first and rejected: they compile to (36,39,42)/(50,54,59), too dark to read as "weak" rather than "blends into the card"; brass-900 was rejected too — it's already reddish, which would undercut the ramp's own "weak to strong, ending in red" direction right at its starting point.
   { r: 245, g: 158, b: 11 }, // amber-500
   { r: 234, g: 88, b: 12 }, // orange-600
   { r: 185, g: 28, b: 28 }, // red-700

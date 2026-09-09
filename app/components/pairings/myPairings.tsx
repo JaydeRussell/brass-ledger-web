@@ -160,11 +160,11 @@ export default function MyPairings({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center justify-between gap-3 border-b border-zinc-100 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <div className="overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-surface-border bg-surface-2 px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-zinc-900 dark:text-zinc-50">{whoLabel}</p>
+            <p className="font-semibold text-text-primary">{whoLabel}</p>
             <ItcBadge
               ranking={ownItc}
               bcpUserId={ownBcpUserId}
@@ -172,12 +172,12 @@ export default function MyPairings({
               title={`View ${whoLabel}'s full ITC history on BCP`}
             />
           </div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Pairings by round</p>
+          <p className="text-sm text-text-secondary">Pairings by round</p>
         </div>
         <button
           type="button"
           onClick={onClear}
-          className="shrink-0 rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          className="shrink-0 rounded-md border border-surface-border px-2 py-1 text-xs font-medium text-text-secondary hover:bg-surface-2"
         >
           Unfollow
         </button>
@@ -185,19 +185,19 @@ export default function MyPairings({
 
       <div className="p-3">
         {error && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 p-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+          <p className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-2 text-sm text-danger-600 dark:text-danger-400">
             Couldn&apos;t load pairings: {error}
           </p>
         )}
 
         {!error && loading && (
           <div className="p-2">
-            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
               <Spinner size="sm" />
               <span>Checking published rounds…</span>
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              <p className="mt-1 text-xs text-text-tertiary">
                 Taking longer than usual — first look at this event.
               </p>
             )}
@@ -205,7 +205,7 @@ export default function MyPairings({
         )}
 
         {!error && !loading && upToRound === 0 && (
-          <p className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="p-2 text-sm text-text-secondary">
             Pairings haven&apos;t started for this event yet.
           </p>
         )}
@@ -221,7 +221,7 @@ export default function MyPairings({
               return (
                 <li
                   key={round}
-                  className="rounded-xl border border-zinc-200 text-sm dark:border-zinc-800"
+                  className="rounded-md border border-surface-border text-sm"
                 >
                   <div
                     role={canExpand ? "button" : undefined}
@@ -241,15 +241,15 @@ export default function MyPairings({
                       canExpand ? "cursor-pointer" : ""
                     }`}
                   >
-                    <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                    <span className="font-medium text-text-primary">
                       Round {round}
                     </span>
                     {pairing?.published ? (
                       <span className="flex items-center gap-2 truncate">
-                        <span className="truncate text-zinc-600 dark:text-zinc-300">
+                        <span className="truncate text-text-secondary">
                           vs {pairing.opponentName}
                           {pairing.table && (
-                            <span className="ml-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+                            <span className="ml-1.5 text-xs text-text-tertiary">
                               (table {pairing.table})
                             </span>
                           )}
@@ -274,29 +274,29 @@ export default function MyPairings({
                         {canExpand && (
                           <span
                             aria-hidden
-                            className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500"
+                            className="shrink-0 text-xs text-text-tertiary"
                           >
                             {isExpanded ? "▲" : "▼"}
                           </span>
                         )}
                       </span>
                     ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500">
+                      <span className="text-text-tertiary">
                         Not published yet
                       </span>
                     )}
                   </div>
 
                   {isExpanded && (
-                    <div className="flex flex-col gap-1 border-t border-zinc-100 px-2.5 pb-2.5 pt-1.5 dark:border-zinc-800">
+                    <div className="flex flex-col gap-1 border-t border-surface-border px-2.5 pb-2.5 pt-1.5">
                       {boardState?.loading && (
-                        <div className="flex items-center gap-1.5 px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        <div className="flex items-center gap-1.5 px-1 py-1 text-xs text-text-secondary">
                           <Spinner size="sm" />
                           <span>Loading boards…</span>
                         </div>
                       )}
                       {boardState?.error && (
-                        <p className="px-1 py-1 text-xs text-rose-600 dark:text-rose-400">
+                        <p className="px-1 py-1 text-xs text-danger-600 dark:text-danger-400">
                           Couldn&apos;t load boards: {boardState.error}
                         </p>
                       )}
@@ -304,19 +304,19 @@ export default function MyPairings({
                         !boardState.loading &&
                         !boardState.error &&
                         boardState.matchups.length === 0 && (
-                          <p className="px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          <p className="px-1 py-1 text-xs text-text-secondary">
                             No individual boards published for this matchup yet.
                           </p>
                         )}
                       {boardState?.matchups.map((m, mi) => (
                         <div
                           key={mi}
-                          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-zinc-50 px-2 py-1.5 text-xs dark:bg-zinc-950/40"
+                          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-surface-2 px-2 py-1.5 text-xs"
                         >
-                          <span className="w-8 shrink-0 text-zinc-400 dark:text-zinc-500">
+                          <span className="w-8 shrink-0 text-text-tertiary">
                             {m.table ? `Bd ${m.table}` : ""}
                           </span>
-                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
                             <span className="truncate">{m.player1Name}</span>
                             <ItcBadge
                               ranking={
@@ -328,8 +328,8 @@ export default function MyPairings({
                               size="xs"
                             />
                           </span>
-                          <span className="text-zinc-400 dark:text-zinc-500">vs</span>
-                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300">
+                          <span className="text-text-tertiary">vs</span>
+                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
                             <span className="truncate">{m.player2Name}</span>
                             <ItcBadge
                               ranking={

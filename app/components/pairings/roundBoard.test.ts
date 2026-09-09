@@ -92,5 +92,5 @@ test("lists every pairing, highlighting followed ones and showing scores", () =>
   assert.match(html, /unpublished/);
   const rows = html.split("<li").slice(1);
   const aliceRow = rows.find((r) => r.includes("Alice"));
-  assert.ok(aliceRow?.includes("border-indigo-300"));
+  assert.ok(aliceRow?.includes("border-brass-500/40"));
 });
