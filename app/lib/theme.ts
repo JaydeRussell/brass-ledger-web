@@ -57,11 +57,18 @@ export function applyTheme(theme: Theme) {
 /**
  * Current theme choice ("light"/"dark"/"system", not the resolved
  * light-or-dark value) plus a setter that also applies it immediately.
- * Starts from `readStoredTheme()` synchronously (not "system" then
- * corrected in an effect) so a component using this never renders a
- * momentarily-wrong toggle state — the class on <html> is already correct
- * before hydration thanks to the inline script, and this just needs to
- * agree with it.
+ *
+ * Starts at "system" — matching what a server-rendered pass always sees
+ * (there's no `localStorage` to read on the server) — then syncs to the
+ * real stored value in an effect right after mount. This intentionally
+ * does NOT read `readStoredTheme()` as the initial state: doing so would
+ * make the client's first render disagree with the server-rendered HTML
+ * whenever a visitor has a non-default saved preference, which is a real
+ * React hydration mismatch (logged as a warning/error) even though it's
+ * invisible in practice here, since every consumer of this hook today
+ * (ThemeToggle, inside the nav drawer) starts off-screen until manually
+ * opened. The <html> class itself never has this problem — the inline
+ * script in layout.tsx's <head> sets it before hydration even begins.
  *
  * While `theme === "system"`, listens for the OS-level preference
  * changing live — same `matchMedia` listener idiom as
@@ -69,7 +76,14 @@ export function applyTheme(theme: Theme) {
  * the page immediately rather than only on next load.
  */
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(readStoredTheme);
+  const [theme, setThemeState] = useState<Theme>("system");
+
+  useEffect(() => {
+    // Wrapped in a resolved-promise callback, like every effect in this
+    // app that sets state from something read synchronously — see
+    // itcBadge.tsx's usePrefersDarkMode for the same idiom.
+    Promise.resolve().then(() => setThemeState(readStoredTheme()));
+  }, []);
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
