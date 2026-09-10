@@ -411,16 +411,19 @@ function HomeContent() {
         const latestPublishableRound = info.ended ? info.numberOfRounds : info.currentRound;
         setBoardRound(latestPublishableRound > 0 ? latestPublishableRound : null);
 
-        if (info.gameSystemId) {
-          fetchCurrentItcLeagueId(info.gameSystemId)
-            .then((leagueId) => {
-              if (!cancelled) setItcLeagueId(leagueId ?? null);
-            })
-            .catch(() => {
-              // Non-critical — player cards just fall back to an unscoped
-              // BCP profile link if this never resolves.
-            });
-        }
+        // Anchored on the event id itself, not gameSystemId — see
+        // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. The
+        // backend already gracefully resolves to a null leagueId for an
+        // event with no leagues at all, so no upfront guard is needed
+        // here the way a gameSystemId presence check once was.
+        fetchCurrentItcLeagueId(eventId)
+          .then((leagueId) => {
+            if (!cancelled) setItcLeagueId(leagueId ?? null);
+          })
+          .catch(() => {
+            // Non-critical — player cards just fall back to an unscoped
+            // BCP profile link if this never resolves.
+          });
       })
       .catch((err) => {
         if (!cancelled) {

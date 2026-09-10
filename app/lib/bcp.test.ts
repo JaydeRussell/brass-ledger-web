@@ -248,11 +248,14 @@ test("buildBcpItcProfileUrl", () => {
 });
 
 test("fetchCurrentItcLeagueId: maps a found league id through, and null to undefined", async () => {
-  installFetch(() => ({ status: 200, body: JSON.stringify({ leagueId: "league-2026" }) }));
-  assert.equal(await fetchCurrentItcLeagueId("gs-1"), "league-2026");
+  const { calls } = installFetch(() => ({ status: 200, body: JSON.stringify({ leagueId: "league-2026" }) }));
+  assert.equal(await fetchCurrentItcLeagueId("evt-1"), "league-2026");
+  // Anchored on the event id, not a bare game system id — see the
+  // function's doc comment for why.
+  assert.match(calls[0], /\/api\/itc\/leagues\/event\/evt-1$/);
 
   installFetch(() => ({ status: 200, body: JSON.stringify({ leagueId: null }) }));
-  assert.equal(await fetchCurrentItcLeagueId("gs-1"), undefined);
+  assert.equal(await fetchCurrentItcLeagueId("evt-1"), undefined);
 });
 
 test("fetchItcRanking: a found ranking passes through, and an empty body resolves to null", async () => {

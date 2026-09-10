@@ -80,8 +80,8 @@ export type EventInfo = {
   description?: string;
   gameSystem?: string;
   // BCP's internal id for the game system (e.g. Warhammer 40,000) — not
-  // meant for display, just for looking up which BCP ranking league
-  // currently covers this game (see fetchCurrentItcLeagueId below).
+  // meant for display. fetchCurrentItcLeagueId (below) is anchored on
+  // the event id itself now, not this field — see its doc comment.
   gameSystemId?: string;
   startDate?: string;
   endDate?: string;
@@ -534,15 +534,18 @@ export type ItcRanking = {
 };
 
 /**
- * Lookup of BCP's current flagship ITC ranking league id for a game
- * system — used to build a working buildBcpItcProfileUrl(...) link.
- * Returns undefined if it couldn't be resolved (e.g. this game system has
- * no such league); callers should fall back to an unscoped profile link
- * in that case.
+ * Lookup of BCP's current flagship ITC ranking league id, anchored on one
+ * specific event's own already-known leagues rather than a bare game
+ * system id — see internal/bcp/itc.go's FetchCurrentItcLeagueIDForEvent
+ * doc comment for why a game-system-wide search stopped being reliable
+ * against BCP's real API. Used to build a working
+ * buildBcpItcProfileUrl(...) link. Returns undefined if it couldn't be
+ * resolved (e.g. none of this event's leagues is the flagship one);
+ * callers should fall back to an unscoped profile link in that case.
  */
-export async function fetchCurrentItcLeagueId(gameSystemId: string): Promise<string | undefined> {
+export async function fetchCurrentItcLeagueId(eventId: string): Promise<string | undefined> {
   const body = await getJSON<{ leagueId: string | null }>(
-    `/api/itc/leagues/${encodeURIComponent(gameSystemId)}`
+    `/api/itc/leagues/event/${encodeURIComponent(eventId)}`
   );
   return body.leagueId ?? undefined;
 }
