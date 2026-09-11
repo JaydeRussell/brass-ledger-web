@@ -49,13 +49,31 @@ the top-level git-safety rules), this is an explicit action, not a default.
 
 **How**, when asked:
 
-1. Decide the size of the bump against everything since the last tagged
-   release (`git log <last tag>..HEAD` in both repos), 0.x semver rules:
-   - **patch** (0.x.Y): fixes, polish, no new user-visible capability.
-   - **minor** (0.x.0): a new feature, a notable rework, or several patches'
-     worth of change bundled together.
-   - **major** (1.0.0+): reserved for an actual "this is stable/done" call
-     — never bump it without being explicitly told to.
+1. Decide the size of the bump — judge the release as one whole, against
+   everything since the last tagged release (`git log <last tag>..HEAD`
+   in both repos), not commit-by-commit:
+   - **minor** (0.X.0, e.g. 0.6.0 → 0.7.0) if *anything* in the release
+     gives the user something new to do, see, or notice — a new page,
+     control, or data field, or a rework substantial enough to change
+     how something looks or behaves. One minor-worthy change makes the
+     whole release minor, even bundled with several unrelated fixes —
+     don't average it down to a patch because "most of it was small."
+   - **patch** (0.X.Y, e.g. 0.6.0 → 0.6.1) only if *everything* in the
+     release is a fix, a polish pass, a perf/refactor with no visible
+     behavior change, or docs/tests only — nothing a user would describe
+     as "it can do something it couldn't before."
+   - **major** (1.0.0+) isn't about how big the release is — it's a
+     separate, deliberate "this is stable enough for real use" call the
+     user makes explicitly. Don't infer it from change size, even a
+     total rewrite; stay on 0.x until told otherwise.
+
+   Worked examples from this project's own history (see
+   `app/lib/changelog.ts`): v0.5.0 bundled several bug fixes *and* the
+   new About page + version footer — that one new page was enough to
+   make the whole release minor (v0.5.0), not a patch on v0.4 (v0.4.1).
+   v0.6.0 added player-profile pages and a manual refresh control —
+   clearly minor. A hypothetical release that was only "fixed lost ITC
+   ratings on team events," with nothing else, would have been a patch.
 2. Bump `package.json`'s `version`.
 3. Add a new entry to the *top* of `CHANGELOG` in `app/lib/changelog.ts`
    (newest-first) — `version`, today's date, a short title, and a few
