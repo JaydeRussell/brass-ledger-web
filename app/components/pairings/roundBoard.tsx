@@ -10,6 +10,7 @@ import {
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
 import Spinner from "../shared/spinner";
+import TeamRosterFallback from "./teamRosterFallback";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type BoardsState = {
@@ -41,6 +42,11 @@ type RoundBoardProps = {
   // `entries` came back empty because a search filter matched nothing,
   // rather than because BCP has nothing published for this round.
   emptyMessage?: string;
+  // Each tournament team's own roster, keyed by BCP teamPlayer id (see
+  // Player.teamPlayerId) — used to fall back to "who's on each team" when
+  // a team-vs-team pairing is published but its individual boards aren't
+  // yet, rather than showing nothing useful.
+  rosterByTeamId?: Map<string, Player[]>;
 };
 
 /**
@@ -70,6 +76,7 @@ export default function RoundBoard({
   teamEvent,
   itcLeagueId,
   emptyMessage,
+  rosterByTeamId,
 }: RoundBoardProps) {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [boardsById, setBoardsById] = React.useState<Record<string, BoardsState>>({});
@@ -78,14 +85,9 @@ export default function RoundBoard({
   const slowLoad = useDelayedFlag(loading);
 
   const loadItcFor = React.useCallback(
-    (matchups: TeamBoardMatchup[]) => {
+    (userIds: Iterable<string>) => {
       if (!itcLeagueId) return;
-      const userIds = new Set<string>();
-      matchups.forEach((m) => {
-        if (m.player1UserId) userIds.add(m.player1UserId);
-        if (m.player2UserId) userIds.add(m.player2UserId);
-      });
-      userIds.forEach((userId) => {
+      Array.from(new Set(userIds)).forEach((userId) => {
         if (requestedItcIdsRef.current.has(userId)) return;
         requestedItcIdsRef.current.add(userId);
         fetchItcRanking(userId, itcLeagueId)
@@ -121,7 +123,21 @@ export default function RoundBoard({
     fetchTeamPairingBoards(eventId, round, entry.id)
       .then((matchups) => {
         setBoardsById((prev) => ({ ...prev, [entry.id]: { loading: false, error: null, matchups } }));
-        loadItcFor(matchups);
+        if (matchups.length > 0) {
+          loadItcFor(
+            matchups.flatMap((m) => [m.player1UserId, m.player2UserId].filter((id): id is string => Boolean(id)))
+          );
+        } else {
+          // No individual boards yet — fall back to showing each side's
+          // roster instead, so their ITC ratings are still worth fetching.
+          const side1Roster = entry.side1Id ? rosterByTeamId?.get(entry.side1Id) ?? [] : [];
+          const side2Roster = entry.side2Id ? rosterByTeamId?.get(entry.side2Id) ?? [] : [];
+          loadItcFor(
+            [...side1Roster, ...side2Roster]
+              .map((p) => p.bcpUserId)
+              .filter((id): id is string => Boolean(id))
+          );
+        }
       })
       .catch((err) => {
         setBoardsById((prev) => ({
@@ -293,11 +309,25 @@ export default function RoundBoard({
                         </p>
                       )}
                       {boardState && !boardState.loading && !boardState.error &&
-                        boardState.matchups.length === 0 && (
-                          <p className="px-1 py-1 text-xs text-text-secondary">
-                            No individual boards published for this matchup yet.
-                          </p>
-                        )}
+                        boardState.matchups.length === 0 &&
+                        (() => {
+                          const side1Roster = entry.side1Id ? rosterByTeamId?.get(entry.side1Id) : undefined;
+                          const side2Roster = entry.side2Id ? rosterByTeamId?.get(entry.side2Id) : undefined;
+                          return side1Roster?.length || side2Roster?.length ? (
+                            <TeamRosterFallback
+                              side1Name={entry.side1Name}
+                              side1Players={side1Roster ?? []}
+                              side2Name={entry.side2Name}
+                              side2Players={side2Roster ?? []}
+                              itcByUserId={itcByUserId}
+                              itcLeagueId={itcLeagueId}
+                            />
+                          ) : (
+                            <p className="px-1 py-1 text-xs text-text-secondary">
+                              No individual boards published for this matchup yet.
+                            </p>
+                          );
+                        })()}
                       {boardState?.matchups.map((m, mi) => (
                         <div
                           key={mi}

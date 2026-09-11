@@ -10,6 +10,7 @@ import {
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
 import Spinner from "../shared/spinner";
+import TeamRosterFallback from "./teamRosterFallback";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type BoardsState = {
@@ -54,6 +55,13 @@ type MyPairingsProps = {
   ownBcpUserId?: string;
   itcByUserId?: Record<string, ItcRanking | null>;
   itcLeagueId?: string | null;
+  // This followed team's own BCP teamPlayer id, and every tournament
+  // team's roster keyed by that same id — used together to fall back to
+  // "who's on each team" when a round's individual boards aren't
+  // published yet. Undefined/omitted for a followed individual player,
+  // who has no team-vs-team pairing to expand this way in the first place.
+  myTeamPlayerId?: string;
+  rosterByTeamId?: Map<string, Player[]>;
 };
 
 /**
@@ -82,6 +90,8 @@ export default function MyPairings({
   ownBcpUserId,
   itcByUserId,
   itcLeagueId,
+  myTeamPlayerId,
+  rosterByTeamId,
 }: MyPairingsProps) {
   const byRound = new Map(pairings.map((p) => [p.round, p]));
 
@@ -94,14 +104,9 @@ export default function MyPairings({
   const slowLoad = useDelayedFlag(loading);
 
   const loadItcFor = React.useCallback(
-    (matchups: TeamBoardMatchup[]) => {
+    (userIds: Iterable<string>) => {
       if (!itcLeagueId) return;
-      const userIds = new Set<string>();
-      matchups.forEach((m) => {
-        if (m.player1UserId) userIds.add(m.player1UserId);
-        if (m.player2UserId) userIds.add(m.player2UserId);
-      });
-      userIds.forEach((userId) => {
+      Array.from(new Set(userIds)).forEach((userId) => {
         if (requestedItcIdsRef.current.has(userId)) return;
         requestedItcIdsRef.current.add(userId);
         fetchItcRanking(userId, itcLeagueId)
@@ -145,7 +150,23 @@ export default function MyPairings({
         const matchups =
           mySideIsTeam1 === false ? rawMatchups.map(orientMatchup) : rawMatchups;
         setBoardsByRound((prev) => ({ ...prev, [round]: { loading: false, error: null, matchups } }));
-        loadItcFor(matchups);
+        if (matchups.length > 0) {
+          loadItcFor(
+            matchups.flatMap((m) => [m.player1UserId, m.player2UserId].filter((id): id is string => Boolean(id)))
+          );
+        } else if (myTeamPlayerId) {
+          // No individual boards yet — fall back to showing each side's
+          // roster instead, so their ITC ratings are still worth fetching.
+          const myRoster = rosterByTeamId?.get(myTeamPlayerId) ?? [];
+          const opponentRoster = pairing.opponentTeamPlayerId
+            ? rosterByTeamId?.get(pairing.opponentTeamPlayerId) ?? []
+            : [];
+          loadItcFor(
+            [...myRoster, ...opponentRoster]
+              .map((p) => p.bcpUserId)
+              .filter((id): id is string => Boolean(id))
+          );
+        }
       })
       .catch((err) => {
         setBoardsByRound((prev) => ({
@@ -303,11 +324,27 @@ export default function MyPairings({
                       {boardState &&
                         !boardState.loading &&
                         !boardState.error &&
-                        boardState.matchups.length === 0 && (
-                          <p className="px-1 py-1 text-xs text-text-secondary">
-                            No individual boards published for this matchup yet.
-                          </p>
-                        )}
+                        boardState.matchups.length === 0 &&
+                        (() => {
+                          const myRoster = myTeamPlayerId ? rosterByTeamId?.get(myTeamPlayerId) : undefined;
+                          const opponentRoster = pairing?.opponentTeamPlayerId
+                            ? rosterByTeamId?.get(pairing.opponentTeamPlayerId)
+                            : undefined;
+                          return myRoster?.length || opponentRoster?.length ? (
+                            <TeamRosterFallback
+                              side1Name={whoLabel}
+                              side1Players={myRoster ?? []}
+                              side2Name={pairing?.opponentName ?? "Opponent"}
+                              side2Players={opponentRoster ?? []}
+                              itcByUserId={boardItcByUserId}
+                              itcLeagueId={itcLeagueId}
+                            />
+                          ) : (
+                            <p className="px-1 py-1 text-xs text-text-secondary">
+                              No individual boards published for this matchup yet.
+                            </p>
+                          );
+                        })()}
                       {boardState?.matchups.map((m, mi) => (
                         <div
                           key={mi}
