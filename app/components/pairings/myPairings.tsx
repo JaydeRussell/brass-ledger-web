@@ -262,12 +262,12 @@ export default function MyPairings({
                       canExpand ? "cursor-pointer" : ""
                     }`}
                   >
-                    <span className="font-medium text-text-primary">
+                    <span className="shrink-0 font-medium text-text-primary">
                       Round {round}
                     </span>
                     {pairing?.published ? (
-                      <span className="flex items-center gap-2 truncate">
-                        <span className="truncate text-text-secondary">
+                      <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-text-secondary">
                           vs {pairing.opponentName}
                           {pairing.table && (
                             <span className="ml-1.5 text-xs text-text-tertiary">
