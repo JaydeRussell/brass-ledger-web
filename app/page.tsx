@@ -174,7 +174,6 @@ function HomeContent() {
   const pathname = usePathname();
 
   const activeTab: TabKey = isTabKey(searchParams.get("tab")) ? (searchParams.get("tab") as TabKey) : "overview";
-  const searchQuery = searchParams.get("q") ?? "";
   // Head-to-head team compare (Roster tab only) — a mode within the tab,
   // not a tab of its own, so it doesn't disturb TabBar's deliberate mirror
   // of BCP's own Overview/Roster/Pairings/Placings layout. Kept in the URL
@@ -235,7 +234,24 @@ function HomeContent() {
     [pathname, router, searchParams]
   );
 
-  const setSearchQuery = React.useCallback((q: string) => updateQuery({ q }), [updateQuery]);
+  // The search box's displayed/filtered-on value lives in plain local
+  // state, not the URL, so every keystroke filters instantly — filtering
+  // an already-loaded roster/pairings/placings list is cheap, but routing
+  // through `updateQuery` (a `router.replace` navigation) on every single
+  // keystroke was the actual bottleneck, not the filtering itself. The
+  // URL's own `q` still gets the value, just debounced, purely so a
+  // search survives a refresh or gets shared as a link — it's not read
+  // back from anywhere once seeded here.
+  const [searchQuery, setSearchQueryState] = React.useState(() => searchParams.get("q") ?? "");
+  const searchDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setSearchQuery = React.useCallback(
+    (q: string) => {
+      setSearchQueryState(q);
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = setTimeout(() => updateQuery({ q }), 300);
+    },
+    [updateQuery]
+  );
 
   const [eventInfo, setEventInfo] = React.useState<EventInfo | null>(null);
   const [players, setPlayers] = React.useState<Player[]>([]);
@@ -260,7 +276,8 @@ function HomeContent() {
   const [error, setError] = React.useState<string | null>(null);
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
   // Note: the shared Roster/Pairings/Placings search box's value
-  // (`searchQuery`) lives in the URL's `q` param, not here — see above.
+  // (`searchQuery`) is its own local state, debounced into the URL's `q`
+  // param rather than driven by it — see above.
 
   // Keyed by followedKey(...) so each followed team/player's pairings load
   // and track independently of the others.
@@ -704,6 +721,12 @@ function HomeContent() {
     // updateQuery call (see its comment above for why that has to be a
     // single call rather than two).
     updateQuery({ tab: "overview", q: "" });
+    // searchQuery itself is local state now (see its declaration above) —
+    // updateQuery only touches the URL, so it needs resetting here too,
+    // and any pending debounced write cancelling so it can't fire after
+    // and stomp this reset back to whatever was being typed before.
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    setSearchQueryState("");
     setEventInfo(null);
     setPlayers([]);
     setItcLeagueId(null);
