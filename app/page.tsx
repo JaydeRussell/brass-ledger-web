@@ -12,10 +12,13 @@ import PlacingsTable from "./components/placings/placingsTable";
 import OverviewPanel from "./components/overview/overviewPanel";
 import TabBar, { type TabKey } from "./components/tabs/tabBar";
 import FollowingPill from "./components/tabs/followingPill";
-import HamburgerButton from "./components/nav/hamburgerButton";
 import SearchBar from "./components/search/searchBar";
 import AccessStatusMessage from "./components/shared/accessStatusMessage";
 import Button from "./components/ui/button";
+import Card from "./components/ui/card";
+import ErrorAlert from "./components/ui/errorAlert";
+import PageHeader from "./components/layout/pageHeader";
+import PageMain from "./components/layout/pageMain";
 import { useRedirectToLoginIfSignedOut } from "./lib/useRedirectToLoginIfSignedOut";
 import {
   fetchBcpEventInfo,
@@ -124,7 +127,7 @@ function groupByTeam(players: Player[]): Map<string, Player[]> {
 
 function CardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm">
+    <Card className="animate-pulse overflow-hidden shadow-sm">
       <div className="border-b border-surface-border bg-surface-2 px-4 py-3">
         <div className="h-4 w-1/3 rounded-sm bg-surface-border" />
       </div>
@@ -132,7 +135,7 @@ function CardSkeleton() {
         <div className="h-12 rounded-md bg-surface-2" />
         <div className="h-12 rounded-md bg-surface-2" />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -842,51 +845,39 @@ function HomeContent() {
   const filteredPlacings = placings.filter((entry) => matchesSearch(entry.name, searchQuery));
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-4 px-4 pt-4 pb-2 sm:pt-8">
-        <div className="flex items-start gap-3">
-          <HamburgerButton />
-          <div>
-            <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-              Brass Ledger
-            </h1>
-            <p className="mt-1 hidden text-sm text-text-secondary sm:block">
-              Pulls roster, published-pairing, and placings data straight from Best Coast
-              Pairings for reference — it doesn&apos;t score or suggest pairings.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {following.map((entry) => (
-            <FollowingPill
-              key={followedKey(entry)}
-              label={entry.label}
-              onStop={() => stopFollowing(followedKey(entry))}
+    <div className="flex-1 bg-surface-0">
+      <PageHeader
+        title="Brass Ledger"
+        subtitle="Pulls roster, published-pairing, and placings data straight from Best Coast Pairings for reference — it doesn't score or suggest pairings."
+        hideSubtitleOnMobile
+        actions={
+          <>
+            {following.map((entry) => (
+              <FollowingPill
+                key={followedKey(entry)}
+                label={entry.label}
+                onStop={() => stopFollowing(followedKey(entry))}
+              />
+            ))}
+            <EventSettings
+              eventId={eventId}
+              eventName={eventInfo?.name}
+              recentEvents={recentEvents.filter((e) => e.id !== eventId)}
+              onChangeEvent={handleChangeEvent}
             />
-          ))}
-          <EventSettings
-            eventId={eventId}
-            eventName={eventInfo?.name}
-            recentEvents={recentEvents.filter((e) => e.id !== eventId)}
-            onChangeEvent={handleChangeEvent}
-          />
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {!authChecked || !user ? null : user.status !== "approved" ? (
-        <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+        <PageMain>
           <AccessStatusMessage status={user.status} />
-        </main>
+        </PageMain>
       ) : (
         <>
           {error && (
             <div className="mx-auto max-w-5xl px-4">
-              <div
-                role="alert"
-                className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-3 text-sm text-danger-600 dark:text-danger-400"
-              >
-                Couldn&apos;t load event data: {error}
-              </div>
+              <ErrorAlert>Couldn&apos;t load event data: {error}</ErrorAlert>
             </div>
           )}
 
@@ -894,7 +885,7 @@ function HomeContent() {
             <TabBar active={activeTab} onChange={changeTab} />
           </div>
 
-          <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+          <PageMain>
         {((activeTab === "roster" && !compareMode) || activeTab === "pairings" || activeTab === "placings") && (
           <SearchBar
             value={searchQuery}
@@ -1069,7 +1060,7 @@ function HomeContent() {
             }
           />
         )}
-          </main>
+          </PageMain>
         </>
       )}
     </div>

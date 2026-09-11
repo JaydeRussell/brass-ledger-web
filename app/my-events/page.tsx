@@ -2,12 +2,16 @@
 import React, { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
 import Spinner from "../components/shared/spinner";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import { Tabs, type TabItem } from "../components/ui/tabs";
+import Button from "../components/ui/button";
+import Card from "../components/ui/card";
+import ErrorAlert from "../components/ui/errorAlert";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
@@ -163,19 +167,14 @@ function MyEventsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-        <HamburgerButton />
-        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-          My Events
-        </h1>
-      </header>
+    <div className="flex-1 bg-surface-0">
+      <PageHeader title="My Events" />
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+      <PageMain>
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
-          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
+          <Card className="p-4">
             <BcpProfileLinker
               onLinked={(id) => {
                 setUser((prev) => (prev ? { ...prev, bcpUserId: id } : prev));
@@ -191,7 +190,7 @@ function MyEventsContent() {
                 Cancel
               </button>
             )}
-          </div>
+          </Card>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border">
@@ -225,22 +224,19 @@ function MyEventsContent() {
                     ? `Last checked ${formatRelativeTime(events.upcomingFetchedAt)} — new sign-ups or an event starting won't show up until you check again.`
                     : "Not checked yet."}
                 </span>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-surface-border px-2 py-1 text-text-secondary hover:bg-surface-2 disabled:opacity-50"
+                  className="inline-flex shrink-0 items-center gap-1.5"
                 >
                   {refreshing && <Spinner size="sm" />}
                   {refreshing ? "Checking…" : "Check for updates"}
-                </button>
+                </Button>
               </div>
             )}
-            {refreshError && (
-              <div role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-600 dark:text-danger-400">
-                Couldn&apos;t check for updates: {refreshError}
-              </div>
-            )}
+            {refreshError && <ErrorAlert>Couldn&apos;t check for updates: {refreshError}</ErrorAlert>}
 
             {loading && (
               <div role="status" aria-live="polite">
@@ -256,11 +252,7 @@ function MyEventsContent() {
                 )}
               </div>
             )}
-            {loadError && (
-              <div role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-600 dark:text-danger-400">
-                Couldn&apos;t load events: {loadError}
-              </div>
-            )}
+            {loadError && <ErrorAlert>Couldn&apos;t load events: {loadError}</ErrorAlert>}
             {!loading && !loadError && (
               <EventList
                 // Keyed by tab so React fully remounts the list (and
@@ -275,7 +267,7 @@ function MyEventsContent() {
             )}
           </>
         )}
-      </main>
+      </PageMain>
     </div>
   );
 }

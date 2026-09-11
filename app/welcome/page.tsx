@@ -2,8 +2,10 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 
-import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
+import Card from "../components/ui/card";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 
@@ -38,17 +40,12 @@ export default function WelcomePage() {
   }, [checked, user, bcpUserId, router]);
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-        <HamburgerButton />
-        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-          Welcome to Brass Ledger
-        </h1>
-      </header>
+    <div className="flex-1 bg-surface-0">
+      <PageHeader title="Welcome to Brass Ledger" />
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+      <PageMain>
         {!checked || !user || bcpUserId ? null : (
-          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
+          <Card className="p-4">
             <p className="mb-4 text-sm text-text-secondary">
               You&apos;re signed in — one more step. Connect your Best Coast Pairings profile and
               we&apos;ll pull in your full event history and player stats right away.
@@ -59,9 +56,9 @@ export default function WelcomePage() {
                 router.push("/my-events");
               }}
             />
-          </div>
+          </Card>
         )}
-      </main>
+      </PageMain>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 import React from "react";
 import type { MyEvent } from "../../lib/myEvents";
 import { eventDateParts, type DateParts } from "../../lib/eventDates";
+import Button from "../ui/button";
+import Card from "../ui/card";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -123,25 +125,15 @@ export default function MonthGrid({ events }: { events: MyEvent[] }) {
   };
 
   return (
-    <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
+    <Card className="p-4">
       <div className="mb-3 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={goPrev}
-          aria-label="Previous month"
-          className="rounded-md px-2 py-1 text-text-secondary hover:bg-surface-2"
-        >
+        <Button variant="ghost" size="sm" onClick={goPrev} aria-label="Previous month">
           ‹
-        </button>
+        </Button>
         <span className="text-sm font-semibold text-text-primary">{monthLabel}</span>
-        <button
-          type="button"
-          onClick={goNext}
-          aria-label="Next month"
-          className="rounded-md px-2 py-1 text-text-secondary hover:bg-surface-2"
-        >
+        <Button variant="ghost" size="sm" onClick={goNext} aria-label="Next month">
           ›
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-text-tertiary">
@@ -157,6 +149,6 @@ export default function MonthGrid({ events }: { events: MyEvent[] }) {
           return <DayCell key={i} day={day} isToday={dNum === todayNum} names={namesForDay(ranges, dNum)} />;
         })}
       </div>
-    </div>
+    </Card>
   );
 }

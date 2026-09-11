@@ -52,11 +52,18 @@ test("shows the default or a custom empty message", () => {
 });
 
 test("disables the prev/next round buttons at the min/max bounds", () => {
+  // Matches the whole opening <button> tag carrying the aria-label, then
+  // checks for `disabled` anywhere inside it — not a fixed attribute
+  // order, which is an implementation detail of the shared Button
+  // primitive (ui/button.tsx) these buttons are built on, not a
+  // behavior this test should pin down.
   const atMin = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, round: 1 }));
-  assert.match(atMin, /aria-label="Previous round"[^>]*disabled/);
+  const prevButton = atMin.match(/<button[^>]*aria-label="Previous round"[^>]*>/)?.[0] ?? "";
+  assert.match(prevButton, /disabled/);
 
   const atMax = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, round: 5 }));
-  assert.match(atMax, /aria-label="Next round"[^>]*disabled/);
+  const nextButton = atMax.match(/<button[^>]*aria-label="Next round"[^>]*>/)?.[0] ?? "";
+  assert.match(nextButton, /disabled/);
 });
 
 test("lists every pairing, highlighting followed ones and showing scores", () => {

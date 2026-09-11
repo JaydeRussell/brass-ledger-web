@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { ItcRanking } from "../../lib/bcp";
 import TeamRoster from "./roster";
+import Card from "../ui/card";
 
 /** One side's "type to filter, click to pick" team list — the same
  * search-then-click shape as bcpProfileLinker.tsx's RosterPicker, just
@@ -19,7 +20,7 @@ function TeamPicker({
   const filtered = teamNames.filter((name) => name.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
-    <div className="flex flex-col rounded-lg border border-dashed border-surface-border bg-surface-1 p-3">
+    <Card className="flex flex-col border-dashed p-3">
       <p className="text-sm font-medium text-text-secondary">{label}</p>
       <input
         value={query}
@@ -44,7 +45,7 @@ function TeamPicker({
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
 
