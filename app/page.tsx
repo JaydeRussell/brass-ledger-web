@@ -28,12 +28,14 @@ import {
   fetchItcRanking,
   fetchMyIndividualPairings,
   fetchMyTeamPairings,
+  fetchTeamPairingBoards,
   fetchRoundBoard,
   type BoardPairing,
   type EventInfo,
   type ItcRanking,
   type MyPairing,
   type PlacingEntry,
+  type TeamBoardMatchup,
 } from "./lib/bcp";
 import {
   loadRecentEvents,
@@ -288,6 +290,19 @@ function HomeContent() {
     Record<string, FollowedPairings>
   >({});
 
+  // The signed-in account's own current-round pairing (roadmap "My round"
+  // view) — auto-detected via the linked BCP profile, not a follow. See
+  // myRoundCard.tsx.
+  const [myPairingState, setMyPairingState] = React.useState<{
+    pairing: MyPairing | null;
+    loading: boolean;
+    error: string | null;
+  }>({ pairing: null, loading: false, error: null });
+  // My own individual board within a team event's team-vs-team pairing,
+  // once BCP has published individual boards for it — see the effect
+  // below and myRoundCard.tsx's doc comment.
+  const [myBoard, setMyBoard] = React.useState<TeamBoardMatchup | null>(null);
+
   // `boardRound` is null until the event's data loads and picks a sensible
   // starting round (the latest one published) — see the first effect below.
   const [boardRound, setBoardRound] = React.useState<number | null>(null);
@@ -518,6 +533,96 @@ function HomeContent() {
       cancelled = true;
     };
   }, [following, eventInfo, eventId]);
+
+  // My own roster row in this event, if this account has linked a BCP
+  // profile and that profile is on this event's roster — same matching
+  // RosterPicker already established for the linking flow itself
+  // (bcpProfileLinker.tsx), just applied automatically instead of as a
+  // manual pick.
+  const myPlayer = React.useMemo(
+    () => (user?.bcpUserId ? players.find((p) => p.bcpUserId === user.bcpUserId) : undefined),
+    [players, user?.bcpUserId]
+  );
+
+  // My own current-round pairing (roadmap "My round" view) — reuses the
+  // exact same fetchMyIndividualPairings/fetchMyTeamPairings calls the
+  // effect above already makes for a followed team/player, just for
+  // myPlayer instead, and kept out of the persisted follows list (never
+  // written to /api/me/events/:id/follows, so it can't be unfollowed or
+  // show up as a follow row). `boardRound` (set once event data loads —
+  // see the earlier effect) is already "the latest publishable round,"
+  // exactly what this needs too.
+  React.useEffect(() => {
+    if (!myPlayer || !eventInfo || !boardRound) {
+      setMyPairingState({ pairing: null, loading: false, error: null });
+      return;
+    }
+
+    let cancelled = false;
+    setMyPairingState((prev) => ({ ...prev, loading: true, error: null }));
+
+    const request =
+      eventInfo.teamEvent && myPlayer.teamPlayerId
+        ? fetchMyTeamPairings(eventId, myPlayer.teamPlayerId, boardRound)
+        : fetchMyIndividualPairings(eventId, String(myPlayer.id), boardRound);
+
+    request
+      .then((results) => {
+        if (cancelled) return;
+        // Match on round number rather than taking the array's last entry
+        // — a round can come back with no entry at all if BCP hasn't
+        // generated it yet, which shouldn't fall back to an older round.
+        const mine = results.find((p) => p.round === boardRound) ?? null;
+        setMyPairingState({ pairing: mine, loading: false, error: null });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setMyPairingState({
+          pairing: null,
+          loading: false,
+          error: err instanceof Error ? err.message : "Failed to load your round",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myPlayer, eventInfo, eventId, boardRound]);
+
+  // My own individual board within a team event's team-vs-team pairing —
+  // only once myPairingState resolves to one with a teamPairingId (a team
+  // event; an individual-event pairing never has one). Same board fetch
+  // myPairings.tsx's toggleExpand already makes, just triggered
+  // automatically for the current round instead of on click, so "your
+  // round" can show your actual table/opponent instead of just your
+  // team's. Falls back to null (team-level info only) if boards aren't
+  // published yet or the fetch fails.
+  React.useEffect(() => {
+    const pairing = myPairingState.pairing;
+    if (!pairing?.teamPairingId || !user?.bcpUserId) {
+      setMyBoard(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetchTeamPairingBoards(eventId, pairing.round, pairing.teamPairingId)
+      .then((matchups) => {
+        if (cancelled) return;
+        const mine =
+          matchups.find(
+            (m) => m.player1UserId === user.bcpUserId || m.player2UserId === user.bcpUserId
+          ) ?? null;
+        setMyBoard(mine);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMyBoard(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myPairingState.pairing, eventId, user?.bcpUserId]);
 
   // Looks up ITC ranking (score + rank) for: each followed individual
   // player, each followed team's own roster members, and each followed
@@ -938,6 +1043,19 @@ function HomeContent() {
         {activeTab === "overview" && (
           <OverviewPanel
             eventInfo={eventInfo}
+            myRound={
+              user?.bcpUserId && myPlayer && eventInfo?.started
+                ? {
+                    round: boardRound ?? 0,
+                    loading: myPairingState.loading,
+                    error: myPairingState.error,
+                    pairing: myPairingState.pairing,
+                    board: myBoard,
+                    myBcpUserId: user.bcpUserId,
+                    players,
+                  }
+                : null
+            }
             following={following.map((entry) => ({
               label: entry.label,
               pairings: followedPairings[followedKey(entry)]?.pairings ?? [],
