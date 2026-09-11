@@ -517,25 +517,29 @@ function HomeContent() {
     const toFetch = Array.from(wanted).filter((id) => !requestedItcIdsRef.current.has(id));
     if (toFetch.length === 0) return;
 
-    let cancelled = false;
     toFetch.forEach((bcpUserId) => {
       requestedItcIdsRef.current.add(bcpUserId);
       fetchItcRanking(bcpUserId, itcLeagueId)
         .then((ranking) => {
-          if (!cancelled) setItcRankings((prev) => ({ ...prev, [bcpUserId]: ranking }));
+          // Always commit — this effect re-runs often while an event's
+          // data is still loading in (following/players/followedPairings
+          // each arrive separately), and requestedItcIdsRef already
+          // guards against ever re-requesting the same id, so a result
+          // from an "earlier" run is not stale, just late. Discarding it
+          // here (as a `cancelled`-gated version of this used to) meant
+          // the ranking was fetched successfully but never stored, and
+          // never retried either — permanently stuck with no rating
+          // shown. Bit us hardest on team events, where a whole roster's
+          // worth of ids fire together and the race window is wider.
+          setItcRankings((prev) => ({ ...prev, [bcpUserId]: ranking }));
         })
         .catch(() => {
-          // Non-critical — cards just fall back to showing no ITC ranking.
-          // Don't leave it in requestedItcIdsRef forever failed-and-forgotten
-          // would be fine either way here, but clearing lets a later retry
-          // (e.g. after reconnecting) succeed instead of staying stuck.
-          if (!cancelled) requestedItcIdsRef.current.delete(bcpUserId);
+          // Non-critical — cards just fall back to showing no ITC
+          // ranking. Clearing lets a later retry (e.g. after
+          // reconnecting) succeed instead of staying stuck.
+          requestedItcIdsRef.current.delete(bcpUserId);
         });
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [itcLeagueId, following, followedPairings, players]);
 
   // Fetches the full pairings board for whichever round is selected —
@@ -599,6 +603,22 @@ function HomeContent() {
   }, [activeTab, eventId, eventInfo]);
 
   const teams = useMemo(() => groupByTeam(players), [players]);
+
+  // Same roster, keyed by each tournament team's BCP teamPlayer id instead
+  // of its display name — what a team-vs-team pairing row's side1Id/side2Id
+  // (and MyPairing's opponentTeamPlayerId) actually reference. Used to fall
+  // back to "who's on each team" when a pairing's individual boards aren't
+  // published yet.
+  const rosterByTeamId = useMemo(() => {
+    const map = new Map<string, Player[]>();
+    players.forEach((player) => {
+      if (!player.teamPlayerId) return;
+      const existing = map.get(player.teamPlayerId);
+      if (existing) existing.push(player);
+      else map.set(player.teamPlayerId, [player]);
+    });
+    return map;
+  }, [players]);
 
   const isFollowing = (key: string) => following.some((f) => followedKey(f) === key);
 
@@ -983,6 +1003,8 @@ function HomeContent() {
                   itcByUserId={itcRankings}
                   itcLeagueId={itcLeagueId}
                   ownBcpUserId={ownBcpUserId}
+                  myTeamPlayerId={entry.kind === "team" ? entry.teamPlayerId : undefined}
+                  rosterByTeamId={rosterByTeamId}
                 />
               );
             })}
@@ -1000,6 +1022,7 @@ function HomeContent() {
                 followedIds={followedIds}
                 teamEvent={isTeamEvent}
                 itcLeagueId={itcLeagueId}
+                rosterByTeamId={rosterByTeamId}
                 emptyMessage={
                   searchQuery && boardEntries.length > 0
                     ? `No pairings match "${searchQuery}" in round ${boardRound}.`

@@ -186,6 +186,11 @@ export type MyPairing = {
   // team, not a single person with an ITC ranking. Used to look up their
   // already-published ITC ranking (see fetchItcRanking below).
   opponentUserId?: string;
+  // The opposing tournament-team's BCP teamPlayer id, set only for a
+  // team-vs-team pairing — lets a caller look the opponent's own roster
+  // up (by Player.teamPlayerId) to show who's playing when BCP hasn't
+  // published individual boards for this matchup yet.
+  opponentTeamPlayerId?: string;
   // Set only for a team-vs-team pairing — the raw TeamPairing record's own
   // id, i.e. the same id its individual board results reference as
   // `teamPairingId` (see fetchTeamPairingBoards). Lets a followed team's
@@ -279,6 +284,7 @@ function teamPairingToMine(
     published: Boolean(record.published),
     isDone: Boolean(record.isDone),
     opponentName: opponent?.name ?? "Unknown team",
+    opponentTeamPlayerId: opponent?.id,
     teamPairingId: record.id,
     mySideIsTeam1: iAmTeam1,
     myScore: myGame?.points,
