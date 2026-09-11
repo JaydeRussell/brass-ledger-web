@@ -12,6 +12,7 @@ const BASE_LINKS = [
   { href: "/calendar", label: "Calendar" },
   { href: "/stats", label: "Player Stats" },
   { href: "/about", label: "About" },
+  { href: "/changelog", label: "Changelog" },
 ];
 
 /**

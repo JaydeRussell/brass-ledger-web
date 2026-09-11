@@ -227,9 +227,11 @@ function scoreOutcome(
 async function fetchRoundPairings(
   eventId: string,
   round: number,
-  pairingType: "Pairing" | "TeamPairing"
+  pairingType: "Pairing" | "TeamPairing",
+  refresh = false
 ): Promise<BcpPairingRecord[]> {
   const params = new URLSearchParams({ type: pairingType, round: String(round) });
+  if (refresh) params.set("refresh", "true");
   return getJSON<BcpPairingRecord[]>(
     `/api/events/${encodeURIComponent(eventId)}/pairings?${params.toString()}`
   );
@@ -352,10 +354,19 @@ export type BoardPairing = {
   table?: number;
   // Ids let the UI highlight a followed team/player's own row reliably —
   // matching on name alone could collide (two players with the same name).
+  // For an individual pairing, this is the event-scoped player id (not
+  // BCP's cross-event account id) — see side1UserId/side2UserId below for
+  // that. For a team pairing, it's the teamPlayer id; there's no single
+  // BCP account behind a team side, so those never get a *UserId either.
   side1Id?: string;
   side1Name: string;
   side2Id?: string;
   side2Name: string;
+  // BCP's global (cross-event) account id for this side, only ever set
+  // for an individual pairing (see individualPairingToBoard) — what a
+  // player-stats link needs, as opposed to side1Id/side2Id above.
+  side1UserId?: string;
+  side2UserId?: string;
   published: boolean;
   isDone: boolean;
   isBye: boolean;
@@ -389,8 +400,10 @@ function individualPairingToBoard(record: BcpPairingRecord): BoardPairing {
     table: record.table,
     side1Id: record.player1Id ?? record.player1?.id,
     side1Name: nameOf(record.player1),
+    side1UserId: record.player1?.user?.id,
     side2Id: record.player2Id ?? record.player2?.id,
     side2Name: nameOf(record.player2),
+    side2UserId: record.player2?.user?.id,
     published: Boolean(record.published),
     isDone: Boolean(record.isDone),
     isBye: !record.player1 || !record.player2,
@@ -405,14 +418,21 @@ function individualPairingToBoard(record: BcpPairingRecord): BoardPairing {
  * the "my pairings" lookups above via this app's backend, which caches per
  * round so browsing the board doesn't cost any extra BCP requests beyond
  * what its rate limit already allows.
+ *
+ * `refresh` asks the backend to bypass its own cache and check BCP for
+ * real (see internal/api/bcp.go's Pairings handler and
+ * Client.InvalidateRoundPairings) — used only by RoundBoard's explicit
+ * "check for updated pairings" button, never automatically. See
+ * CLAUDE.md's no-polling rule for why this is opt-in per call.
  */
 export async function fetchRoundBoard(
   eventId: string,
   round: number,
-  teamEvent: boolean
+  teamEvent: boolean,
+  refresh = false
 ): Promise<BoardPairing[]> {
   const pairingType = teamEvent ? "TeamPairing" : "Pairing";
-  const records = await fetchRoundPairings(eventId, round, pairingType);
+  const records = await fetchRoundPairings(eventId, round, pairingType, refresh);
   const board = records.map(teamEvent ? teamPairingToBoard : individualPairingToBoard);
   // Byes sort to the bottom regardless of table, since they're not really
   // part of the table sequence; everything else sorts by table number.
@@ -492,6 +512,10 @@ export type PlacingEntry = {
   name: string;
   placing?: number;
   metrics: { name: string; value: number }[];
+  // BCP's global (cross-event) account id — only ever set for an
+  // individual-event row; a team-event row's `name` is the team itself,
+  // not one person, so there's no single account to point it at.
+  bcpUserId?: string;
 };
 
 /**
@@ -499,10 +523,21 @@ export type PlacingEntry = {
  * ranked by its own `placing` field. Not available (returns an empty
  * list) until BCP has actually placed anyone, which typically means at
  * least one round has finished.
+ *
+ * `refresh` asks the backend to bypass its own cache and check BCP for
+ * real (see internal/api/bcp.go's Placings handler and
+ * Client.InvalidatePlacings) — used only by PlacingsTable's explicit
+ * "check for updated placings" button, never automatically.
  */
-export function fetchBcpPlacings(eventId: string, teamEvent: boolean): Promise<PlacingEntry[]> {
+export function fetchBcpPlacings(
+  eventId: string,
+  teamEvent: boolean,
+  refresh = false
+): Promise<PlacingEntry[]> {
+  const params = new URLSearchParams({ team: String(teamEvent) });
+  if (refresh) params.set("refresh", "true");
   return getJSON<PlacingEntry[]>(
-    `/api/events/${encodeURIComponent(eventId)}/placings?team=${teamEvent}`
+    `/api/events/${encodeURIComponent(eventId)}/placings?${params.toString()}`
   );
 }
 

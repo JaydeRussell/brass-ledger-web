@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import Card from "../components/ui/card";
@@ -43,6 +44,16 @@ export default function AboutPage() {
             All event data comes from Best Coast Pairings&apos; own tournament platform.
             Brass Ledger isn&apos;t affiliated with or endorsed by BCP — it&apos;s an
             independent companion that reads what BCP has already published.
+          </p>
+        </Card>
+
+        <Card className="p-4">
+          <h2 className="mb-2 text-sm font-semibold text-text-primary">What&apos;s changed</h2>
+          <p className="text-sm text-text-secondary">
+            <Link href="/changelog" className="text-brass-600 hover:underline dark:text-brass-400">
+              See the changelog
+            </Link>{" "}
+            for what&apos;s shipped so far.
           </p>
         </Card>
       </PageMain>

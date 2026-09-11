@@ -52,6 +52,17 @@ test("doesn't repeat the disposition as a subfaction suffix when BCP reused that
   assert.equal((html.match(/Purge the Foe/g) ?? []).length, 1);
 });
 
+test("the player's name links to their stats page only when a bcpUserId is known", () => {
+  const noLink = renderToStaticMarkup(React.createElement(PlayerCard, { player: basePlayer }));
+  assert.ok(!noLink.includes("/players/"));
+  assert.match(noLink, /Jayde Russell/);
+
+  const withLink = renderToStaticMarkup(
+    React.createElement(PlayerCard, { player: { ...basePlayer, bcpUserId: "bcp-1" } })
+  );
+  assert.match(withLink, /href="\/players\/bcp-1\?name=Jayde%20Russell"/);
+});
+
 test("shows a link to the army list only when one is published", () => {
   const noList = renderToStaticMarkup(React.createElement(PlayerCard, { player: basePlayer }));
   assert.ok(!noList.includes(">list<"));

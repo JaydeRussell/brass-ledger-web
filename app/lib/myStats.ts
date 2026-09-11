@@ -75,3 +75,16 @@ export type MyStats = {
 export async function fetchMyStats(): Promise<MyStats> {
   return getJSON<MyStats>("/api/me/stats");
 }
+
+/**
+ * The same summary as fetchMyStats, but for an arbitrary already-known
+ * BCP account id (see internal/api/stats.go's PlayerStats) — used
+ * whenever a player's name is clicked somewhere else in the app (roster,
+ * pairings, placings) rather than for the signed-in account's own
+ * profile. Still requires being signed in and approved, same as every
+ * other BCP-backed read in this app; it just isn't scoped to the
+ * caller's own linked profile the way fetchMyStats is.
+ */
+export async function fetchPlayerStats(bcpUserId: string): Promise<MyStats> {
+  return getJSON<MyStats>(`/api/players/${encodeURIComponent(bcpUserId)}/stats`);
+}

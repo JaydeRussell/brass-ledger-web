@@ -171,9 +171,9 @@ test("fetchRoundBoard: individual event, sorts byes to the bottom and others by 
   installFetch(() => ({
     status: 200,
     body: JSON.stringify([
-      { id: "a", pairingType: "Pairing", table: 3, player1: { id: "p1", user: { firstName: "A" } }, player2: { id: "p2", user: { firstName: "B" } } },
-      { id: "bye", pairingType: "Pairing", player1: { id: "p3", user: { firstName: "C" } } }, // no player2 => a bye
-      { id: "b", pairingType: "Pairing", table: 1, player1: { id: "p4", user: { firstName: "D" } }, player2: { id: "p5", user: { firstName: "E" } } },
+      { id: "a", pairingType: "Pairing", table: 3, player1: { id: "p1", user: { id: "u1", firstName: "A" } }, player2: { id: "p2", user: { id: "u2", firstName: "B" } } },
+      { id: "bye", pairingType: "Pairing", player1: { id: "p3", user: { id: "u3", firstName: "C" } } }, // no player2 => a bye
+      { id: "b", pairingType: "Pairing", table: 1, player1: { id: "p4", user: { id: "u4", firstName: "D" } }, player2: { id: "p5", user: { id: "u5", firstName: "E" } } },
     ]),
   }));
   const board = await fetchRoundBoard("evt-1", 1, false);
@@ -183,6 +183,12 @@ test("fetchRoundBoard: individual event, sorts byes to the bottom and others by 
     "expected table-1 first, table-3 second, and the bye last regardless of table"
   );
   assert.equal(board[2].isBye, true);
+  // side1UserId/side2UserId are what a player-stats link needs (BCP's
+  // cross-event account id), distinct from side1Id/side2Id's event-scoped
+  // player id.
+  const [tableOne] = board;
+  assert.equal(tableOne.side1UserId, "u4");
+  assert.equal(tableOne.side2UserId, "u5");
 });
 
 test("fetchRoundBoard: team event, maps team names onto side1/side2", async () => {
@@ -200,6 +206,9 @@ test("fetchRoundBoard: team event, maps team names onto side1/side2", async () =
   assert.equal(board.side1Name, "Team A");
   assert.equal(board.side2Name, "Team B");
   assert.equal(board.isBye, false);
+  // A team side is a team, not one person — no BCP account to link.
+  assert.equal(board.side1UserId, undefined);
+  assert.equal(board.side2UserId, undefined);
 });
 
 test("fetchTeamPairingBoards: filters to one team pairing's boards and sorts by table", async () => {

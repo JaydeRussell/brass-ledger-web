@@ -9,6 +9,7 @@ import {
 } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
+import PlayerStatsLink from "../shared/playerStatsLink";
 import Spinner from "../shared/spinner";
 import TeamRosterFallback from "./teamRosterFallback";
 import Button from "../ui/button";
@@ -188,7 +189,9 @@ export default function MyPairings({
       <div className="flex items-center justify-between gap-3 border-b border-surface-border bg-surface-2 px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-text-primary">{whoLabel}</p>
+            <p className="font-semibold text-text-primary">
+              <PlayerStatsLink name={whoLabel} bcpUserId={ownBcpUserId} />
+            </p>
             <ItcBadge
               ranking={ownItc}
               bcpUserId={ownBcpUserId}
@@ -263,7 +266,7 @@ export default function MyPairings({
                     {pairing?.published ? (
                       <span className="flex min-w-0 flex-1 items-center gap-2">
                         <span className="min-w-0 flex-1 truncate text-text-secondary">
-                          vs {pairing.opponentName}
+                          vs <PlayerStatsLink name={pairing.opponentName} bcpUserId={pairing.opponentUserId} />
                           {pairing.table && (
                             <span className="ml-1.5 text-xs text-text-tertiary">
                               (table {pairing.table})
@@ -349,7 +352,9 @@ export default function MyPairings({
                             {m.table ? `Bd ${m.table}` : ""}
                           </span>
                           <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                            <span className="truncate">{m.player1Name}</span>
+                            <span className="truncate">
+                              <PlayerStatsLink name={m.player1Name} bcpUserId={m.player1UserId} />
+                            </span>
                             <ItcBadge
                               ranking={
                                 m.player1UserId ? boardItcByUserId[m.player1UserId] : undefined
@@ -362,7 +367,9 @@ export default function MyPairings({
                           </span>
                           <span className="text-text-tertiary">vs</span>
                           <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                            <span className="truncate">{m.player2Name}</span>
+                            <span className="truncate">
+                              <PlayerStatsLink name={m.player2Name} bcpUserId={m.player2UserId} />
+                            </span>
                             <ItcBadge
                               ranking={
                                 m.player2UserId ? boardItcByUserId[m.player2UserId] : undefined

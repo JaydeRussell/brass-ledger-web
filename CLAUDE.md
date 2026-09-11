@@ -33,6 +33,65 @@ otherwise, follows these rules:
 Before considering a feature that touches `app/lib/bcp.ts` (or any future
 third-party integration) done, check it against this list.
 
+## Releases
+
+Brass Ledger is one product across two repos (this one and the sibling
+`brass-ledger-api`), but only this repo carries a version — `package.json`'s
+`version` field, read by `app/components/layout/footer.tsx` and cross-checked
+against `app/lib/changelog.ts` by that file's own test. There's no separate
+backend version; a release covers whatever changed in either or both repos
+since the last one.
+
+**When to cut a release**: when the user asks to (e.g. "ship this," "cut a
+release," "update the changelog," "call the session" after a chunk of real
+work) — not automatically after every commit. Like committing itself (see
+the top-level git-safety rules), this is an explicit action, not a default.
+
+**How**, when asked:
+
+1. Decide the size of the bump — judge the release as one whole, against
+   everything since the last tagged release (`git log <last tag>..HEAD`
+   in both repos), not commit-by-commit:
+   - **minor** (0.X.0, e.g. 0.6.0 → 0.7.0) if *anything* in the release
+     gives the user something new to do, see, or notice — a new page,
+     control, or data field, or a rework substantial enough to change
+     how something looks or behaves. One minor-worthy change makes the
+     whole release minor, even bundled with several unrelated fixes —
+     don't average it down to a patch because "most of it was small."
+   - **patch** (0.X.Y, e.g. 0.6.0 → 0.6.1) only if *everything* in the
+     release is a fix, a polish pass, a perf/refactor with no visible
+     behavior change, or docs/tests only — nothing a user would describe
+     as "it can do something it couldn't before."
+   - **major** (1.0.0+) isn't about how big the release is — it's a
+     separate, deliberate "this is stable enough for real use" call the
+     user makes explicitly. Don't infer it from change size, even a
+     total rewrite; stay on 0.x until told otherwise.
+
+   Worked examples from this project's own history (see
+   `app/lib/changelog.ts`): v0.5.0 bundled several bug fixes *and* the
+   new About page + version footer — that one new page was enough to
+   make the whole release minor (v0.5.0), not a patch on v0.4 (v0.4.1).
+   v0.6.0 added player-profile pages and a manual refresh control —
+   clearly minor. A hypothetical release that was only "fixed lost ITC
+   ratings on team events," with nothing else, would have been a patch.
+2. Bump `package.json`'s `version`.
+3. Add a new entry to the *top* of `CHANGELOG` in `app/lib/changelog.ts`
+   (newest-first) — `version`, today's date, a short title, and a few
+   plain-language highlights. Written for someone using the app, not a
+   commit-log dump: group by what changed, not by commit boundaries.
+4. Commit (only the work itself, or the version/changelog bump — whichever
+   the user actually asked for) in whichever repo(s) have real changes.
+5. Tag that commit `vX.Y.Z` (`git tag vX.Y.Z`) in every repo that has a
+   commit for this release — a purely local tag; only push it (`git push
+   --tags` / `git push <remote> vX.Y.Z`) if the user also asks to push.
+
+v0.1.0 through v0.5.0 were assigned retroactively (2026-09-10) by grouping
+this project's existing commit history into the milestones the "Current
+status" section below already narrates — see `app/lib/changelog.ts` for
+the resulting entries and tags on the commits that closed out each one.
+v0.6.0 on is meant to be kept current as work actually ships, not
+re-derived from history again.
+
 ---
 
 # Current status (as of 2026-09-07) — read this first in a new session

@@ -10,7 +10,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 // fetchMyStats has resolved. What's verified here is that first render —
 // a loading spinner, no premature reach into the ITC lookups — same
 // pattern and same limitation as bcpProfileLinker.test.ts.
-mock.module("../../lib/myStats.ts", { namedExports: { fetchMyStats: async () => ({ linked: false, totalEvents: 0, factions: [] }) } });
+mock.module("../../lib/myStats.ts", {
+  namedExports: {
+    fetchMyStats: async () => ({ linked: false, totalEvents: 0, factions: [] }),
+    fetchPlayerStats: async () => ({ linked: false, totalEvents: 0, factions: [] }),
+  },
+});
 mock.module("../../lib/bcp.ts", {
   namedExports: {
     fetchCurrentItcLeagueId: async () => {
@@ -39,4 +44,11 @@ test("shows a loading spinner on first paint, before stats have loaded", () => {
   // only appears once the 3-second threshold has actually elapsed, never
   // on the very first render.
   assert.ok(!html.includes("Taking longer than usual"));
+});
+
+test("mode: player also shows a loading spinner on first paint", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(PlayerStatsPanel, { bcpUserId: "u1", mode: "player", playerName: "Alexandria" })
+  );
+  assert.match(html, /Loading player stats…/);
 });

@@ -9,6 +9,8 @@ import {
 } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
+import PlayerStatsLink from "../shared/playerStatsLink";
+import RefreshButton from "../shared/refreshButton";
 import Spinner from "../shared/spinner";
 import TeamRosterFallback from "./teamRosterFallback";
 import Button from "../ui/button";
@@ -31,6 +33,13 @@ type RoundBoardProps = {
   loading: boolean;
   error: string | null;
   onRoundChange: (round: number) => void;
+  // Re-fetches this round's board on demand. BCP has no push/live-update
+  // mechanism worth copying (see CLAUDE.md's "no polling" rule — their
+  // own "live" pairings page turns out to just be a 15-second interval
+  // fetch under a status light), so checking for a newly published
+  // pairing is a manual, explicit action rather than something this
+  // component does on its own on a timer.
+  onRefresh: () => void;
   followedIds?: Set<string>; // ids of followed teams/players, highlighted if present in this round
   // Whether this round's entries are team-vs-team pairings — only those
   // can expand into individual boards; a singles-event row is already an
@@ -75,6 +84,7 @@ export default function RoundBoard({
   loading,
   error,
   onRoundChange,
+  onRefresh,
   followedIds,
   teamEvent,
   itcLeagueId,
@@ -159,6 +169,7 @@ export default function RoundBoard({
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-surface-border bg-surface-2 px-4 py-3">
         <p className="font-semibold text-text-primary">Round pairings</p>
         <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={onRefresh} loading={loading} label="pairings" />
           <Button
             variant="secondary"
             size="sm"
@@ -256,11 +267,11 @@ export default function RoundBoard({
                     </span>
                     <span className="min-w-0 flex-1 truncate text-text-primary">
                       <span className={side1Followed ? "font-semibold" : undefined}>
-                        {entry.side1Name}
+                        <PlayerStatsLink name={entry.side1Name} bcpUserId={entry.side1UserId} />
                       </span>
                       <span className="mx-1.5 text-text-tertiary">vs</span>
                       <span className={side2Followed ? "font-semibold" : undefined}>
-                        {entry.side2Name}
+                        <PlayerStatsLink name={entry.side2Name} bcpUserId={entry.side2UserId} />
                       </span>
                     </span>
                     {!entry.published ? (
@@ -336,7 +347,9 @@ export default function RoundBoard({
                             {m.table ? `Bd ${m.table}` : ""}
                           </span>
                           <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                            <span className="truncate">{m.player1Name}</span>
+                            <span className="truncate">
+                              <PlayerStatsLink name={m.player1Name} bcpUserId={m.player1UserId} />
+                            </span>
                             <ItcBadge
                               ranking={m.player1UserId ? itcByUserId[m.player1UserId] : undefined}
                               bcpUserId={m.player1UserId}
@@ -347,7 +360,9 @@ export default function RoundBoard({
                           </span>
                           <span className="text-text-tertiary">vs</span>
                           <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                            <span className="truncate">{m.player2Name}</span>
+                            <span className="truncate">
+                              <PlayerStatsLink name={m.player2Name} bcpUserId={m.player2UserId} />
+                            </span>
                             <ItcBadge
                               ranking={m.player2UserId ? itcByUserId[m.player2UserId] : undefined}
                               bcpUserId={m.player2UserId}

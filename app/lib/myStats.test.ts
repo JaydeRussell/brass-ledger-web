@@ -23,7 +23,7 @@ function installFetch(handler: (url: string, init?: RequestInit) => FakeResponse
   return { calls };
 }
 
-const { fetchMyStats } = await import("./myStats.ts");
+const { fetchMyStats, fetchPlayerStats } = await import("./myStats.ts");
 
 test("fetchMyStats: sends credentials and returns the parsed body", async () => {
   const wantBody = {
@@ -59,4 +59,25 @@ test("fetchMyStats: not linked resolves with linked: false", async () => {
 test("fetchMyStats: an unexpected error status throws", async () => {
   installFetch(() => ({ status: 401, body: { error: "not signed in" } }));
   await assert.rejects(() => fetchMyStats(), /not signed in/);
+});
+
+test("fetchPlayerStats: sends credentials and hits the by-id route", async () => {
+  const wantBody = { linked: true, totalEvents: 2, factions: [] };
+  const { calls } = installFetch(() => ({ status: 200, body: wantBody }));
+
+  const got = await fetchPlayerStats("bcp-user-1");
+
+  assert.deepEqual(got, wantBody);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].url.endsWith("/api/players/bcp-user-1/stats"));
+  assert.equal(calls[0].init?.credentials, "include");
+});
+
+test("fetchPlayerStats: encodes the bcpUserId into the URL", async () => {
+  const { calls } = installFetch(() => ({
+    status: 200,
+    body: { linked: true, totalEvents: 0, factions: [] },
+  }));
+  await fetchPlayerStats("a/b c");
+  assert.ok(calls[0].url.includes(encodeURIComponent("a/b c")), `URL was ${calls[0].url}`);
 });
