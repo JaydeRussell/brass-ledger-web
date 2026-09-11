@@ -113,6 +113,15 @@ export async function signOut(): Promise<void> {
 export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [checked, setChecked] = useState(false);
+  // True only when the /api/me lookup itself failed (network error, 5xx —
+  // fetchCurrentUser throws for anything but a clean 401), as opposed to
+  // a confirmed 401 (fetchCurrentUser resolves that to `null` normally).
+  // Both leave `user` null, but a caller that can fall back to
+  // already-cached content on a bad connection (see app/page.tsx's
+  // eventCache.ts-backed fallback) needs to tell the two apart — a real
+  // 401 means sign in again; a failed lookup means "unknown, don't
+  // navigate away from what's already on screen."
+  const [authError, setAuthError] = useState(false);
 
   // Guards against a stale lookup clobbering fresher state — e.g. the
   // mount effect's own lookup resolving after a caller has already
@@ -127,6 +136,7 @@ export function useCurrentUser() {
       .then((u) => {
         if (requestIdRef.current !== requestId) return;
         setUser(u);
+        setAuthError(false);
         logClientEvent("info", "auth status check: resolved", {
           signedIn: u !== null,
           userId: u?.id,
@@ -134,14 +144,15 @@ export function useCurrentUser() {
       })
       .catch((err: unknown) => {
         if (requestIdRef.current !== requestId) return;
-        // Treat a failed lookup (e.g. backend unreachable) the same as
-        // signed-out — this is a nice-to-have status indicator, not a
-        // gate on anything actually sensitive, so there's nothing else
-        // useful to do here.
-        logClientEvent("warn", "auth status check: /api/me lookup failed, treating as signed out", {
+        // `user` still goes null here (nothing confirms a session), but
+        // authError distinguishes this from a real 401 — see its
+        // declaration above. A caller with no fallback of its own can
+        // keep treating this exactly like signed-out, same as before.
+        logClientEvent("warn", "auth status check: /api/me lookup failed", {
           error: err instanceof Error ? err.message : String(err),
         });
         setUser(null);
+        setAuthError(true);
       })
       .finally(() => {
         if (requestIdRef.current === requestId) setChecked(true);
@@ -153,5 +164,5 @@ export function useCurrentUser() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is stable (useCallback, empty deps)
   }, []);
 
-  return { user, checked, setUser, refresh };
+  return { user, checked, authError, setUser, refresh };
 }

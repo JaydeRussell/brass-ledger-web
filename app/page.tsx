@@ -45,6 +45,7 @@ import {
   type RecentEvent,
 } from "./lib/recentEvents";
 import { fetchFollows, addFollow, removeFollow, followedKey, type Followed } from "./lib/follows";
+import { loadCachedEvent, saveCachedEvent, formatRelativeTime } from "./lib/eventCache";
 import { useCurrentUser } from "./lib/auth";
 import { logClientEvent } from "./lib/clientLog";
 import { useDelayedFlag } from "./lib/useDelayedFlag";
@@ -163,8 +164,8 @@ function HomeContent() {
   // than treating "not yet known" as signed-out) avoids a flash where a
   // signed-in visitor's guest-mode localStorage briefly shows before the
   // real, synced list replaces it.
-  const { user, checked: authChecked } = useCurrentUser();
-  useRedirectToLoginIfSignedOut(user, authChecked);
+  const { user, checked: authChecked, authError: authCheckFailed } = useCurrentUser();
+  useRedirectToLoginIfSignedOut(user, authChecked, authCheckFailed);
 
   // The active tab and the search filter both live in the URL's query
   // string (`?tab=...&q=...`) instead of plain component state. Unlike
@@ -260,6 +261,11 @@ function HomeContent() {
 
   const [eventInfo, setEventInfo] = React.useState<EventInfo | null>(null);
   const [players, setPlayers] = React.useState<Player[]>([]);
+  // When the currently-shown eventInfo/players were last known good —
+  // "just now" for a fresh fetch, or a cached snapshot's own cachedAt for
+  // a fallback shown after a failed refetch (see eventCache.ts). Null
+  // only when there's truly nothing to show yet.
+  const [dataAsOf, setDataAsOf] = React.useState<number | null>(null);
   // BCP's current flagship ITC ranking league id, used to link each player
   // card to their already-published BCP ranking profile — see
   // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. Null until it
@@ -358,6 +364,18 @@ function HomeContent() {
       setEventId(storedEventId);
       if (eventParam) writeLocalStorage(EVENT_ID_STORAGE_KEY, eventParam);
 
+      // Show the last-known view for this event immediately, before the
+      // real fetch below even starts — the actual point of eventCache.ts.
+      // Overwritten by the load effect once a fresh fetch succeeds; left
+      // in place if that fetch fails (spotty venue wifi) instead of
+      // sitting on a blank page.
+      const cached = loadCachedEvent(storedEventId);
+      if (cached) {
+        setEventInfo(cached.eventInfo);
+        setPlayers(cached.players);
+        setDataAsOf(cached.cachedAt);
+      }
+
       // Server-side sync (fetchFollows/fetchRecentEventsFromServer) needs
       // an approved account on the backend (api.RequireApproved) — a
       // pending/rejected account falls back to the same guest-mode
@@ -434,6 +452,8 @@ function HomeContent() {
         if (cancelled) return;
         setEventInfo(info);
         setPlayers(playerList);
+        setDataAsOf(Date.now());
+        saveCachedEvent(eventId, { eventInfo: info, players: playerList, cachedAt: Date.now() });
         setRecentEvents((prev) =>
           recordRecentEvent(prev, {
             id: info.id,
@@ -852,8 +872,14 @@ function HomeContent() {
     // and stomp this reset back to whatever was being typed before.
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     setSearchQueryState("");
-    setEventInfo(null);
-    setPlayers([]);
+    // Hydrate from this event's own last-known-good snapshot if one
+    // exists (e.g. switching back to an event viewed earlier this
+    // session) instead of blanking to null — see eventCache.ts. Falls
+    // back to today's null/[] when there's nothing cached for it yet.
+    const cached = loadCachedEvent(id);
+    setEventInfo(cached?.eventInfo ?? null);
+    setPlayers(cached?.players ?? []);
+    setDataAsOf(cached?.cachedAt ?? null);
     setItcLeagueId(null);
     setItcRankings({});
     requestedItcIdsRef.current = new Set();
@@ -1009,15 +1035,42 @@ function HomeContent() {
         }
       />
 
-      {!authChecked || !user ? null : user.status !== "approved" ? (
+      {/* A failed /api/me lookup (authCheckFailed) leaves `user` null the
+          same as a confirmed sign-out, but useRedirectToLoginIfSignedOut
+          above already skips its redirect in that case — so if there's
+          also a cached event snapshot to fall back on (see
+          eventCache.ts), show it instead of rendering nothing. With
+          nothing cached either, there's genuinely nothing to show. */}
+      {!authChecked ? null : !user && !(authCheckFailed && eventInfo) ? null : user &&
+        user.status !== "approved" ? (
         <PageMain>
           <AccessStatusMessage status={user.status} />
         </PageMain>
       ) : (
         <>
-          {error && (
+          {authCheckFailed && (
             <div className="mx-auto max-w-5xl px-4">
-              <ErrorAlert>Couldn&apos;t load event data: {error}</ErrorAlert>
+              <ErrorAlert>
+                Can&apos;t reach the server right now
+                {dataAsOf ? ` — showing data from ${formatRelativeTime(dataAsOf)}` : ""}.
+              </ErrorAlert>
+            </div>
+          )}
+
+          {error && !authCheckFailed && (
+            <div className="mx-auto max-w-5xl px-4">
+              {eventInfo ? (
+                // Still showing a last-known-good snapshot (see
+                // eventCache.ts) rather than blanking the page — a
+                // softer notice than a hard failure, since there's
+                // actually something on screen.
+                <ErrorAlert>
+                  Showing saved data{dataAsOf ? ` from ${formatRelativeTime(dataAsOf)}` : ""} —
+                  couldn&apos;t refresh: {error}
+                </ErrorAlert>
+              ) : (
+                <ErrorAlert>Couldn&apos;t load event data: {error}</ErrorAlert>
+              )}
             </div>
           )}
 

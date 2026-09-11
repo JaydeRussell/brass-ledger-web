@@ -23,6 +23,16 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.8.0",
+    date: "2026-09-11",
+    title: "Resilience on bad venue wifi",
+    highlights: [
+      "Switching events, or reloading the page, no longer blanks the screen to an error when the connection drops — the last-known event data stays up with a small \"showing saved data\" notice instead, until a fresh load succeeds.",
+      "If the app can't even confirm you're signed in (a fully unreachable server), it no longer bounces you to the sign-in page — it keeps showing whatever event data it already had, with a \"can't reach the server\" notice, rather than losing your place.",
+      "A full offline app (service worker, works with zero connectivity from a cold load) is intentionally not part of this — that's earmarked for whenever a mobile app version of Brass Ledger happens; see ROADMAP.md.",
+    ],
+  },
+  {
     version: "0.7.0",
     date: "2026-09-11",
     title: "Your round, at a glance",
