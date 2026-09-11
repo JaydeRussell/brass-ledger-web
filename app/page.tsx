@@ -294,10 +294,23 @@ function HomeContent() {
   const [boardEntries, setBoardEntries] = React.useState<BoardPairing[]>([]);
   const [boardLoading, setBoardLoading] = React.useState(false);
   const [boardError, setBoardError] = React.useState<string | null>(null);
+  // Bumped by RoundBoard's "check for updates" button to re-run the fetch
+  // effect below for the *same* round — changing boardRound alone wouldn't
+  // retrigger it. No timer ever bumps this; see CLAUDE.md's no-polling rule.
+  const [boardRefreshKey, setBoardRefreshKey] = React.useState(0);
+  // Set (synchronously, right before bumping boardRefreshKey) by
+  // refreshBoard below, and read/reset by the fetch effect — the effect
+  // itself can't otherwise tell "this run is because of a manual refresh"
+  // apart from "this run is because the round/event changed," and only
+  // the former should ask the backend to bypass its own cache.
+  const boardRefreshRequestedRef = React.useRef(false);
 
   const [placings, setPlacings] = React.useState<PlacingEntry[]>([]);
   const [placingsLoading, setPlacingsLoading] = React.useState(false);
   const [placingsError, setPlacingsError] = React.useState<string | null>(null);
+  // Same purpose as boardRefreshKey, for PlacingsTable's refresh button.
+  const [placingsRefreshKey, setPlacingsRefreshKey] = React.useState(0);
+  const placingsRefreshRequestedRef = React.useRef(false);
 
   // Client-only hydration from localStorage, run exactly once right after
   // mount — see the comment on `eventId`'s initial state above for why
@@ -569,8 +582,10 @@ function HomeContent() {
     if (!eventInfo || !boardRound || boardRound < 1) return;
 
     let cancelled = false;
+    const refresh = boardRefreshRequestedRef.current;
+    boardRefreshRequestedRef.current = false;
 
-    fetchRoundBoard(eventId, boardRound, eventInfo.teamEvent)
+    fetchRoundBoard(eventId, boardRound, eventInfo.teamEvent, refresh)
       .then((entries) => {
         if (!cancelled) {
           setBoardEntries(entries);
@@ -589,7 +604,7 @@ function HomeContent() {
     return () => {
       cancelled = true;
     };
-  }, [eventId, boardRound, eventInfo]);
+  }, [eventId, boardRound, eventInfo, boardRefreshKey]);
 
   // Placings are only fetched once the Placings tab is actually opened —
   // per CLAUDE.md's "fetch only what's needed" rule, there's no reason to
@@ -600,8 +615,10 @@ function HomeContent() {
     if (activeTab !== "placings" || !eventInfo) return;
 
     let cancelled = false;
+    const refresh = placingsRefreshRequestedRef.current;
+    placingsRefreshRequestedRef.current = false;
 
-    fetchBcpPlacings(eventId, eventInfo.teamEvent)
+    fetchBcpPlacings(eventId, eventInfo.teamEvent, refresh)
       .then((entries) => {
         if (!cancelled) {
           setPlacings(entries);
@@ -620,7 +637,7 @@ function HomeContent() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, eventId, eventInfo]);
+  }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
 
   const teams = useMemo(() => groupByTeam(players), [players]);
 
@@ -763,6 +780,24 @@ function HomeContent() {
     const clamped = Math.min(Math.max(round, 1), Math.max(maxRound, 1));
     setBoardLoading(true);
     setBoardRound(clamped);
+  };
+
+  // Manual "check for updates" for the currently viewed round — see
+  // RoundBoard's onRefresh doc comment for why this is a button rather
+  // than a timer. RefreshButton (rendered by RoundBoard) already guards
+  // against a rapidly mashed click on its own — see its doc comment —
+  // so this only needs to do the actual work of a single accepted click.
+  const refreshBoard = () => {
+    boardRefreshRequestedRef.current = true;
+    setBoardLoading(true);
+    setBoardRefreshKey((k) => k + 1);
+  };
+
+  // Same, for PlacingsTable's refresh button.
+  const refreshPlacings = () => {
+    placingsRefreshRequestedRef.current = true;
+    setPlacingsLoading(true);
+    setPlacingsRefreshKey((k) => k + 1);
   };
 
   const changeTab = (tab: TabKey) => {
@@ -1033,6 +1068,7 @@ function HomeContent() {
                 loading={boardLoading}
                 error={boardError}
                 onRoundChange={changeBoardRound}
+                onRefresh={refreshBoard}
                 followedIds={followedIds}
                 teamEvent={isTeamEvent}
                 itcLeagueId={itcLeagueId}
@@ -1052,6 +1088,7 @@ function HomeContent() {
             entries={filteredPlacings}
             loading={placingsLoading}
             error={placingsError}
+            onRefresh={refreshPlacings}
             followedIds={followedIds}
             emptyMessage={
               searchQuery && placings.length > 0

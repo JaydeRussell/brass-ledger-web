@@ -1,5 +1,7 @@
 "use client";
 import type { PlacingEntry } from "../../lib/bcp";
+import PlayerStatsLink from "../shared/playerStatsLink";
+import RefreshButton from "../shared/refreshButton";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
@@ -14,6 +16,10 @@ type PlacingsTableProps = {
   // `entries` came back empty because a search filter matched nothing,
   // rather than because BCP has no placings published yet.
   emptyMessage?: string;
+  // Re-fetches this event's placings on demand. Same reasoning as
+  // RoundBoard's onRefresh — no polling/live-update timer (see CLAUDE.md),
+  // just an explicit manual check.
+  onRefresh: () => void;
 };
 
 /**
@@ -28,14 +34,16 @@ export default function PlacingsTable({
   error,
   followedIds,
   emptyMessage,
+  onRefresh,
 }: PlacingsTableProps) {
   const metricNames = entries[0]?.metrics.map((m) => m.name) ?? [];
   const slowLoad = useDelayedFlag(loading);
 
   return (
     <Card className="overflow-hidden shadow-sm">
-      <div className="border-b border-surface-border bg-surface-2 px-4 py-3">
+      <div className="flex items-center justify-between gap-2 border-b border-surface-border bg-surface-2 px-4 py-3">
         <p className="font-semibold text-text-primary">Placings</p>
+        <RefreshButton onRefresh={onRefresh} loading={loading} label="placings" />
       </div>
 
       <div className="p-3">
@@ -88,7 +96,7 @@ export default function PlacingsTable({
                       {entry.placing ?? "—"}
                     </td>
                     <td className="truncate px-2 py-1.5 font-medium text-text-primary">
-                      {entry.name}
+                      <PlayerStatsLink name={entry.name} bcpUserId={entry.bcpUserId} />
                     </td>
                     {metricNames.map((name) => (
                       <td

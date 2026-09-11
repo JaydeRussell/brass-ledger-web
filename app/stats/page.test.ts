@@ -31,6 +31,7 @@ mock.module("../lib/recentEvents.ts", {
 mock.module("../lib/myStats.ts", {
   namedExports: {
     fetchMyStats: async () => ({ linked: false, totalEvents: 0, factions: [] }),
+    fetchPlayerStats: async () => ({ linked: false, totalEvents: 0, factions: [] }),
   },
 });
 mock.module("../lib/bcp.ts", {

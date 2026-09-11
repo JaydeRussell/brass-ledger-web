@@ -1,6 +1,7 @@
 "use client";
 import type { ItcRanking } from "../../lib/bcp";
 import ItcBadge from "../shared/itcBadge";
+import PlayerStatsLink from "../shared/playerStatsLink";
 
 type TeamRosterFallbackProps = {
   side1Name: string;
@@ -26,7 +27,7 @@ export default function TeamRosterFallback({
   itcLeagueId,
 }: TeamRosterFallbackProps) {
   return (
-    <div className="grid gap-3 px-1 py-1 sm:grid-cols-2">
+    <div className="grid grid-cols-2 gap-2 px-1 py-1 sm:gap-3">
       {[
         { name: side1Name, players: side1Players },
         { name: side2Name, players: side2Players },
@@ -39,7 +40,9 @@ export default function TeamRosterFallback({
                 key={player.id}
                 className="flex items-center gap-1.5 rounded-md bg-surface-2 px-2 py-1 text-xs"
               >
-                <span className="min-w-0 flex-1 truncate text-text-secondary">{player.name}</span>
+                <span className="min-w-0 flex-1 truncate text-text-secondary">
+                  <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
+                </span>
                 <ItcBadge
                   ranking={player.bcpUserId ? itcByUserId?.[player.bcpUserId] : undefined}
                   bcpUserId={player.bcpUserId}

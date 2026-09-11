@@ -2,6 +2,7 @@
 import type { ItcRanking } from "../../lib/bcp";
 import DispositionBadge from "../shared/dispositionBadge";
 import ItcBadge from "../shared/itcBadge";
+import PlayerStatsLink from "../shared/playerStatsLink";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -96,7 +97,7 @@ export default function TeamRoster({
                   <Avatar name={player.name} />
                   <div className="min-w-36 flex-1">
                     <p className="truncate text-sm font-medium text-text-primary">
-                      {player.name}
+                      <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
                       {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}
                     </p>
                     <p className="truncate text-xs text-text-secondary">

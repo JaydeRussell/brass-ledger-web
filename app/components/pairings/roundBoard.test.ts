@@ -28,6 +28,7 @@ const baseProps = {
   loading: false,
   error: null,
   onRoundChange: () => {},
+  onRefresh: () => {},
   teamEvent: false,
 };
 
@@ -64,6 +65,25 @@ test("disables the prev/next round buttons at the min/max bounds", () => {
   const atMax = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, round: 5 }));
   const nextButton = atMax.match(/<button[^>]*aria-label="Next round"[^>]*>/)?.[0] ?? "";
   assert.match(nextButton, /disabled/);
+});
+
+// Just the enabled/disabled state, via SSR — RoundBoard uses hooks
+// (useState/useDelayedFlag), so unlike PlayerCard's direct-call tests it
+// can't be invoked as a plain function to grab onClick and simulate a
+// real click; see app/lib/testUtils.ts's documented limitation.
+test("the refresh button is enabled while idle and disabled while loading", () => {
+  // Matches the literal `disabled=""` HTML attribute React SSR emits for
+  // a true boolean prop — not just the substring "disabled", which the
+  // button's own className (Button's disabled:opacity-50 etc.) always
+  // contains regardless of actual state.
+  const idle = renderToStaticMarkup(React.createElement(RoundBoard, baseProps));
+  const idleButton = idle.match(/<button[^>]*aria-label="Check for updated pairings"[^>]*>/)?.[0] ?? "";
+  assert.ok(!/\sdisabled=""/.test(idleButton));
+
+  const loading = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, loading: true }));
+  const loadingButton =
+    loading.match(/<button[^>]*aria-label="Check for updated pairings"[^>]*>/)?.[0] ?? "";
+  assert.match(loadingButton, /\sdisabled=""/);
 });
 
 test("lists every pairing, highlighting followed ones and showing scores", () => {
