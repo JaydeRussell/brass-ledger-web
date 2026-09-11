@@ -86,44 +86,54 @@ export default function TeamRoster({
           <ul className="flex flex-col gap-2">
             {players.map((player) => {
               const ranking = player.bcpUserId ? itcRankings?.[player.bcpUserId] : undefined;
+              const hasBadgeRow = Boolean(player.disposition) || Boolean(ranking);
               return (
               <li
                 key={player.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-surface-border p-2.5"
+                className="flex flex-col gap-2 rounded-md border border-surface-border p-2.5"
               >
-                <Avatar name={player.name} />
-                <div className="min-w-36 flex-1">
-                  <p className="truncate text-sm font-medium text-text-primary">
-                    {player.name}
-                    {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}
-                  </p>
-                  <p className="truncate text-xs text-text-secondary">
-                    {player.faction}
-                    {/* When subFaction holds a Force Disposition value
-                        (see types/player.d.ts), it's shown as the badge
-                        instead — repeating it here as "faction — Purge
-                        the Foe" would mislabel a disposition as a
-                        sub-faction. */}
-                    {player.subFaction && player.subFaction !== player.disposition && ` — ${player.subFaction}`}
-                  </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <Avatar name={player.name} />
+                  <div className="min-w-36 flex-1">
+                    <p className="truncate text-sm font-medium text-text-primary">
+                      {player.name}
+                      {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}
+                    </p>
+                    <p className="truncate text-xs text-text-secondary">
+                      {player.faction}
+                      {/* When subFaction holds a Force Disposition value
+                          (see types/player.d.ts), it's shown as the badge
+                          instead — repeating it here as "faction — Purge
+                          the Foe" would mislabel a disposition as a
+                          sub-faction. */}
+                      {player.subFaction && player.subFaction !== player.disposition && ` — ${player.subFaction}`}
+                    </p>
+                  </div>
+                  {player.list && (
+                    <a
+                      href={player.list}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
+                    >
+                      list
+                    </a>
+                  )}
                 </div>
-                {player.list && (
-                  <a
-                    href={player.list}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
-                  >
-                    list
-                  </a>
+                {/* Disposition + ITC on their own row, indented to align
+                    under the name/faction text (avatar width + gap)
+                    rather than crowding the name row on narrow screens. */}
+                {hasBadgeRow && (
+                  <div className="flex flex-wrap items-center gap-2 pl-[52px]">
+                    <DispositionBadge disposition={player.disposition} />
+                    <ItcBadge
+                      ranking={ranking}
+                      bcpUserId={player.bcpUserId}
+                      leagueId={itcLeagueId}
+                      title={`View ${player.name}'s full ITC history on BCP`}
+                    />
+                  </div>
                 )}
-                <DispositionBadge disposition={player.disposition} />
-                <ItcBadge
-                  ranking={ranking}
-                  bcpUserId={player.bcpUserId}
-                  leagueId={itcLeagueId}
-                  title={`View ${player.name}'s full ITC history on BCP`}
-                />
               </li>
               );
             })}
