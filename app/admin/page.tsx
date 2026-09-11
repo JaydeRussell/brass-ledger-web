@@ -2,11 +2,14 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 
-import HamburgerButton from "../components/nav/hamburgerButton";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import Spinner from "../components/shared/spinner";
 import Badge from "../components/ui/badge";
 import Button from "../components/ui/button";
+import Card from "../components/ui/card";
+import ErrorAlert from "../components/ui/errorAlert";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 import { fetchAdminUsers, approveUser, rejectUser, setUserRole, type AdminUser } from "../lib/adminUsers";
@@ -101,35 +104,26 @@ export default function AdminPage() {
     // non-admin), or the redirect effect above hasn't fired yet on this
     // render — render nothing rather than a flash of admin content.
     return (
-      <div className="min-h-screen bg-surface-0">
-        <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-          <HamburgerButton />
-          <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">Admin</h1>
-        </header>
+      <div className="flex-1 bg-surface-0">
+        <PageHeader title="Admin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-        <HamburgerButton />
-        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">Admin</h1>
-      </header>
+    <div className="flex-1 bg-surface-0">
+      <PageHeader title="Admin" />
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6">
+      <PageMain>
         {user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : loadError ? (
-          <p
-            role="alert"
-            className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-3 text-sm text-danger-600 dark:text-danger-400"
-          >
+          <ErrorAlert>
             Couldn&apos;t load accounts: {loadError}{" "}
             <button type="button" onClick={load} className="underline">
               Retry
             </button>
-          </p>
+          </ErrorAlert>
         ) : users === null ? (
           <div role="status" aria-live="polite" className="flex items-center gap-2 p-4 text-sm text-text-secondary">
             <Spinner size="sm" />
@@ -145,7 +139,7 @@ export default function AdminPage() {
                 phone-width table well (unlike PlacingsTable's few, purely
                 numeric columns, this row has real interactive controls
                 that need room, not just a horizontal scroll). */}
-            <div className="hidden overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm sm:block">
+            <Card className="hidden overflow-hidden shadow-sm sm:block">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-surface-border bg-surface-2 text-left text-xs text-text-secondary">
@@ -171,7 +165,7 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </Card>
 
             <div className="flex flex-col gap-2 sm:hidden">
               {users.map((row) => (
@@ -189,7 +183,7 @@ export default function AdminPage() {
             </div>
           </>
         )}
-      </main>
+      </PageMain>
     </div>
   );
 }
@@ -276,7 +270,7 @@ function AdminRow({ row, isSelf, rowState, onApprove, onReject, onSetRole, layou
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-surface-border bg-surface-1 p-3 shadow-sm">
+    <Card className="flex flex-col gap-2 p-3 shadow-sm">
       {identity}
       <div className="flex flex-wrap gap-1.5">
         {bcpLinked}
@@ -284,6 +278,6 @@ function AdminRow({ row, isSelf, rowState, onApprove, onReject, onSetRole, layou
         {statusBadge}
       </div>
       {actions}
-    </div>
+    </Card>
   );
 }

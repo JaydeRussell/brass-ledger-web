@@ -1,6 +1,8 @@
 "use client";
 import type { PlacingEntry } from "../../lib/bcp";
 import Spinner from "../shared/spinner";
+import Card from "../ui/card";
+import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type PlacingsTableProps = {
@@ -31,17 +33,13 @@ export default function PlacingsTable({
   const slowLoad = useDelayedFlag(loading);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm">
+    <Card className="overflow-hidden shadow-sm">
       <div className="border-b border-surface-border bg-surface-2 px-4 py-3">
         <p className="font-semibold text-text-primary">Placings</p>
       </div>
 
       <div className="p-3">
-        {error && (
-          <p className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-2 text-sm text-danger-600 dark:text-danger-400">
-            Couldn&apos;t load placings: {error}
-          </p>
-        )}
+        {error && <ErrorAlert size="sm">Couldn&apos;t load placings: {error}</ErrorAlert>}
 
         {!error && loading && (
           <div className="p-2">
@@ -107,6 +105,6 @@ export default function PlacingsTable({
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

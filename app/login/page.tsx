@@ -2,7 +2,9 @@
 import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import HamburgerButton from "../components/nav/hamburgerButton";
+import Card from "../components/ui/card";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
 import { googleSignInUrl, useCurrentUser } from "../lib/auth";
 
 // Mirrors the backend's isSafeReturnPath (brass-ledger-api's
@@ -50,23 +52,15 @@ function LoginContent() {
   }, [checked, user, returnTo, router]);
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-        <HamburgerButton />
-        <div>
-          <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-            Brass Ledger
-          </h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Rosters, published pairings, and placings pulled straight from Best Coast
-            Pairings — it doesn&apos;t score or suggest pairings.
-          </p>
-        </div>
-      </header>
+    <div className="flex-1 bg-surface-0">
+      <PageHeader
+        title="Brass Ledger"
+        subtitle="Rosters, published pairings, and placings pulled straight from Best Coast Pairings — it doesn't score or suggest pairings."
+      />
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+      <PageMain>
         {!checked || user ? null : (
-          <div className="rounded-lg border border-surface-border bg-surface-1 p-6 text-center shadow-sm">
+          <Card className="p-6 text-center shadow-sm">
             <p className="mb-4 text-sm text-text-secondary">
               Sign in with Google to continue. New here? You&apos;ll be walked through
               connecting your Best Coast Pairings profile right after — same button either
@@ -78,9 +72,9 @@ function LoginContent() {
             >
               Continue with Google
             </a>
-          </div>
+          </Card>
         )}
-      </main>
+      </PageMain>
     </div>
   );
 }

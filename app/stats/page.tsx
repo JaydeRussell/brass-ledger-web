@@ -1,10 +1,12 @@
 "use client";
 import React from "react";
 
-import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import PlayerStatsPanel from "../components/myEvents/playerStatsPanel";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
+import Card from "../components/ui/card";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 
@@ -25,19 +27,14 @@ export default function StatsPage() {
   const bcpUserId = user?.bcpUserId ?? "";
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-        <HamburgerButton />
-        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-          Player Stats
-        </h1>
-      </header>
+    <div className="flex-1 bg-surface-0">
+      <PageHeader title="Player Stats" />
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+      <PageMain>
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
-          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
+          <Card className="p-4">
             <BcpProfileLinker
               onLinked={(id) => {
                 setUser((prev) => (prev ? { ...prev, bcpUserId: id } : prev));
@@ -53,7 +50,7 @@ export default function StatsPage() {
                 Cancel
               </button>
             )}
-          </div>
+          </Card>
         ) : (
           <>
             <div className="flex justify-end">
@@ -68,7 +65,7 @@ export default function StatsPage() {
             <PlayerStatsPanel bcpUserId={bcpUserId} />
           </>
         )}
-      </main>
+      </PageMain>
     </div>
   );
 }

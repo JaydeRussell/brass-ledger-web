@@ -11,6 +11,9 @@ import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
 import Spinner from "../shared/spinner";
 import TeamRosterFallback from "./teamRosterFallback";
+import Button from "../ui/button";
+import Card from "../ui/card";
+import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type BoardsState = {
@@ -152,40 +155,36 @@ export default function RoundBoard({
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm">
+    <Card className="overflow-hidden shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-surface-border bg-surface-2 px-4 py-3">
         <p className="font-semibold text-text-primary">Round pairings</p>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => onRoundChange(round - 1)}
             disabled={round <= minRound}
             aria-label="Previous round"
-            className="rounded-md border border-surface-border px-2.5 py-1.5 text-sm text-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             ‹
-          </button>
+          </Button>
           <span className="min-w-[5.5rem] text-center text-sm font-medium text-text-primary">
             Round {round}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => onRoundChange(round + 1)}
             disabled={round >= maxRound}
             aria-label="Next round"
-            className="rounded-md border border-surface-border px-2.5 py-1.5 text-sm text-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             ›
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="max-h-80 overflow-y-auto p-3">
-        {error && (
-          <p className="rounded-lg border border-danger-500/30 bg-danger-500/15 p-2 text-sm text-danger-600 dark:text-danger-400">
-            Couldn&apos;t load round {round}: {error}
-          </p>
-        )}
+        {error && <ErrorAlert size="sm">Couldn&apos;t load round {round}: {error}</ErrorAlert>}
 
         {!error && loading && (
           <div className="p-2">
@@ -376,6 +375,6 @@ export default function RoundBoard({
           </ul>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

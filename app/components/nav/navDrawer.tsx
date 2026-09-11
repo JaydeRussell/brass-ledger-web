@@ -11,6 +11,7 @@ const BASE_LINKS = [
   { href: "/my-events", label: "My Events" },
   { href: "/calendar", label: "Calendar" },
   { href: "/stats", label: "Player Stats" },
+  { href: "/about", label: "About" },
 ];
 
 /**

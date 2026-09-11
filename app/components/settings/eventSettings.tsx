@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import type { RecentEvent } from "../../lib/recentEvents";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdownMenu";
+import Button from "../ui/button";
 
 type EventSettingsProps = {
   eventId: string;
@@ -117,20 +118,12 @@ export default function EventSettings({
         </div>
 
         <div className="mt-2 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 text-sm text-text-secondary hover:bg-surface-1"
-          >
+          <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => submit()}
-            className="rounded-md bg-brass-500 px-3 py-2 text-sm text-[oklch(0.16_0.006_260)] hover:bg-brass-600"
-          >
+          </Button>
+          <Button variant="primary" onClick={() => submit()}>
             Switch event
-          </button>
+          </Button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

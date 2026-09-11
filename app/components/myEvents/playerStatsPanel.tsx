@@ -4,6 +4,7 @@ import { fetchMyStats, type MyStats, type PlacingWithField } from "../../lib/myS
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
 import ItcBadge from "../shared/itcBadge";
 import Spinner from "../shared/spinner";
+import Card from "../ui/card";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 import { logClientEvent } from "../../lib/clientLog";
 
@@ -128,7 +129,7 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
 
   if (loading) {
     return (
-      <div role="status" aria-live="polite" className="rounded-lg border border-surface-border bg-surface-1 p-4 shadow-sm">
+      <Card role="status" aria-live="polite" className="p-4 shadow-sm">
         <div className="flex items-center gap-2">
           <Spinner size="sm" />
           <span className="text-sm text-text-secondary">Loading player stats…</span>
@@ -139,14 +140,14 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
             it&apos;s asking Best Coast Pairings for them the first time.
           </p>
         )}
-      </div>
+      </Card>
     );
   }
 
   if (!stats || !stats.linked || stats.totalEvents === 0) return null;
 
   return (
-    <div className="rounded-lg border border-surface-border bg-surface-1 p-4 shadow-sm">
+    <Card className="p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-text-primary">Player stats</h2>
@@ -203,6 +204,6 @@ export default function PlayerStatsPanel({ bcpUserId }: PlayerStatsPanelProps) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

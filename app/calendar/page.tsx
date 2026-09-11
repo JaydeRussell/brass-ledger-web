@@ -1,12 +1,15 @@
 "use client";
 import React from "react";
 
-import HamburgerButton from "../components/nav/hamburgerButton";
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
 import EventList from "../components/myEvents/eventList";
 import MonthGrid from "../components/calendar/monthGrid";
 import Spinner from "../components/shared/spinner";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
+import Card from "../components/ui/card";
+import ErrorAlert from "../components/ui/errorAlert";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
@@ -74,19 +77,14 @@ export default function CalendarPage() {
   const upcoming: MyEvent[] = events ? [...events.present, ...events.future] : [];
 
   return (
-    <div className="min-h-screen bg-surface-0">
-      <header className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 pb-2 sm:pt-8">
-        <HamburgerButton />
-        <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-          Calendar
-        </h1>
-      </header>
+    <div className="flex-1 bg-surface-0">
+      <PageHeader title="Calendar" />
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
+      <PageMain>
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : !bcpUserId || changingProfile ? (
-          <div className="rounded-lg border border-surface-border bg-surface-1 p-4">
+          <Card className="p-4">
             <BcpProfileLinker
               onLinked={(id) => {
                 setUser((prev) => (prev ? { ...prev, bcpUserId: id } : prev));
@@ -102,7 +100,7 @@ export default function CalendarPage() {
                 Cancel
               </button>
             )}
-          </div>
+          </Card>
         ) : (
           <>
             <div className="flex justify-end">
@@ -129,11 +127,7 @@ export default function CalendarPage() {
                 )}
               </div>
             )}
-            {loadError && (
-              <div role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-600 dark:text-danger-400">
-                Couldn&apos;t load events: {loadError}
-              </div>
-            )}
+            {loadError && <ErrorAlert>Couldn&apos;t load events: {loadError}</ErrorAlert>}
             {!loading && !loadError && (
               <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
                 <div className="lg:flex-1">
@@ -149,7 +143,7 @@ export default function CalendarPage() {
             )}
           </>
         )}
-      </main>
+      </PageMain>
     </div>
   );
 }

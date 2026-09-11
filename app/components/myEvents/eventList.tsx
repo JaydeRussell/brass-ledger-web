@@ -3,6 +3,7 @@ import React from "react";
 import Link from "next/link";
 import type { MyEvent } from "../../lib/myEvents";
 import { formatDateRange } from "../../lib/eventDates";
+import Card from "../ui/card";
 
 /**
  * "Live now" for an event whose own date range covers this moment,
@@ -67,46 +68,48 @@ function EventCard({ event }: { event: MyEvent }) {
   const countdown = formatCountdown(event.startDate, event.endDate);
 
   return (
-    <li className="rounded-lg border border-surface-border bg-surface-1">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        className="w-full p-3 text-left"
-      >
-        <div className="truncate text-sm font-medium text-text-primary">
-          {event.eventName}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
-          {countdown && (
-            <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-600 dark:text-brass-400">
-              {countdown}
-            </span>
-          )}
-          {dateRange && <span>{dateRange}</span>}
-          {placingDetail && <span>{placingDetail}</span>}
-          {event.faction && <span>{event.faction}</span>}
-          {event.team && <span className="truncate">{event.team}</span>}
-        </div>
-      </button>
+    <li>
+      <Card>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="w-full p-3 text-left"
+        >
+          <div className="truncate text-sm font-medium text-text-primary">
+            {event.eventName}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
+            {countdown && (
+              <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-600 dark:text-brass-400">
+                {countdown}
+              </span>
+            )}
+            {dateRange && <span>{dateRange}</span>}
+            {placingDetail && <span>{placingDetail}</span>}
+            {event.faction && <span>{event.faction}</span>}
+            {event.team && <span className="truncate">{event.team}</span>}
+          </div>
+        </button>
 
-      {expanded && (
-        <div className="border-t border-surface-border px-3 pb-3 pt-2">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-            <OverviewRow label="Status" value={countdown} />
-            <OverviewRow label="Dates" value={dateRange} />
-            <OverviewRow label="Result" value={placingDetail} />
-            <OverviewRow label="Faction" value={event.faction} />
-            <OverviewRow label="Team" value={event.team} />
-          </dl>
-          <Link
-            href={`/?event=${encodeURIComponent(event.eventId)}`}
-            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
-          >
-            View event page →
-          </Link>
-        </div>
-      )}
+        {expanded && (
+          <div className="border-t border-surface-border px-3 pb-3 pt-2">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+              <OverviewRow label="Status" value={countdown} />
+              <OverviewRow label="Dates" value={dateRange} />
+              <OverviewRow label="Result" value={placingDetail} />
+              <OverviewRow label="Faction" value={event.faction} />
+              <OverviewRow label="Team" value={event.team} />
+            </dl>
+            <Link
+              href={`/?event=${encodeURIComponent(event.eventId)}`}
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
+            >
+              View event page →
+            </Link>
+          </div>
+        )}
+      </Card>
     </li>
   );
 }
