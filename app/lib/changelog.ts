@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.6.1",
+    date: "2026-09-11",
+    title: "Backend housekeeping",
+    highlights: [
+      "Bumped the backend's Go toolchain to 1.27 and cleaned up several code patterns the new version's tooling flagged — no user-visible change.",
+    ],
+  },
+  {
     version: "0.6.0",
     date: "2026-09-10",
     title: "Player profiles and manual refresh",
