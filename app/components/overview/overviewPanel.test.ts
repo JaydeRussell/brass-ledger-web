@@ -131,3 +131,36 @@ test("shows event facts (dates, location, organizer) only when present", () => {
   assert.ok(!withoutFacts.includes("Location"));
   assert.ok(!withoutFacts.includes("Organizer"));
 });
+
+test("renders a 'Your round' card first when myRound is supplied", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(OverviewPanel, {
+      eventInfo: baseEvent,
+      myRound: {
+        round: 2,
+        loading: false,
+        error: null,
+        pairing: { round: 2, table: 7, published: true, isDone: false, opponentName: "Rival" },
+        board: null,
+        players: [],
+      },
+      following: [],
+      onGoToRoster: () => {},
+      onGoToPairings: () => {},
+    })
+  );
+  assert.match(html, /Your round/);
+  assert.match(html, /Table 7/);
+});
+
+test("omits the 'Your round' card when myRound is absent", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(OverviewPanel, {
+      eventInfo: baseEvent,
+      following: [],
+      onGoToRoster: () => {},
+      onGoToPairings: () => {},
+    })
+  );
+  assert.ok(!html.includes("Your round"));
+});

@@ -1,5 +1,6 @@
 "use client";
-import type { EventInfo, MyPairing } from "../../lib/bcp";
+import type { EventInfo, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
+import MyRoundCard from "../pairings/myRoundCard";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import Button from "../ui/button";
@@ -11,8 +12,23 @@ type FollowedSummary = {
   pairings: MyPairing[];
 };
 
+// The signed-in account's own current-round pairing — see myRoundCard.tsx.
+// Absent (undefined/null) whenever there's nothing to auto-detect (signed
+// out, no linked BCP profile, not on this event's roster, or the event
+// hasn't started), in which case OverviewPanel renders exactly as before.
+type MyRoundSummary = {
+  round: number;
+  loading: boolean;
+  error: string | null;
+  pairing: MyPairing | null;
+  board: TeamBoardMatchup | null;
+  myBcpUserId?: string;
+  players: Player[];
+};
+
 type OverviewPanelProps = {
   eventInfo: EventInfo | null;
+  myRound?: MyRoundSummary | null;
   following: FollowedSummary[];
   onGoToRoster: () => void;
   onGoToPairings: () => void;
@@ -48,6 +64,7 @@ function FactRow({ label, value }: { label: string; value?: string }) {
  */
 export default function OverviewPanel({
   eventInfo,
+  myRound,
   following,
   onGoToRoster,
   onGoToPairings,
@@ -57,6 +74,18 @@ export default function OverviewPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {myRound && (
+        <MyRoundCard
+          loading={myRound.loading}
+          error={myRound.error}
+          round={myRound.round}
+          pairing={myRound.pairing}
+          board={myRound.board}
+          myBcpUserId={myRound.myBcpUserId}
+          players={myRound.players}
+        />
+      )}
+
       <Card className="p-4 shadow-sm">
         {eventInfo ? (
           <>

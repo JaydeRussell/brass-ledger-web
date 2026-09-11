@@ -82,8 +82,13 @@ the top-level git-safety rules), this is an explicit action, not a default.
 4. Commit (only the work itself, or the version/changelog bump — whichever
    the user actually asked for) in whichever repo(s) have real changes.
 5. Tag that commit `vX.Y.Z` (`git tag vX.Y.Z`) in every repo that has a
-   commit for this release — a purely local tag; only push it (`git push
-   --tags` / `git push <remote> vX.Y.Z`) if the user also asks to push.
+   commit for this release — a purely local tag at first.
+6. Once the PR/MR carrying that commit is merged, push the tag (`git push
+   <remote> vX.Y.Z`) in that repo — standing permission, no need to ask
+   again each time. Still don't push a tag before its commit is merged,
+   and still don't push tags on request alone outside this merged-PR
+   trigger (e.g. someone asks to "tag it" without merging anything) —
+   ask first in that case.
 
 v0.1.0 through v0.5.0 were assigned retroactively (2026-09-10) by grouping
 this project's existing commit history into the milestones the "Current

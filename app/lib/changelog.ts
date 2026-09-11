@@ -23,6 +23,16 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.7.0",
+    date: "2026-09-11",
+    title: "Your round, at a glance",
+    highlights: [
+      "The Overview tab now shows a \"Your round\" card automatically for a signed-in account with a linked BCP profile on that event's roster — current round, table, and opponent, no need to follow yourself first.",
+      "For a team event, it finds your own individual board once BCP publishes it, not just your team's overall matchup.",
+      "Your opponent's faction (for this event) and full stats — ITC ranking, best placings, faction history — now show right on that same card.",
+    ],
+  },
+  {
     version: "0.6.1",
     date: "2026-09-11",
     title: "Backend housekeeping",
