@@ -42,14 +42,26 @@ jobs:
       # suite once more with Node's own coverage flag (not folded into the
       # `npm test` step above, since coverage output is noisier and not
       # wanted on every local run) and takes the "all files" row's line-%
-      # column as the single headline number. Written as a shields.io
-      # "endpoint" JSON file, committed back to main only. README badge
-      # points at it via https://img.shields.io/endpoint?url=<raw file URL>
-      - name: Compute coverage badge
+      # column as the single headline number.
+      #
+      # Published to a dedicated, UNPROTECTED `badges` branch — not
+      # committed to main. First attempt tried committing straight to
+      # main and got rejected: this repo's branch protection requires a
+      # PR + passing status checks for every change to main, and that
+      # applies even to a push made with the workflow's own token, no
+      # bot exception. `badges` holds nothing but this one generated
+      # file with no real history worth keeping, so each run just
+      # force-pushes a fresh single commit rather than tracking history
+      # or diffing against the last one.
+      # README badge points at it via shields.io's endpoint format:
+      # https://img.shields.io/endpoint?url=<raw file URL on the badges branch>
+      - name: Publish coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         # A hiccup in badge generation is a cosmetic problem, not a
         # reason to fail this job (and block the deploy gated on it).
         continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           node --experimental-strip-types --experimental-loader=./scripts/tsx-test-loader.mjs \
@@ -63,26 +75,16 @@ jobs:
           elif awk_ge "$pct" 60; then color="yellow"
           elif awk_ge "$pct" 50; then color="orange"
           fi
-          mkdir -p .github/badges
-          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$pct" "$color" > .github/badges/coverage.json
-      - name: Commit coverage badge
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          git add .github/badges/coverage.json
-          # --cached (staged vs. HEAD), not a plain `git diff`, which
-          # silently ignores untracked files entirely — that bug is
-          # exactly why this never committed the badge's first run: the
-          # file was brand new, so a plain `git diff --quiet` reported
-          # "no changes" and skipped straight past the commit below.
-          if git diff --cached --quiet -- .github/badges/coverage.json; then
-            exit 0
-          fi
+          rm -rf /tmp/badges-publish
+          mkdir -p /tmp/badges-publish
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$pct" "$color" > /tmp/badges-publish/coverage.json
+          cd /tmp/badges-publish
+          git init -q
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update coverage badge [skip ci]"
-          git push
+          git add coverage.json
+          git commit -q -m "Update coverage badge [skip ci]"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:badges
 
   # Only on a real push to main, not PRs — a PR from a fork wouldn't
   # have access to the deploy secrets anyway, and we don't want every PR
