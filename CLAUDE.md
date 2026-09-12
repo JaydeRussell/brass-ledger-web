@@ -305,7 +305,14 @@ stale, rather than appending to it forever.
   `localStorage` only, unchanged. "Notes" was never actually specced
   beyond the old TODO-list mention — nothing planned there unless raised
   again.
-- No CI yet.
+- ~~No CI yet.~~ **Stale as of 2026-09-12** — GitHub Actions CI/CD has
+  existed since early this session (`.github/workflows/ci.yml`): lint/
+  test/build/npm-audit on every push and PR, then an
+  auto-deploy-to-Cloudflare-via-vinext-with-smoke-test job on every push
+  to `main`, gated on `test` passing. `test` is a required status check
+  on `main`'s branch protection. Dependabot
+  (`.github/dependabot.yml`) keeps npm packages and Actions versions
+  current on a weekly cadence.
 
 ## Environment quirks that will trip up a new session
 

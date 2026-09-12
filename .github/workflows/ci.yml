@@ -21,6 +21,15 @@ jobs:
       # works — the actual deploy build below is vinext's, but this is
       # the cheapest way to catch a regular Next.js regression too.
       - run: npm run build
+      # Gated at "high" rather than every advisory: a moderate/low finding
+      # in some transitive build-tool dependency (eslint's own toolchain,
+      # tailwindcss's browserslist, etc.) shows up often in this ecosystem
+      # and frequently has no fix yet — failing CI over those would just
+      # train everyone to ignore this check. High/critical (the ones that
+      # were actually live here — see the 2026-09-12 dependency bump
+      # commit, which found real RCE/SSRF-class Next.js CVEs this way)
+      # still blocks.
+      - run: npm audit --audit-level=high
 
   # Only on a real push to main, not PRs — a PR from a fork wouldn't
   # have access to the deploy secrets anyway, and we don't want every PR
