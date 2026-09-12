@@ -48,3 +48,36 @@ test("handles every result being tied without a zero-height scale", () => {
   // y-domain to a single value and dividing by zero when scaling).
   assert.doesNotThrow(() => renderToStaticMarkup(React.createElement(PlacingTrendChart, { points: tied })));
 });
+
+test("the Percentile toggle is disabled when no event published a field size", () => {
+  const html = renderToStaticMarkup(React.createElement(PlacingTrendChart, { points }));
+  const percentileButton = html.match(/<button[^>]*>Percentile<\/button>/)?.[0];
+  assert.ok(percentileButton, "expected a Percentile toggle button");
+  assert.match(percentileButton!, /disabled=""/);
+});
+
+test("the Percentile toggle is enabled once at least one event has a field size", () => {
+  const withFieldSize: PlacingHistoryPoint[] = [
+    { ...points[0], fieldSize: 20 },
+    points[1],
+  ];
+  const html = renderToStaticMarkup(React.createElement(PlacingTrendChart, { points: withFieldSize }));
+  const percentileButton = html.match(/<button[^>]*>Percentile<\/button>/)?.[0];
+  assert.ok(percentileButton, "expected a Percentile toggle button");
+  assert.ok(!percentileButton!.includes('disabled=""'));
+});
+
+test("axis tick labels default to plain placing numbers, not percentages", () => {
+  const html = renderToStaticMarkup(React.createElement(PlacingTrendChart, { points }));
+  const tickTexts = [...html.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
+  assert.ok(tickTexts.length > 0, "expected at least one axis tick label");
+  assert.ok(
+    tickTexts.every((t) => !t.includes("%")),
+    `placing mode ticks shouldn't be percent-formatted, got ${JSON.stringify(tickTexts)}`
+  );
+});
+
+test("shows a lower-is-better caption naming the active metric", () => {
+  const html = renderToStaticMarkup(React.createElement(PlacingTrendChart, { points }));
+  assert.match(html, /Placing · lower is better/);
+});
