@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import Link from "next/link";
 import type { MyEvent } from "../../lib/myEvents";
 import { formatDateRange } from "../../lib/eventDates";
@@ -35,31 +34,19 @@ function formatCountdown(startDate?: string, endDate?: string): string | undefin
   return `Starts in ${Math.round(diffHour / 24)}d`;
 }
 
-// One (label, value) row of the expanded overview below — skipped
-// entirely when there's no value, same as the collapsed summary line's
-// conditional spans.
-function OverviewRow({ label, value }: { label: string; value?: string }) {
-  if (!value) return null;
-  return (
-    <>
-      <dt className="text-text-tertiary">{label}</dt>
-      <dd className="min-w-0 truncate text-text-secondary">{value}</dd>
-    </>
-  );
-}
-
 /**
- * One event card. Collapsed by default, showing the same one-line
- * summary this always has; the first click expands it in place to show
- * that same summary as a small overview plus a link to the event's own
- * page (app/page.tsx, opened to this event via its `?event=` query
- * param — see that file's dedicated hydration effect for how it's
- * consumed and then stripped back out of the URL). Clicking again
- * collapses it — same toggle-button pattern as eventSettings.tsx's gear
- * button, just without a floating panel.
+ * One event card: the summary line (name, countdown/status, dates,
+ * placing, faction, team) plus a direct link to the event's own page
+ * (app/page.tsx, opened to this event via its `?event=` query param —
+ * see that file's dedicated hydration effect for how it's consumed and
+ * then stripped back out of the URL).
+ *
+ * This used to hide the link behind a click-to-expand step that only
+ * ever revealed "Status" and "Dates" — both already visible right here
+ * on the collapsed line — plus the link itself. That extra click added
+ * nothing, so the link now sits directly on the card instead.
  */
 function EventCard({ event }: { event: MyEvent }) {
-  const [expanded, setExpanded] = React.useState(false);
   const dateRange = formatDateRange(event.startDate, event.endDate);
   const placingDetail =
     event.placing != null
@@ -69,46 +56,25 @@ function EventCard({ event }: { event: MyEvent }) {
 
   return (
     <li>
-      <Card>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="w-full p-3 text-left"
+      <Card className="p-3">
+        <div className="truncate text-sm font-medium text-text-primary">{event.eventName}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
+          {countdown && (
+            <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-600 dark:text-brass-400">
+              {countdown}
+            </span>
+          )}
+          {dateRange && <span>{dateRange}</span>}
+          {placingDetail && <span>{placingDetail}</span>}
+          {event.faction && <span>{event.faction}</span>}
+          {event.team && <span className="truncate">{event.team}</span>}
+        </div>
+        <Link
+          href={`/?event=${encodeURIComponent(event.eventId)}`}
+          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
         >
-          <div className="truncate text-sm font-medium text-text-primary">
-            {event.eventName}
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
-            {countdown && (
-              <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-600 dark:text-brass-400">
-                {countdown}
-              </span>
-            )}
-            {dateRange && <span>{dateRange}</span>}
-            {placingDetail && <span>{placingDetail}</span>}
-            {event.faction && <span>{event.faction}</span>}
-            {event.team && <span className="truncate">{event.team}</span>}
-          </div>
-        </button>
-
-        {expanded && (
-          <div className="border-t border-surface-border px-3 pb-3 pt-2">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-              <OverviewRow label="Status" value={countdown} />
-              <OverviewRow label="Dates" value={dateRange} />
-              <OverviewRow label="Result" value={placingDetail} />
-              <OverviewRow label="Faction" value={event.faction} />
-              <OverviewRow label="Team" value={event.team} />
-            </dl>
-            <Link
-              href={`/?event=${encodeURIComponent(event.eventId)}`}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
-            >
-              View event page →
-            </Link>
-          </div>
-        )}
+          View event page →
+        </Link>
       </Card>
     </li>
   );

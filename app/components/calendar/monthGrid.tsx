@@ -68,7 +68,7 @@ function DayCell({ day, isToday, names }: { day: number; isToday: boolean; names
             {names[0]}
           </span>
           {names.length > 1 && (
-            <span className="text-[10px] text-text-tertiary">
+            <span title={names.slice(1).join(", ")} className="text-[10px] text-text-tertiary">
               +{names.length - 1} more
             </span>
           )}
