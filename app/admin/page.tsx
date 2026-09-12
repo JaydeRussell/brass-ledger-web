@@ -7,12 +7,31 @@ import Spinner from "../components/shared/spinner";
 import Badge from "../components/ui/badge";
 import Button from "../components/ui/button";
 import Card from "../components/ui/card";
+import ConfirmDialog from "../components/ui/confirmDialog";
 import ErrorAlert from "../components/ui/errorAlert";
+import { Tabs, type TabItem } from "../components/ui/tabs";
 import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 import { fetchAdminUsers, approveUser, rejectUser, setUserRole, type AdminUser } from "../lib/adminUsers";
+
+type StatusTabKey = "all" | AdminUser["status"];
+const STATUS_TABS: StatusTabKey[] = ["all", "pending", "approved", "rejected"];
+const STATUS_TAB_LABELS: Record<StatusTabKey, string> = {
+  all: "All",
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
+// A plain, case-insensitive substring match over name/email — same
+// pattern as page.tsx's own matchesSearch for Roster/Pairings/Placings.
+function matchesSearch(user: AdminUser, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return user.name.toLowerCase().includes(q) || user.email.toLowerCase().includes(q);
+}
 
 function initials(name: string): string {
   return (
@@ -37,11 +56,19 @@ type RowState = { saving: boolean; error: string | null };
 /**
  * The one admin-only surface in this app: list every account and
  * approve/reject/re-role them (see internal/api/admin.go — the backend
- * for this has existed since the roles/access-control work, with no
- * frontend until now). A single pending-first list, not per-status
- * tabs — the backend already sorts it that way, so this is one queue to
- * work through rather than several silos.
+ * for this has existed since the roles/access-control work). Fetches
+ * the full list in one call (already small, seed-data-sized) and
+ * filters/tabs it client-side — status tabs (All/Pending/Approved/
+ * Rejected) and a name/email search, so a batch of new sign-ups after
+ * an event is easy to work through without scrolling past every
+ * already-decided account.
  *
+ * Reject has an explicit confirm step (ConfirmDialog) since it's a
+ * one-way action a new user can't self-recover from — Approve and the
+ * role toggle stay a single click, matching how the rest of this app
+ * only asks twice for something hard to undo.
+ *
+
  * Gating is layered, in order: signed-out -> /login (shared with every
  * other page). Signed-in but not an admin -> redirect to / rather than
  * showing this page's own AccessStatusMessage, which would misleadingly
@@ -66,6 +93,12 @@ export default function AdminPage() {
   const [users, setUsers] = React.useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [rowStates, setRowStates] = React.useState<Record<number, RowState>>({});
+  const [statusTab, setStatusTab] = React.useState<StatusTabKey>("all");
+  const [search, setSearch] = React.useState("");
+  // The row a Reject click is waiting on confirmation for — null means no
+  // dialog open. Holding the whole row (not just an id) lets the dialog
+  // show the account's name without a second lookup.
+  const [confirmReject, setConfirmReject] = React.useState<AdminUser | null>(null);
 
   const load = React.useCallback(() => {
     setLoadError(null);
@@ -98,6 +131,10 @@ export default function AdminPage() {
       setRowState(id, { saving: false, error: err instanceof Error ? err.message : String(err) });
     }
   }
+
+  const filteredUsers = (users ?? []).filter(
+    (u) => (statusTab === "all" || u.status === statusTab) && matchesSearch(u, search)
+  );
 
   if (!checked || !user || !isAdmin) {
     // Either still checking, about to be redirected (signed-out or
@@ -133,57 +170,105 @@ export default function AdminPage() {
           <p className="p-4 text-sm text-text-secondary">No accounts found.</p>
         ) : (
           <>
-            {/* Table layout at sm+; a stacked card list below that, same
-                "two renders, CSS picks which shows" approach as elsewhere
-                in this app for a data-dense view that doesn't survive a
-                phone-width table well (unlike PlacingsTable's few, purely
-                numeric columns, this row has real interactive controls
-                that need room, not just a horizontal scroll). */}
-            <Card className="hidden overflow-hidden shadow-sm sm:block">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-surface-border bg-surface-2 text-left text-xs text-text-secondary">
-                    <th className="px-3 py-2 font-medium">Account</th>
-                    <th className="px-3 py-2 font-medium">BCP</th>
-                    <th className="px-3 py-2 font-medium">Role</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((row) => (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border">
+              <Tabs
+                value={statusTab}
+                onValueChange={setStatusTab}
+                label="Account status"
+                tabs={STATUS_TABS.map(
+                  (tab): TabItem<StatusTabKey> => ({
+                    value: tab,
+                    label: `${STATUS_TAB_LABELS[tab]} (${
+                      users.filter((u) => tab === "all" || u.status === tab).length
+                    })`,
+                  })
+                )}
+              />
+            </div>
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or email…"
+              className="w-full rounded-md border border-surface-border bg-surface-0 px-3 py-2 text-sm text-text-primary outline-none focus:border-brass-500"
+            />
+
+            {filteredUsers.length === 0 ? (
+              <p className="p-4 text-sm text-text-secondary">No accounts match.</p>
+            ) : (
+              <>
+                {/* Table layout at sm+; a stacked card list below that, same
+                    "two renders, CSS picks which shows" approach as elsewhere
+                    in this app for a data-dense view that doesn't survive a
+                    phone-width table well (unlike PlacingsTable's few, purely
+                    numeric columns, this row has real interactive controls
+                    that need room, not just a horizontal scroll). */}
+                <Card className="hidden overflow-hidden shadow-sm sm:block">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-surface-border bg-surface-2 text-left text-xs text-text-secondary">
+                        <th className="px-3 py-2 font-medium">Account</th>
+                        <th className="px-3 py-2 font-medium">BCP</th>
+                        <th className="px-3 py-2 font-medium">Role</th>
+                        <th className="px-3 py-2 font-medium">Status</th>
+                        <th className="px-3 py-2 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map((row) => (
+                        <AdminRow
+                          key={row.id}
+                          row={row}
+                          isSelf={row.id === user.id}
+                          rowState={rowStates[row.id]}
+                          onApprove={() => mutateRow(row.id, { status: "approved" }, () => approveUser(row.id))}
+                          onReject={() => setConfirmReject(row)}
+                          onSetRole={(role) => mutateRow(row.id, { role }, () => setUserRole(row.id, role))}
+                          layout="table"
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+
+                <div className="flex flex-col gap-2 sm:hidden">
+                  {filteredUsers.map((row) => (
                     <AdminRow
                       key={row.id}
                       row={row}
                       isSelf={row.id === user.id}
                       rowState={rowStates[row.id]}
                       onApprove={() => mutateRow(row.id, { status: "approved" }, () => approveUser(row.id))}
-                      onReject={() => mutateRow(row.id, { status: "rejected" }, () => rejectUser(row.id))}
+                      onReject={() => setConfirmReject(row)}
                       onSetRole={(role) => mutateRow(row.id, { role }, () => setUserRole(row.id, role))}
-                      layout="table"
+                      layout="card"
                     />
                   ))}
-                </tbody>
-              </table>
-            </Card>
-
-            <div className="flex flex-col gap-2 sm:hidden">
-              {users.map((row) => (
-                <AdminRow
-                  key={row.id}
-                  row={row}
-                  isSelf={row.id === user.id}
-                  rowState={rowStates[row.id]}
-                  onApprove={() => mutateRow(row.id, { status: "approved" }, () => approveUser(row.id))}
-                  onReject={() => mutateRow(row.id, { status: "rejected" }, () => rejectUser(row.id))}
-                  onSetRole={(role) => mutateRow(row.id, { role }, () => setUserRole(row.id, role))}
-                  layout="card"
-                />
-              ))}
-            </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </PageMain>
+
+      <ConfirmDialog
+        open={confirmReject !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmReject(null);
+        }}
+        title="Reject this account?"
+        description={
+          confirmReject
+            ? `${confirmReject.name} (${confirmReject.email}) won't be able to sign back in unless approved again later.`
+            : undefined
+        }
+        confirmLabel="Reject"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (!confirmReject) return;
+          mutateRow(confirmReject.id, { status: "rejected" }, () => rejectUser(confirmReject.id));
+        }}
+      />
     </div>
   );
 }
