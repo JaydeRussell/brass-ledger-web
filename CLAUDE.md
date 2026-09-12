@@ -121,7 +121,7 @@ stale, rather than appending to it forever.
   events (auth status checks, sign-out attempts, uncaught
   errors/unhandled rejections via `app/components/shared/clientErrorLogger.tsx`,
   mounted in `app/layout.tsx`) to `app/api/log/route.ts`, which appends
-  them to `logs/frontend.log` (see the README's "Logging" section).
+  them to `logs/frontend.log` (`LOG_FILE`, see `.env.example`).
   Backend has the equivalent (`logs/backend.log`) — the two are meant to
   be read together when debugging a failed sign-in.
 - **Navigation** — a left-hand hamburger menu replaced the old
