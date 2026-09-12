@@ -18,46 +18,38 @@ roadmap item that brushes up against that needs to stay on the
 ## Ideas
 
 Sourced from a 2026-09-11 thought experiment: "what would I want as a
-player using this app live at a tournament?" All five stay on the
-already-published-BCP-data side of the scope line. Three have since
-shipped — see the changelog, not this list, for what they turned into.
+player using this app live at a tournament?" All five stayed on the
+already-published-BCP-data side of the scope line; all five are now
+resolved (shipped or declined) — see the changelog and "Declined" below
+for what happened to each. Nothing queued here right now; add a new idea
+above this line when one comes up.
 
-Scored 1–10 on **effort** (build cost, given what's already fetched/
-built) and **usefulness** (value to a player at a live event), ranked by
-usefulness-per-effort — highest-leverage first, not necessarily
-highest-usefulness first.
+## Declined
 
-### 1. Notification nudge for new data
-**Effort: 8/10 · Usefulness: 8/10**
+Not dropped because it shipped (see "Done / promoted" below) — dropped
+because it can't be built within this project's own rules. Kept here,
+unlike a shipped item, so a future session doesn't re-propose the same
+thing without the context of why it didn't happen.
 
-A push (or at least in-app) notification when pairings post or a result
-comes in, instead of manually mashing refresh. Needs a service worker, a
-push-subscription store, permission UX, and a backend job comparing old
-vs. new cached data per linked event before it can decide to send
-anything. A lighter in-app-only version (toast when the tab is already
-open, no push infra) would cut this to roughly a 3, at the cost of only
-working when the app's already open. Its service-worker infra is
-deliberately deferred to the user's planned mobile-app work (see the
-resilience item's note in the changelog for v0.8.0) rather than built
-standalone for the web app now.
+**Notification nudge for new data** (2026-09-11): true push
+notifications need a backend job periodically re-checking BCP with
+nobody actively using the app — a direct conflict with both repos'
+"no polling / fetch on page load and explicit user action only" rule,
+not just a high-effort feature. A narrower, technically-compliant
+version was proposed (frontend polls its own backend, not BCP, capped
+interval, only for the open event, only while the tab is visible) and
+declined too — "a bit too loose with our rules." A fully-compliant
+fallback exists (toast triggered only when the tab regains focus, no
+timer at all) but wasn't pursued either; the whole idea was dropped
+rather than built in a diminished form.
 
-### 2. Personal trend view
-**Effort: 6/10 · Usefulness: 6/10**
-
-Extend the existing player-stats page with placing/points-over-time
-trends (cheap — reuses the placings history already fetched there) and
-win-rate by opponent faction (expensive — placings history is event-
-level standings, not round-by-round results, so faction-matchup trends
-need a new historical pairings fetch across every past event). The 6/10
-effort reflects doing both; the placing-trend half alone would be closer
-to a 3.
-
-### Ranked (usefulness ÷ effort)
-
-| Rank | Feature | Effort | Usefulness |
-|---|---|---|---|
-| 1 | Notification nudge for new data | 8 | 8 |
-| 2 | Personal trend view | 6 | 6 |
+**Win-rate by opponent faction** (half of "Personal trend view",
+2026-09-11): reconstructing this needs a full round-by-round pairings
+fetch across every past event — the same "hundreds of extra BCP
+requests for one stat" cost `internal/api/stats.go`'s `StatsHandler` doc
+comment had already declined once before, for the same reason. The
+other half of that idea (placing/points over time) had no such
+conflict and shipped — see the changelog for v0.9.0.
 
 ## Done / promoted
 

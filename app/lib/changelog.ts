@@ -23,6 +23,15 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.9.0",
+    date: "2026-09-11",
+    title: "Placing trends on the stats page",
+    highlights: [
+      "Player Stats now shows a placing-over-time chart once you've got at least two concluded events — hover any point for that event's name, date, and points, or expand it into a plain table.",
+      "Win-rate by opponent faction (the other half of this idea) stays off the table — reconstructing it needs a full round-by-round pairings fetch across every past event, hundreds of extra requests for one stat, the same cost this app already declined once before; see ROADMAP.md.",
+    ],
+  },
+  {
     version: "0.8.0",
     date: "2026-09-11",
     title: "Resilience on bad venue wifi",

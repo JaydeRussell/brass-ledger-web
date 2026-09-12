@@ -46,6 +46,27 @@ export type PlacingWithField = {
 };
 
 /**
+ * One already-concluded event's placing, for the placing-over-time trend
+ * (see internal/api/stats.go's placingHistoryPoint). `history` on
+ * MyStats below is chronological (oldest first) — the reverse of most
+ * other BCP-derived lists in this app, which read newest-first — since a
+ * trend chart reads left-to-right as time passing.
+ *
+ * `points` rides along for a tooltip detail only — it's not meant to be
+ * plotted itself, since BCP's scoring scale varies by event format (a
+ * battle-points GT and a primary/secondary RTT don't mean the same "90
+ * points"), unlike placing, which is comparable across every event.
+ */
+export type PlacingHistoryPoint = {
+  eventId: string;
+  eventName: string;
+  eventDate: string;
+  placing: number;
+  points?: number;
+  fieldSize?: number;
+};
+
+/**
  * The signed-in account's player-stats summary (see
  * internal/api/stats.go's playerStatsResponse). `linked` is false — with
  * every other field empty/zero — for an account that hasn't pasted a BCP
@@ -70,6 +91,7 @@ export type MyStats = {
   factions: FactionStat[];
   mostRecentEventId?: string;
   competingSince?: string;
+  history: PlacingHistoryPoint[];
 };
 
 export async function fetchMyStats(): Promise<MyStats> {
