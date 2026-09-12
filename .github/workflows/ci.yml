@@ -9,6 +9,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # contents: write is only actually exercised by the "Commit coverage
+    # badge" step below, and only on a push to main — needed so that step
+    # can push using the default GITHUB_TOKEN. A push made with that
+    # token doesn't itself trigger another workflow run, so this can't
+    # loop.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -30,6 +37,47 @@ jobs:
       # commit, which found real RCE/SSRF-class Next.js CVEs this way)
       # still blocks.
       - run: npm audit --audit-level=high
+      # Self-hosted coverage badge — no external service/account (unlike
+      # Codecov) needed, same approach as the backend repo. Re-runs the
+      # suite once more with Node's own coverage flag (not folded into the
+      # `npm test` step above, since coverage output is noisier and not
+      # wanted on every local run) and takes the "all files" row's line-%
+      # column as the single headline number. Written as a shields.io
+      # "endpoint" JSON file, committed back to main only. README badge
+      # points at it via https://img.shields.io/endpoint?url=<raw file URL>
+      - name: Compute coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        # A hiccup in badge generation is a cosmetic problem, not a
+        # reason to fail this job (and block the deploy gated on it).
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --experimental-loader=./scripts/tsx-test-loader.mjs \
+            --experimental-test-module-mocks --experimental-test-coverage --test > /tmp/coverage.txt 2>&1 || true
+          pct="$(grep '^ℹ all files' /tmp/coverage.txt | awk -F'|' '{print $2}' | tr -d ' ')"
+          color="red"
+          awk_ge() { awk -v a="$1" -v b="$2" 'BEGIN{exit !(a>=b)}'; }
+          if awk_ge "$pct" 90; then color="brightgreen"
+          elif awk_ge "$pct" 80; then color="green"
+          elif awk_ge "$pct" 70; then color="yellowgreen"
+          elif awk_ge "$pct" 60; then color="yellow"
+          elif awk_ge "$pct" 50; then color="orange"
+          fi
+          mkdir -p .github/badges
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$pct" "$color" > .github/badges/coverage.json
+      - name: Commit coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- .github/badges/coverage.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/coverage.json
+          git commit -m "Update coverage badge [skip ci]"
+          git push
 
   # Only on a real push to main, not PRs — a PR from a fork wouldn't
   # have access to the deploy secrets anyway, and we don't want every PR

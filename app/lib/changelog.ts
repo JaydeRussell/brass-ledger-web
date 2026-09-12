@@ -1,8 +1,8 @@
 // The content behind /changelog (and the footer's version link) —
 // deliberately a typed data module, not a literal .md/.txt file read at
-// request time: this app deploys live to Cloudflare Workers via vinext
-// (see README's "Deploying to Cloudflare"), which has no filesystem to
-// read from at runtime, and the project also builds under plain
+// request time: this app deploys live to Cloudflare Workers via vinext,
+// which has no filesystem to read from at runtime, and the project also
+// builds under plain
 // Next.js/Turbopack locally — a static import is the one thing both
 // pipelines are guaranteed to handle identically, the same reasoning
 // footer.tsx already relies on for importing package.json directly

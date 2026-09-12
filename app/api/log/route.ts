@@ -5,8 +5,8 @@
 // console isn't something anyone can read back later, so this route
 // lets the client hand a log line to the Next.js server process, which
 // appends it to a plain file on disk (LOG_FILE, alongside the backend's
-// own log file — see that repo's internal/applog and README's "Logging"
-// section for the matching half of this).
+// own log file — see that repo's internal/applog for the matching half
+// of this).
 //
 // Best-effort and intentionally low-ceremony: never throws back to the
 // client in a way that could itself trigger another logged error, and
