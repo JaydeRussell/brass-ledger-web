@@ -64,6 +64,28 @@ test("lists one row per round up to upToRound, published or not", () => {
   assert.match(html, /Not published yet/);
 });
 
+test("surfaces the opponent's faction, disposition, and list link on a published round row (roadmap #8)", () => {
+  const pairings: MyPairing[] = [
+    { round: 1, published: true, isDone: false, opponentName: "Rival", opponentUserId: "u-rival" },
+  ];
+  const players: Player[] = [
+    {
+      id: "p1",
+      name: "Rival",
+      faction: "Necrons",
+      disposition: "Purge the Foe",
+      list: "https://example.com/list.pdf",
+      bcpUserId: "u-rival",
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyPairings, { ...baseProps, pairings, upToRound: 1, players })
+  );
+  assert.match(html, /\(Necrons\)/);
+  assert.match(html, /Purge the Foe/);
+  assert.match(html, /href="https:\/\/example\.com\/list\.pdf"/);
+});
+
 test("shows an Unfollow button and the followed side's own ITC badge when given", () => {
   const html = renderToStaticMarkup(
     React.createElement(MyPairings, {

@@ -1,10 +1,12 @@
 "use client";
+import React from "react";
 import type { PlacingEntry } from "../../lib/bcp";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
+import TeamRosterList from "../pairings/teamRosterList";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type PlacingsTableProps = {
@@ -20,7 +22,86 @@ type PlacingsTableProps = {
   // RoundBoard's onRefresh — no polling/live-update timer (see CLAUDE.md),
   // just an explicit manual check.
   onRefresh: () => void;
+  // For a team event, a row's own entry.id is that team's teamPlayerId
+  // (see PlacingEntry's doc comment) — looked up here to let a row
+  // expand into that team's already-published roster (roadmap #7),
+  // reusing the same rosterByTeamId Roster/Pairings already build.
+  // Absent (or empty for a given id) for a singles event, where a
+  // placing row is already one person — such a row just doesn't expand.
+  rosterByTeamId?: Map<string, Player[]>;
 };
+
+// A metric whose name looks like a win/loss-derived record (BCP's own
+// "Match Points", a literal "Wins" count, etc.) — moved to the front of
+// the columns regardless of where BCP's own metrics array happens to put
+// it, since it's the number most players actually track first (roadmap
+// #7). A metric already in front, or no match at all, is left as-is.
+const WIN_LOSS_METRIC_PATTERN = /win|match points|record|w\/l/i;
+
+function leadWithWinLoss(names: string[]): string[] {
+  const idx = names.findIndex((name) => WIN_LOSS_METRIC_PATTERN.test(name));
+  if (idx <= 0) return names;
+  const reordered = [...names];
+  const [winLoss] = reordered.splice(idx, 1);
+  reordered.unshift(winLoss);
+  return reordered;
+}
+
+/**
+ * One placings row. For a team event with a roster available for this
+ * entry's team (see rosterByTeamId), the row expands in place to show
+ * that team's already-published roster — same reuse-not-recompute
+ * posture as TeamRosterFallback elsewhere. A singles-event row (no
+ * roster passed) just isn't expandable.
+ */
+function PlacingRow({
+  entry,
+  metricNames,
+  highlighted,
+  roster,
+}: {
+  entry: PlacingEntry;
+  metricNames: string[];
+  highlighted: boolean;
+  roster?: Player[];
+}) {
+  const [expanded, setExpanded] = React.useState(false);
+  const canExpand = Boolean(roster?.length);
+
+  return (
+    <>
+      <tr
+        onClick={canExpand ? () => setExpanded((v) => !v) : undefined}
+        aria-expanded={canExpand ? expanded : undefined}
+        className={`border-t border-surface-border ${highlighted ? "bg-brass-500/10" : ""} ${
+          canExpand ? "cursor-pointer" : ""
+        }`}
+      >
+        <td className="px-2 py-1.5 text-text-secondary">{entry.placing ?? "—"}</td>
+        <td className="truncate px-2 py-1.5 font-medium text-text-primary">
+          <PlayerStatsLink name={entry.name} bcpUserId={entry.bcpUserId} />
+          {canExpand && (
+            <span aria-hidden className="ml-1.5 text-xs text-text-tertiary">
+              {expanded ? "▲" : "▼"}
+            </span>
+          )}
+        </td>
+        {metricNames.map((name) => (
+          <td key={name} className="px-2 py-1.5 text-right text-text-secondary">
+            {entry.metrics.find((m) => m.name === name)?.value ?? "—"}
+          </td>
+        ))}
+      </tr>
+      {expanded && canExpand && (
+        <tr className="border-t border-surface-border">
+          <td colSpan={2 + metricNames.length} className="px-2 pb-2 pt-1">
+            <TeamRosterList name={entry.name} players={roster ?? []} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
 
 /**
  * Standings as BCP has already computed and published them. The metric
@@ -35,8 +116,9 @@ export default function PlacingsTable({
   followedIds,
   emptyMessage,
   onRefresh,
+  rosterByTeamId,
 }: PlacingsTableProps) {
-  const metricNames = entries[0]?.metrics.map((m) => m.name) ?? [];
+  const metricNames = leadWithWinLoss(entries[0]?.metrics.map((m) => m.name) ?? []);
   const slowLoad = useDelayedFlag(loading);
 
   return (
@@ -86,27 +168,13 @@ export default function PlacingsTable({
               </thead>
               <tbody>
                 {entries.map((entry) => (
-                  <tr
+                  <PlacingRow
                     key={entry.id}
-                    className={`border-t border-surface-border ${
-                      followedIds?.has(entry.id) ? "bg-brass-500/10" : ""
-                    }`}
-                  >
-                    <td className="px-2 py-1.5 text-text-secondary">
-                      {entry.placing ?? "—"}
-                    </td>
-                    <td className="truncate px-2 py-1.5 font-medium text-text-primary">
-                      <PlayerStatsLink name={entry.name} bcpUserId={entry.bcpUserId} />
-                    </td>
-                    {metricNames.map((name) => (
-                      <td
-                        key={name}
-                        className="px-2 py-1.5 text-right text-text-secondary"
-                      >
-                        {entry.metrics.find((m) => m.name === name)?.value ?? "—"}
-                      </td>
-                    ))}
-                  </tr>
+                    entry={entry}
+                    metricNames={metricNames}
+                    highlighted={followedIds?.has(entry.id) ?? false}
+                    roster={rosterByTeamId?.get(entry.id)}
+                  />
                 ))}
               </tbody>
             </table>

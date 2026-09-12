@@ -9,6 +9,7 @@ import {
 } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
+import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import Spinner from "../shared/spinner";
 import TeamRosterFallback from "./teamRosterFallback";
@@ -66,6 +67,11 @@ type MyPairingsProps = {
   // who has no team-vs-team pairing to expand this way in the first place.
   myTeamPlayerId?: string;
   rosterByTeamId?: Map<string, Player[]>;
+  // This event's full roster — used only to look up a shown opponent's
+  // faction/disposition/list (already-published roster fields, not
+  // fetched separately) for each round row and each expanded board
+  // (roadmap #8).
+  players?: Player[];
 };
 
 /**
@@ -96,6 +102,7 @@ export default function MyPairings({
   itcLeagueId,
   myTeamPlayerId,
   rosterByTeamId,
+  players,
 }: MyPairingsProps) {
   const byRound = new Map(pairings.map((p) => [p.round, p]));
 
@@ -256,7 +263,7 @@ export default function MyPairings({
                           }
                         : undefined
                     }
-                    className={`flex items-center justify-between gap-3 p-2.5 ${
+                    className={`flex flex-wrap items-center gap-x-3 gap-y-1 p-2.5 ${
                       canExpand ? "cursor-pointer" : ""
                     }`}
                   >
@@ -264,14 +271,15 @@ export default function MyPairings({
                       Round {round}
                     </span>
                     {pairing?.published ? (
-                      <span className="flex min-w-0 flex-1 items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate text-text-secondary">
+                      <>
+                        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
                           vs <PlayerStatsLink name={pairing.opponentName} bcpUserId={pairing.opponentUserId} />
                           {pairing.table && (
-                            <span className="ml-1.5 text-xs text-text-tertiary">
+                            <span className="text-xs text-text-tertiary">
                               (table {pairing.table})
                             </span>
                           )}
+                          <PlayerFactionDetails bcpUserId={pairing.opponentUserId} players={players} />
                         </span>
                         <ItcBadge
                           ranking={
@@ -298,7 +306,7 @@ export default function MyPairings({
                             {isExpanded ? "▲" : "▼"}
                           </span>
                         )}
-                      </span>
+                      </>
                     ) : (
                       <span className="text-text-tertiary">
                         Not published yet
@@ -364,6 +372,7 @@ export default function MyPairings({
                               title={`View ${m.player1Name}'s full ITC history on BCP`}
                               size="xs"
                             />
+                            <PlayerFactionDetails bcpUserId={m.player1UserId} players={players} />
                           </span>
                           <span className="text-text-tertiary">vs</span>
                           <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
@@ -379,6 +388,7 @@ export default function MyPairings({
                               title={`View ${m.player2Name}'s full ITC history on BCP`}
                               size="xs"
                             />
+                            <PlayerFactionDetails bcpUserId={m.player2UserId} players={players} />
                           </span>
                           {m.player1Score !== undefined && m.player2Score !== undefined && (
                             <span

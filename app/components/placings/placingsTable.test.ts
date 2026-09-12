@@ -72,6 +72,69 @@ test("a row's name links to its player-stats page only when it carries a bcpUser
   assert.ok(!teamHtml.includes("/players/"));
 });
 
+test("leads with a win/loss-style metric regardless of BCP's own column order (roadmap #7)", () => {
+  const reordered: PlacingEntry[] = [
+    {
+      id: "t1",
+      name: "Team One",
+      placing: 1,
+      metrics: [
+        { name: "Battle Points", value: 287 },
+        { name: "Match Points", value: 4 },
+        { name: "Path to Victory", value: 3 },
+      ],
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: reordered, loading: false, error: null, onRefresh: noop })
+  );
+  const headerRow = html.split("</thead>")[0];
+  const matchPointsIdx = headerRow.indexOf("Match Points");
+  const battlePointsIdx = headerRow.indexOf("Battle Points");
+  assert.ok(matchPointsIdx > 0 && matchPointsIdx < battlePointsIdx, "Match Points should come before Battle Points");
+});
+
+test("leaves column order alone when no metric looks like a win/loss record", () => {
+  const noRecord: PlacingEntry[] = [
+    {
+      id: "t1",
+      name: "Team One",
+      placing: 1,
+      metrics: [
+        { name: "Battle Points", value: 287 },
+        { name: "Strength of Schedule", value: 3 },
+      ],
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: noRecord, loading: false, error: null, onRefresh: noop })
+  );
+  const headerRow = html.split("</thead>")[0];
+  assert.ok(headerRow.indexOf("Battle Points") < headerRow.indexOf("Strength of Schedule"));
+});
+
+test("a team row with a roster available shows an expand affordance; a singles row doesn't (roadmap #7)", () => {
+  const rosterByTeamId = new Map<string, Player[]>([
+    ["t1", [{ id: "p1", name: "Nicholas Kudriavetz", faction: "Orks", bcpUserId: "u1" }]],
+  ]);
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, {
+      entries,
+      loading: false,
+      error: null,
+      onRefresh: noop,
+      rosterByTeamId,
+    })
+  );
+  const rows = html.split("<tr").slice(1);
+  const team1Row = rows.find((r) => r.includes("Team One"));
+  const team2Row = rows.find((r) => r.includes("Team Two"));
+  assert.match(team1Row ?? "", /aria-expanded="false"/);
+  assert.ok(!team2Row?.includes("aria-expanded"));
+  // Collapsed by default — the roster itself isn't in the initial markup.
+  assert.ok(!html.includes("Nicholas Kudriavetz"));
+});
+
 test("highlights a followed row", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, {
