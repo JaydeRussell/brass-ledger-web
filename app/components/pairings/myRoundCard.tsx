@@ -1,10 +1,11 @@
 "use client";
 import React from "react";
-import type { MyPairing, TeamBoardMatchup } from "../../lib/bcp";
+import type { ItcRanking, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
 import TeamRosterFallback from "./teamRosterFallback";
+import TeamItcComparison from "../shared/teamItcComparison";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
@@ -48,6 +49,11 @@ type MyRoundCardProps = {
   // through to TeamRosterFallback's roster rows below rather than
   // fetching a second copy just for this card.
   itcLeagueId?: string | null;
+  // Same already-fetched ITC data, keyed by bcpUserId — used to show a
+  // neutral avg-ITC comparison between the two team sides (roadmap #4)
+  // whenever this is a team pairing, regardless of whether individual
+  // boards are resolved yet.
+  itcByUserId?: Record<string, ItcRanking | null>;
 };
 
 type ResolvedOpponent = {
@@ -111,6 +117,7 @@ export default function MyRoundCard({
   myTeamPlayerId,
   rosterByTeamId,
   itcLeagueId,
+  itcByUserId,
 }: MyRoundCardProps) {
   const slowLoad = useDelayedFlag(loading);
 
@@ -200,6 +207,18 @@ export default function MyRoundCard({
           <span className="shrink-0 text-xs text-warning-600 dark:text-warning-400">in progress</span>
         )}
       </div>
+
+      {pairing.opponentTeamPlayerId && itcByUserId && (myRoster?.length || opponentRoster?.length) ? (
+        <div className="mt-2">
+          <TeamItcComparison
+            side1Name="Your team"
+            side1Players={myRoster ?? []}
+            side2Name={resolved.opponentName}
+            side2Players={opponentRoster ?? []}
+            itcByUserId={itcByUserId}
+          />
+        </div>
+      ) : null}
 
       {resolved.opponentBcpUserId && (
         <div className="mt-3 border-t border-surface-border pt-3">

@@ -571,6 +571,14 @@ function HomeContent() {
     () => (user?.bcpUserId ? players.find((p) => p.bcpUserId === user.bcpUserId) : undefined),
     [players, user?.bcpUserId]
   );
+  // Non-null exactly when OverviewPanel's "Your round" card is actually
+  // shown — same condition its own ternary below checks, extracted so
+  // the following list's self-follow filter (roadmap #6) can reuse it
+  // without a second `user.bcpUserId`/`myPlayer` null-check.
+  const myRoundInfo =
+    user?.bcpUserId && myPlayer && eventInfo?.started
+      ? { bcpUserId: user.bcpUserId, teamPlayerId: myPlayer.teamPlayerId, playerId: String(myPlayer.id) }
+      : null;
 
   // My own current-round pairing (roadmap "My round" view) — reuses the
   // exact same fetchMyIndividualPairings/fetchMyTeamPairings calls the
@@ -652,12 +660,31 @@ function HomeContent() {
     };
   }, [myPairingState.pairing, eventId, user?.bcpUserId]);
 
+  // Same roster, keyed by each tournament team's BCP teamPlayer id instead
+  // of its display name — what a team-vs-team pairing row's side1Id/side2Id
+  // (and MyPairing's opponentTeamPlayerId) actually reference. Used to fall
+  // back to "who's on each team" when a pairing's individual boards aren't
+  // published yet, and (below) to find both sides' rosters for a neutral
+  // avg-ITC comparison (roadmap #4).
+  const rosterByTeamId = useMemo(() => {
+    const map = new Map<string, Player[]>();
+    players.forEach((player) => {
+      if (!player.teamPlayerId) return;
+      const existing = map.get(player.teamPlayerId);
+      if (existing) existing.push(player);
+      else map.set(player.teamPlayerId, [player]);
+    });
+    return map;
+  }, [players]);
+
   // Looks up ITC ranking (score + rank) for: each followed individual
-  // player, each followed team's own roster members, and each followed
-  // individual player's round-by-round opponents — never a whole roster,
-  // to avoid a burst of requests against BCP's API. Team-vs-team pairings
-  // don't get an opponent lookup here since a team isn't a single ranked
-  // person. Purely a read of an already-published BCP number.
+  // player, each followed team's own roster members (plus, for a neutral
+  // avg-ITC comparison — roadmap #4 — the opposing team's roster in its
+  // latest pairing), each followed individual player's round-by-round
+  // opponents, and (for the same roadmap #4 comparison on "Your round")
+  // my own team's roster and my own opponent team's roster. Never a whole
+  // roster beyond what's actually shown, to avoid a burst of requests
+  // against BCP's API. Purely a read of an already-published BCP number.
   useEffect(() => {
     if (!itcLeagueId) return;
 
@@ -677,8 +704,28 @@ function HomeContent() {
         (teamsByName.get(entry.label) ?? []).forEach((p) => {
           if (p.bcpUserId) wanted.add(p.bcpUserId);
         });
+        const latestPairing = [...(followedPairings[followedKey(entry)]?.pairings ?? [])]
+          .reverse()
+          .find((p) => p.published);
+        if (latestPairing?.opponentTeamPlayerId) {
+          (rosterByTeamId.get(latestPairing.opponentTeamPlayerId) ?? []).forEach((p) => {
+            if (p.bcpUserId) wanted.add(p.bcpUserId);
+          });
+        }
       }
     });
+
+    if (eventInfo?.teamEvent && myPlayer?.teamPlayerId) {
+      (rosterByTeamId.get(myPlayer.teamPlayerId) ?? []).forEach((p) => {
+        if (p.bcpUserId) wanted.add(p.bcpUserId);
+      });
+      const opponentTeamPlayerId = myPairingState.pairing?.opponentTeamPlayerId;
+      if (opponentTeamPlayerId) {
+        (rosterByTeamId.get(opponentTeamPlayerId) ?? []).forEach((p) => {
+          if (p.bcpUserId) wanted.add(p.bcpUserId);
+        });
+      }
+    }
 
     const toFetch = Array.from(wanted).filter((id) => !requestedItcIdsRef.current.has(id));
     if (toFetch.length === 0) return;
@@ -706,7 +753,16 @@ function HomeContent() {
           requestedItcIdsRef.current.delete(bcpUserId);
         });
     });
-  }, [itcLeagueId, following, followedPairings, players]);
+  }, [
+    itcLeagueId,
+    following,
+    followedPairings,
+    players,
+    rosterByTeamId,
+    eventInfo?.teamEvent,
+    myPlayer?.teamPlayerId,
+    myPairingState.pairing,
+  ]);
 
   // Fetches the full pairings board for whichever round is selected —
   // every matchup BCP has published for that round, not just a followed
@@ -773,22 +829,6 @@ function HomeContent() {
   }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
 
   const teams = useMemo(() => groupByTeam(players), [players]);
-
-  // Same roster, keyed by each tournament team's BCP teamPlayer id instead
-  // of its display name — what a team-vs-team pairing row's side1Id/side2Id
-  // (and MyPairing's opponentTeamPlayerId) actually reference. Used to fall
-  // back to "who's on each team" when a pairing's individual boards aren't
-  // published yet.
-  const rosterByTeamId = useMemo(() => {
-    const map = new Map<string, Player[]>();
-    players.forEach((player) => {
-      if (!player.teamPlayerId) return;
-      const existing = map.get(player.teamPlayerId);
-      if (existing) existing.push(player);
-      else map.set(player.teamPlayerId, [player]);
-    });
-    return map;
-  }, [players]);
 
   const isFollowing = (key: string) => following.some((f) => followedKey(f) === key);
 
@@ -1105,25 +1145,45 @@ function HomeContent() {
           <OverviewPanel
             eventInfo={eventInfo}
             myRound={
-              user?.bcpUserId && myPlayer && eventInfo?.started
+              myRoundInfo
                 ? {
                     round: boardRound ?? 0,
                     loading: myPairingState.loading,
                     error: myPairingState.error,
                     pairing: myPairingState.pairing,
                     board: myBoard,
-                    myBcpUserId: user.bcpUserId,
+                    myBcpUserId: myRoundInfo.bcpUserId,
                     players,
-                    myTeamPlayerId: myPlayer.teamPlayerId,
+                    myTeamPlayerId: myRoundInfo.teamPlayerId,
                     rosterByTeamId,
                     itcLeagueId,
+                    itcByUserId: itcRankings,
                   }
                 : null
             }
-            following={following.map((entry) => ({
-              label: entry.label,
-              pairings: followedPairings[followedKey(entry)]?.pairings ?? [],
-            }))}
+            rosterByTeamId={rosterByTeamId}
+            itcByUserId={itcRankings}
+            following={following
+              // Skip a followed entry that's the signed-in account's own
+              // team/self — when "Your round" is already showing above,
+              // a "Following [my own team]" card right below it would
+              // just repeat the identical round/table/opponent (see
+              // roadmap #6). Only relevant while "Your round" itself is
+              // actually rendered; if it isn't (e.g. event hasn't
+              // started), following your own team is still worth
+              // showing like any other follow.
+              .filter(
+                (entry) =>
+                  !myRoundInfo ||
+                  (entry.kind === "team"
+                    ? entry.teamPlayerId !== myRoundInfo.teamPlayerId
+                    : entry.playerId !== myRoundInfo.playerId)
+              )
+              .map((entry) => ({
+                label: entry.label,
+                pairings: followedPairings[followedKey(entry)]?.pairings ?? [],
+                teamPlayerId: entry.kind === "team" ? entry.teamPlayerId : undefined,
+              }))}
             onGoToRoster={() => changeTab("roster")}
             onGoToPairings={() => changeTab("pairings")}
           />

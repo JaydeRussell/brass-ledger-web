@@ -90,6 +90,37 @@ test("shows each followed entry's most recent published pairing", () => {
   assert.match(html, /Round 1: vs Team X/);
 });
 
+test("shows a neutral avg-ITC comparison for a followed team's pairing when data is available (roadmap #4)", () => {
+  const pairings: MyPairing[] = [
+    {
+      round: 1,
+      published: true,
+      isDone: false,
+      opponentName: "Rose City Ruffians",
+      opponentTeamPlayerId: "tp-opponent",
+    },
+  ];
+  const rosterByTeamId = new Map<string, Player[]>([
+    ["tp-mine", [{ id: "p1", name: "A1", faction: "Orks", bcpUserId: "u-a1", teamPlayerId: "tp-mine" }]],
+    [
+      "tp-opponent",
+      [{ id: "p2", name: "B1", faction: "Necrons", bcpUserId: "u-b1", teamPlayerId: "tp-opponent" }],
+    ],
+  ]);
+  const html = renderToStaticMarkup(
+    React.createElement(OverviewPanel, {
+      eventInfo: baseEvent,
+      following: [{ label: "Master Crafted", pairings, teamPlayerId: "tp-mine" }],
+      rosterByTeamId,
+      itcByUserId: { "u-a1": { points: 1540 }, "u-b1": { points: 1410 } },
+      onGoToRoster: () => {},
+      onGoToPairings: () => {},
+    })
+  );
+  assert.match(html, /Master Crafted: Avg ITC 1540/);
+  assert.match(html, /Rose City Ruffians: Avg ITC 1410/);
+});
+
 test("shows a fallback when a followed entry has no published pairings", () => {
   const html = renderToStaticMarkup(
     React.createElement(OverviewPanel, {
