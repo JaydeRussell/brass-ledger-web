@@ -9,6 +9,7 @@ import {
 } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
+import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
 import Spinner from "../shared/spinner";
@@ -59,6 +60,20 @@ type RoundBoardProps = {
   // a team-vs-team pairing is published but its individual boards aren't
   // yet, rather than showing nothing useful.
   rosterByTeamId?: Map<string, Player[]>;
+  // This event's full roster — used only to look up a followed side's
+  // faction/disposition/list (already-published roster fields, not
+  // fetched separately) on its row (roadmap #8). Only shown for a
+  // followed side, not every row, since this board can list dozens of
+  // matchups at once.
+  players?: Player[];
+  // The signed-in account's own side1Id/side2Id-space identifier —
+  // teamPlayerId for a team event, event-scoped player id for a singles
+  // one (same id space as followedIds, but specifically "mine" rather
+  // than anyone followed, since those aren't always the same entry).
+  // Lets "Jump to mine" (roadmap #9) scroll straight to that row on a
+  // large board (Challengers Cup has 68 teams) instead of leaving a
+  // scrollbar as the only hint it even scrolls.
+  myId?: string;
 };
 
 /**
@@ -90,12 +105,21 @@ export default function RoundBoard({
   itcLeagueId,
   emptyMessage,
   rosterByTeamId,
+  players,
+  myId,
 }: RoundBoardProps) {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [boardsById, setBoardsById] = React.useState<Record<string, BoardsState>>({});
   const [itcByUserId, setItcByUserId] = React.useState<Record<string, ItcRanking | null>>({});
   const requestedItcIdsRef = React.useRef<Set<string>>(new Set());
   const slowLoad = useDelayedFlag(loading);
+  const rowRefs = React.useRef<Map<string, HTMLLIElement>>(new Map());
+
+  const myEntry = myId ? entries.find((e) => e.side1Id === myId || e.side2Id === myId) : undefined;
+  const jumpToMine = () => {
+    if (!myEntry) return;
+    rowRefs.current.get(myEntry.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
 
   const loadItcFor = React.useCallback(
     (userIds: Iterable<string>) => {
@@ -169,6 +193,11 @@ export default function RoundBoard({
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-surface-border bg-surface-2 px-4 py-3">
         <p className="font-semibold text-text-primary">Round pairings</p>
         <div className="flex items-center gap-2">
+          {myEntry && (
+            <Button variant="ghost" size="sm" onClick={jumpToMine}>
+              Jump to mine
+            </Button>
+          )}
           <RefreshButton onRefresh={onRefresh} loading={loading} label="pairings" />
           <Button
             variant="secondary"
@@ -242,6 +271,10 @@ export default function RoundBoard({
               return (
                 <li
                   key={entry.id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(entry.id, el);
+                    else rowRefs.current.delete(entry.id);
+                  }}
                   className={`rounded-md border text-sm ${
                     isFollowed ? "border-brass-500/40 bg-brass-500/10" : "border-surface-border"
                   }`}
@@ -260,19 +293,23 @@ export default function RoundBoard({
                           }
                         : undefined
                     }
-                    className={`flex items-center gap-3 p-2 ${canExpand ? "cursor-pointer" : ""}`}
+                    className={`flex flex-wrap items-center gap-x-3 gap-y-1 p-2 ${
+                      canExpand ? "cursor-pointer" : ""
+                    }`}
                   >
                     <span className="w-12 shrink-0 text-xs font-medium text-text-tertiary">
                       {entry.table ? `Tbl ${entry.table}` : ""}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-text-primary">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-primary">
                       <span className={side1Followed ? "font-semibold" : undefined}>
                         <PlayerStatsLink name={entry.side1Name} bcpUserId={entry.side1UserId} />
                       </span>
-                      <span className="mx-1.5 text-text-tertiary">vs</span>
+                      {side1Followed && <PlayerFactionDetails bcpUserId={entry.side1UserId} players={players} />}
+                      <span className="text-text-tertiary">vs</span>
                       <span className={side2Followed ? "font-semibold" : undefined}>
                         <PlayerStatsLink name={entry.side2Name} bcpUserId={entry.side2UserId} />
                       </span>
+                      {side2Followed && <PlayerFactionDetails bcpUserId={entry.side2UserId} players={players} />}
                     </span>
                     {!entry.published ? (
                       <span className="shrink-0 text-xs text-text-tertiary">
@@ -357,6 +394,7 @@ export default function RoundBoard({
                               title={`View ${m.player1Name}'s full ITC history on BCP`}
                               size="xs"
                             />
+                            <PlayerFactionDetails bcpUserId={m.player1UserId} players={players} />
                           </span>
                           <span className="text-text-tertiary">vs</span>
                           <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
@@ -370,6 +408,7 @@ export default function RoundBoard({
                               title={`View ${m.player2Name}'s full ITC history on BCP`}
                               size="xs"
                             />
+                            <PlayerFactionDetails bcpUserId={m.player2UserId} players={players} />
                           </span>
                           {m.player1Score !== undefined && m.player2Score !== undefined && (
                             <span

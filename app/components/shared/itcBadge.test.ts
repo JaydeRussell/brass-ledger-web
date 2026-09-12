@@ -45,6 +45,14 @@ test("renders a link to the BCP profile when bcpUserId is given, scoped to the l
   assert.match(html, /title="View X&#x27;s history"/);
 });
 
+test("carries both a placing-only compact label and the full label, toggled responsively (roadmap #8)", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(ItcBadge, { ranking: { points: 1465.4, placing: 15 }, title: "t" })
+  );
+  assert.match(html, /<span class="sm:hidden">#15<\/span>/);
+  assert.match(html, /<span class="hidden sm:inline">#15 · 1465 pts<\/span>/);
+});
+
 test("size=\"xs\" uses the tighter text size class", () => {
   const html = renderToStaticMarkup(
     React.createElement(ItcBadge, { ranking: { points: 10 }, title: "t", size: "xs" })

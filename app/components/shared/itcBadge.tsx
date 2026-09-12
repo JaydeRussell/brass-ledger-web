@@ -48,7 +48,19 @@ export default function ItcBadge({ ranking, bcpUserId, leagueId, title, size = "
   const isDark = usePrefersDarkMode();
   if (!ranking) return null;
 
-  const label = `#${ranking.placing ?? "?"} · ${Math.round(ranking.points)} pts`;
+  // On a narrow screen, a crowded pairing row (opponent name, table,
+  // faction, this badge, a score) has no room for the full "#15 ·
+  // 1,465 pts" — the placing alone is the more universally-readable
+  // number at that width (roadmap #8), with the full label back once
+  // there's room (Tailwind's `sm:` breakpoint).
+  const compactLabel = `#${ranking.placing ?? "?"}`;
+  const fullLabel = `#${ranking.placing ?? "?"} · ${Math.round(ranking.points)} pts`;
+  const label = (
+    <>
+      <span className="sm:hidden">{compactLabel}</span>
+      <span className="hidden sm:inline">{fullLabel}</span>
+    </>
+  );
   const { backgroundColor, color } = itcGradientStyle(ranking.points, isDark);
   const sizeClasses = size === "xs" ? "px-1.5 py-0.5 text-[11px]" : "px-1.5 py-0.5 text-xs";
   const sharedClasses = `shrink-0 whitespace-nowrap rounded-full border border-black/10 font-medium dark:border-white/10 ${sizeClasses}`;

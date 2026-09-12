@@ -1236,6 +1236,7 @@ function HomeContent() {
                   ownBcpUserId={ownBcpUserId}
                   myTeamPlayerId={entry.kind === "team" ? entry.teamPlayerId : undefined}
                   rosterByTeamId={rosterByTeamId}
+                  players={players}
                 />
               );
             })}
@@ -1255,6 +1256,8 @@ function HomeContent() {
                 teamEvent={isTeamEvent}
                 itcLeagueId={itcLeagueId}
                 rosterByTeamId={rosterByTeamId}
+                players={players}
+                myId={myPlayer ? (isTeamEvent ? myPlayer.teamPlayerId : String(myPlayer.id)) : undefined}
                 emptyMessage={
                   searchQuery && boardEntries.length > 0
                     ? `No pairings match "${searchQuery}" in round ${boardRound}.`
@@ -1272,6 +1275,7 @@ function HomeContent() {
             error={placingsError}
             onRefresh={refreshPlacings}
             followedIds={followedIds}
+            rosterByTeamId={rosterByTeamId}
             emptyMessage={
               searchQuery && placings.length > 0
                 ? `No placings match "${searchQuery}".`

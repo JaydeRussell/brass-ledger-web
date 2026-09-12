@@ -121,3 +121,53 @@ test("lists every pairing, highlighting followed ones and showing scores", () =>
   const aliceRow = rows.find((r) => r.includes("Alice"));
   assert.ok(aliceRow?.includes("border-brass-500/40"));
 });
+
+test("surfaces faction/disposition/list only for the followed side, not every row (roadmap #8)", () => {
+  const entries: BoardPairing[] = [
+    {
+      id: "b1",
+      table: 1,
+      side1Id: "s1",
+      side1Name: "Alice",
+      side1UserId: "u-alice",
+      side2Id: "s2",
+      side2Name: "Bob",
+      side2UserId: "u-bob",
+      published: true,
+      isDone: false,
+      isBye: false,
+    },
+  ];
+  const players: Player[] = [
+    { id: "p1", name: "Alice", faction: "Aeldari", bcpUserId: "u-alice" },
+    { id: "p2", name: "Bob", faction: "Necrons", bcpUserId: "u-bob" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(RoundBoard, {
+      ...baseProps,
+      entries,
+      followedIds: new Set(["s1"]),
+      players,
+    })
+  );
+  assert.match(html, /\(Aeldari\)/);
+  assert.ok(!html.includes("(Necrons)"));
+});
+
+test("shows a 'Jump to mine' control only when myId matches a row in this round (roadmap #9)", () => {
+  const entries: BoardPairing[] = [
+    { id: "b1", side1Id: "s1", side1Name: "Alice", side2Id: "s2", side2Name: "Bob", published: true, isDone: false, isBye: false },
+  ];
+  const withMatch = renderToStaticMarkup(
+    React.createElement(RoundBoard, { ...baseProps, entries, myId: "s1" })
+  );
+  assert.match(withMatch, /Jump to mine/);
+
+  const withoutMatch = renderToStaticMarkup(
+    React.createElement(RoundBoard, { ...baseProps, entries, myId: "s-not-in-this-round" })
+  );
+  assert.ok(!withoutMatch.includes("Jump to mine"));
+
+  const noMyId = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, entries }));
+  assert.ok(!noMyId.includes("Jump to mine"));
+});
