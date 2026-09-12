@@ -2,6 +2,7 @@
 import React from "react";
 import { fetchMyStats, fetchPlayerStats, type MyStats, type PlacingWithField } from "../../lib/myStats";
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
+import PlacingTrendChart from "./placingTrendChart";
 import ItcBadge from "../shared/itcBadge";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
@@ -239,6 +240,11 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
           ))}
         </div>
       )}
+
+      {/* A single point isn't a trend — render nothing rather than a
+          one-dot chart, same pattern MyRoundCard/OverviewPanel already
+          use for "not enough to show yet." */}
+      {stats.history.length >= 2 && <PlacingTrendChart points={stats.history} />}
     </Card>
   );
 }
