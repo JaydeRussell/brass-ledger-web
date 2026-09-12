@@ -4,6 +4,7 @@ import type { MyPairing, TeamBoardMatchup } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
+import TeamRosterFallback from "./teamRosterFallback";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
@@ -33,6 +34,20 @@ type MyRoundCardProps = {
   // faction/subfaction for this specific event, the same already-fetched
   // data every other tab already has in hand.
   players: Player[];
+  // My own BCP teamPlayer id, set only for a team event — paired with
+  // pairing.opponentTeamPlayerId and rosterByTeamId below to show both
+  // sides' rosters (via TeamRosterFallback, same component RoundBoard and
+  // MyPairings already use) when BCP has published the team-vs-team
+  // pairing but not yet the individual boards within it, instead of
+  // showing nothing but the opposing team's name.
+  myTeamPlayerId?: string;
+  // teamPlayerId -> that team's roster, already built once by the caller
+  // for Roster/Pairings (see app/page.tsx's rosterByTeamId).
+  rosterByTeamId?: Map<string, Player[]>;
+  // Already-fetched by the caller for other tabs' ITC badges — passed
+  // through to TeamRosterFallback's roster rows below rather than
+  // fetching a second copy just for this card.
+  itcLeagueId?: string | null;
 };
 
 type ResolvedOpponent = {
@@ -93,6 +108,9 @@ export default function MyRoundCard({
   board,
   myBcpUserId,
   players,
+  myTeamPlayerId,
+  rosterByTeamId,
+  itcLeagueId,
 }: MyRoundCardProps) {
   const slowLoad = useDelayedFlag(loading);
 
@@ -141,6 +159,14 @@ export default function MyRoundCard({
     resolved.myScore !== undefined && resolved.opponentScore !== undefined
       ? classifyScore(resolved.myScore, resolved.opponentScore)
       : undefined;
+  // A team-vs-team pairing BCP has published, but not yet the individual
+  // boards within it — same situation RoundBoard/MyPairings already
+  // handle with TeamRosterFallback instead of showing nothing.
+  const unresolvedTeamPairing = !board && pairing.opponentTeamPlayerId;
+  const myRoster = myTeamPlayerId ? rosterByTeamId?.get(myTeamPlayerId) : undefined;
+  const opponentRoster = pairing.opponentTeamPlayerId
+    ? rosterByTeamId?.get(pairing.opponentTeamPlayerId)
+    : undefined;
 
   return (
     <Card className="p-4 shadow-sm">
@@ -184,6 +210,18 @@ export default function MyRoundCard({
           />
         </div>
       )}
+
+      {unresolvedTeamPairing && (myRoster?.length || opponentRoster?.length) ? (
+        <div className="mt-3 border-t border-surface-border pt-3">
+          <TeamRosterFallback
+            side1Name="Your team"
+            side1Players={myRoster ?? []}
+            side2Name={resolved.opponentName}
+            side2Players={opponentRoster ?? []}
+            itcLeagueId={itcLeagueId}
+          />
+        </div>
+      ) : null}
     </Card>
   );
 }

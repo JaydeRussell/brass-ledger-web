@@ -72,13 +72,11 @@ test("shows no countdown badge for an already-concluded event", () => {
   assert.ok(!html.includes("Starts in"));
 });
 
-// Each card starts collapsed (see eventList.tsx's EventCard doc comment)
-// — the expanded overview/"View event page" link only appear after a
-// click, which this SSR-only render can't simulate (no DOM to dispatch
-// events into — see app/lib/testUtils.ts's note on this environment's
-// testing limitations), so this only checks the collapsed starting
-// state doesn't leak the expanded content.
-test("starts collapsed: no expanded overview or event-page link until clicked", () => {
+// The "View event page" link sits directly on the card now — no
+// click-to-expand step, since the old expanded overview only ever
+// repeated the Status/Dates already visible on the collapsed line (see
+// eventList.tsx's EventCard doc comment).
+test("shows the event-page link directly on the card, with no expand step", () => {
   const events: MyEvent[] = [
     {
       eventId: "e1",
@@ -92,7 +90,7 @@ test("starts collapsed: no expanded overview or event-page link until clicked", 
     },
   ];
   const html = renderToStaticMarkup(React.createElement(EventList, { events, emptyMessage: "n/a" }));
-  assert.ok(!html.includes("View event page"));
-  assert.ok(!html.includes("/?event=e1"));
-  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /View event page/);
+  assert.match(html, /\/\?event=e1/);
+  assert.ok(!html.includes("aria-expanded"));
 });

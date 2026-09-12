@@ -153,6 +153,37 @@ test("a team-level pairing (no resolved board) shows the opposing team, no oppon
   assert.ok(!html.includes("Loading player stats"));
 });
 
+test("a team-level pairing with no resolved board shows both sides' rosters when available (roadmap #1)", () => {
+  const pairing: MyPairing = {
+    round: 2,
+    published: true,
+    isDone: false,
+    opponentName: "Team Rival",
+    opponentTeamPlayerId: "tp-2",
+    teamPairingId: "tpr-1",
+    mySideIsTeam1: true,
+  };
+  const rosterByTeamId = new Map<string, Player[]>([
+    ["tp-1", [{ id: "p1", name: "Me", faction: "Orks", bcpUserId: "u-me", teamPlayerId: "tp-1" }]],
+    ["tp-2", [{ id: "p2", name: "Rival", faction: "Necrons", bcpUserId: "u-rival", teamPlayerId: "tp-2" }]],
+  ]);
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false,
+      error: null,
+      round: 2,
+      pairing,
+      board: null,
+      players,
+      myTeamPlayerId: "tp-1",
+      rosterByTeamId,
+    })
+  );
+  assert.match(html, /Your team/);
+  assert.match(html, /Me/);
+  assert.match(html, /Rival/);
+});
+
 test("a resolved board orients my side out from the opponent's, regardless of raw player1/player2 order", () => {
   const pairing: MyPairing = {
     round: 2,

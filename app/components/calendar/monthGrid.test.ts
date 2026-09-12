@@ -62,6 +62,7 @@ test("a second event on the same day collapses to a '+N more' line instead of st
   assert.match(html, />First Event</);
   assert.ok(!html.includes(">Second Event<"), "expected the second same-day event not to render its own tag");
   assert.match(html, /\+1 more/);
+  assert.match(html, /title="Second Event"/);
 });
 
 test("does not label any day for an event outside the displayed (current) month", () => {

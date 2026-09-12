@@ -1,6 +1,7 @@
 "use client";
 import type { EventInfo, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
 import MyRoundCard from "../pairings/myRoundCard";
+import LinkifiedText from "../shared/linkifiedText";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import Button from "../ui/button";
@@ -24,6 +25,9 @@ type MyRoundSummary = {
   board: TeamBoardMatchup | null;
   myBcpUserId?: string;
   players: Player[];
+  myTeamPlayerId?: string;
+  rosterByTeamId?: Map<string, Player[]>;
+  itcLeagueId?: string | null;
 };
 
 type OverviewPanelProps = {
@@ -83,6 +87,9 @@ export default function OverviewPanel({
           board={myRound.board}
           myBcpUserId={myRound.myBcpUserId}
           players={myRound.players}
+          myTeamPlayerId={myRound.myTeamPlayerId}
+          rosterByTeamId={myRound.rosterByTeamId}
+          itcLeagueId={myRound.itcLeagueId}
         />
       )}
 
@@ -112,9 +119,10 @@ export default function OverviewPanel({
             </div>
 
             {eventInfo.description && (
-              <p className="mt-3 whitespace-pre-wrap border-t border-surface-border pt-3 text-sm text-text-secondary">
-                {eventInfo.description}
-              </p>
+              <LinkifiedText
+                text={eventInfo.description}
+                className="mt-3 whitespace-pre-wrap border-t border-surface-border pt-3 text-sm text-text-secondary"
+              />
             )}
           </>
         ) : (

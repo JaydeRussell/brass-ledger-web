@@ -1093,7 +1093,7 @@ function HomeContent() {
             onChange={setSearchQuery}
             placeholder={
               activeTab === "roster"
-                ? "Search teams, players, factions…"
+                ? "Search or follow teams, players, factions…"
                 : activeTab === "pairings"
                   ? "Search teams or players…"
                   : "Search standings…"
@@ -1114,6 +1114,9 @@ function HomeContent() {
                     board: myBoard,
                     myBcpUserId: user.bcpUserId,
                     players,
+                    myTeamPlayerId: myPlayer.teamPlayerId,
+                    rosterByTeamId,
+                    itcLeagueId,
                   }
                 : null
             }
@@ -1130,8 +1133,8 @@ function HomeContent() {
           <>
             {!loading && isTeamEvent && sortedTeamNames.length >= 2 && (
               <div className="flex justify-end">
-                <Button variant="ghost" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
-                  {compareMode ? "← Back to roster" : "Compare two teams"}
+                <Button variant="secondary" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
+                  {compareMode ? "← Back to roster" : "⇄ Compare two teams"}
                 </Button>
               </div>
             )}
