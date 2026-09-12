@@ -1,6 +1,8 @@
 # Brass Ledger
 
 [![CI/CD](https://github.com/JaydeRussell/brass-ledger-web/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JaydeRussell/brass-ledger-web/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/JaydeRussell/brass-ledger-web/main/.github/badges/coverage.json)](https://github.com/JaydeRussell/brass-ledger-web/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/JaydeRussell/brass-ledger-web)](LICENSE)
 
 **Tournament Companion** for Warhammer 40k — a read-only tournament aid,
 pulling data straight from Best Coast Pairings (BCP). Switch it to any BCP
