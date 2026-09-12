@@ -1,7 +1,8 @@
 "use client";
-import type { EventInfo, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
+import type { EventInfo, ItcRanking, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
 import MyRoundCard from "../pairings/myRoundCard";
 import LinkifiedText from "../shared/linkifiedText";
+import TeamItcComparison from "../shared/teamItcComparison";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
 import Button from "../ui/button";
@@ -11,6 +12,11 @@ import { formatDateRange } from "../../lib/eventDates";
 type FollowedSummary = {
   label: string;
   pairings: MyPairing[];
+  // The followed team's own BCP teamPlayer id, set only when this entry
+  // is a followed team (not an individual player) — paired with
+  // rosterByTeamId/itcByUserId below to show a neutral avg-ITC
+  // comparison against its latest pairing's opponent (roadmap #4).
+  teamPlayerId?: string;
 };
 
 // The signed-in account's own current-round pairing — see myRoundCard.tsx.
@@ -28,12 +34,16 @@ type MyRoundSummary = {
   myTeamPlayerId?: string;
   rosterByTeamId?: Map<string, Player[]>;
   itcLeagueId?: string | null;
+  itcByUserId?: Record<string, ItcRanking | null>;
 };
 
 type OverviewPanelProps = {
   eventInfo: EventInfo | null;
   myRound?: MyRoundSummary | null;
   following: FollowedSummary[];
+  // Shared with MyRoundCard — see its own props for what these are.
+  rosterByTeamId?: Map<string, Player[]>;
+  itcByUserId?: Record<string, ItcRanking | null>;
   onGoToRoster: () => void;
   onGoToPairings: () => void;
 };
@@ -70,6 +80,8 @@ export default function OverviewPanel({
   eventInfo,
   myRound,
   following,
+  rosterByTeamId,
+  itcByUserId,
   onGoToRoster,
   onGoToPairings,
 }: OverviewPanelProps) {
@@ -90,6 +102,7 @@ export default function OverviewPanel({
           myTeamPlayerId={myRound.myTeamPlayerId}
           rosterByTeamId={myRound.rosterByTeamId}
           itcLeagueId={myRound.itcLeagueId}
+          itcByUserId={myRound.itcByUserId}
         />
       )}
 
@@ -155,6 +168,10 @@ export default function OverviewPanel({
       ) : (
         following.map((entry) => {
           const latestPairing = [...entry.pairings].reverse().find((p) => p.published);
+          const myRoster = entry.teamPlayerId ? rosterByTeamId?.get(entry.teamPlayerId) : undefined;
+          const opponentRoster = latestPairing?.opponentTeamPlayerId
+            ? rosterByTeamId?.get(latestPairing.opponentTeamPlayerId)
+            : undefined;
           return (
             <Card key={entry.label} className="p-4 shadow-sm">
               <p className="font-semibold text-text-primary">Following {entry.label}</p>
@@ -166,6 +183,19 @@ export default function OverviewPanel({
               ) : (
                 <p className="mt-1 text-sm text-text-secondary">No pairings published yet.</p>
               )}
+              {latestPairing?.opponentTeamPlayerId &&
+              itcByUserId &&
+              (myRoster?.length || opponentRoster?.length) ? (
+                <div className="mt-1">
+                  <TeamItcComparison
+                    side1Name={entry.label}
+                    side1Players={myRoster ?? []}
+                    side2Name={latestPairing.opponentName}
+                    side2Players={opponentRoster ?? []}
+                    itcByUserId={itcByUserId}
+                  />
+                </div>
+              ) : null}
               <Button variant="ghost" size="sm" className="mt-2 -ml-2.5" onClick={onGoToPairings}>
                 View full pairings →
               </Button>
