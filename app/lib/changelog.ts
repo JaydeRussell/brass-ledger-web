@@ -23,6 +23,22 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.10.0",
+    date: "2026-09-12",
+    title: "Overview, Placings, and Admin polish",
+    highlights: [
+      "\"Your round\" now falls back to showing both teams' rosters for a team event when individual boards aren't published yet, matching Pairings' existing behavior.",
+      "Event descriptions' markdown-style links (rules pack, player portal) now render as real clickable links instead of raw bracketed text, and My Events cards drop the extra click-to-expand step.",
+      "Overview no longer shows a duplicate \"Following [your own team]\" card next to \"Your round\".",
+      "A followed team's pairing and \"Your round\" (team events) now show both sides' already-published average ITC side by side — plain data, no ranking or \"favored\" framing.",
+      "Placings: the win/loss record now leads the columns, a team row expands to show its roster, and a followed row is highlighted, matching Roster/Pairings.",
+      "Pairing rows now surface faction, disposition, and a list link for a followed player, reflow cleanly on narrow screens, and the full Round pairings board got a \"Jump to mine\" button.",
+      "Admin page gained search, status tabs, and a confirm step before rejecting an account.",
+      "Fixed a duplicated zip code in event addresses, and My Events no longer lists the same event twice when BCP scores it under two leagues at once.",
+      "Patched a live, reachable SQL-injection CVE in the backend's Postgres driver and reachable RCE/SSRF-class CVEs in Next.js, and added govulncheck/npm audit to CI so future ones surface automatically.",
+    ],
+  },
+  {
     version: "0.9.0",
     date: "2026-09-11",
     title: "Placing trends on the stats page",
