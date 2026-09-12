@@ -12,13 +12,18 @@
 // app's own backend, and every exported type/function signature here is
 // unchanged from before the move — only what happens inside them changed.
 //
-// SCOPE NOTE (unchanged): this app only ever retrieves data BCP already
-// publishes (rosters, event metadata, already-decided pairings,
-// already-computed placings). It never computes, ranks, or suggests a
-// pairing/matchup of any kind — Challengers Cup's event pack bans "AI
-// programs, algorithms, or methodology... for the pairings process,"
-// which is broader than just AI. Don't add scoring or suggestion logic
-// here, even without any AI involved.
+// SCOPE NOTE: this app only ever retrieves data BCP already publishes
+// (rosters, event metadata, already-decided pairings, already-computed
+// placings). It never computes, ranks, or suggests a pairing/matchup of
+// any kind — Challengers Cup's event pack bans "AI programs, algorithms,
+// or methodology... for the pairings process," which is broader than
+// just AI. Don't add scoring or suggestion logic here, even without any
+// AI involved. Holds at team level too, not just per-board — team events
+// run a live captain-driven board-assignment step after BCP publishes
+// the team pairing, so even a team-aggregate computed comparison could
+// feed that in-progress decision. Plainly showing two already-published
+// numbers side by side (no framing, no "favored" label) stays fine —
+// see the backend's internal/bcp/types.go for the full reasoning.
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 

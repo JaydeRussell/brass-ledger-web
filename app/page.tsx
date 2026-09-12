@@ -63,7 +63,15 @@ const DEFAULT_EVENT_ID = "uC7tqqdPYLtT"; // The Challengers Cup 2026
 // matchup-scoring or pairing-suggestion feature should be added back into
 // this app, even without any AI involved. "My pairings" and "Placings"
 // only ever display decisions/results BCP has already published, never
-// anything this app computed.
+// anything this app computed. This holds at a team level too, not just
+// per-board: team events run a live captain-driven board-assignment step
+// (Defender/Attacker) after BCP publishes the team pairing, so even a
+// team-aggregate computed comparison could feed that in-progress human
+// decision. Plainly showing two already-published numbers side by side
+// (no framing, no "favored" label, no color tied to which is higher)
+// stays fine — see the backend's internal/bcp/types.go for the full
+// reasoning, settled 2026-09-12 after a "favored team" indicator was
+// proposed and declined (see this repo's ROADMAP.md).
 
 const EVENT_ID_STORAGE_KEY = "bcp-event-id";
 
