@@ -32,6 +32,10 @@ type MyRoundSummary = {
   myBcpUserId?: string;
   players: Player[];
   myTeamPlayerId?: string;
+  // Threaded straight into MyRoundCard's own isTeamEvent prop — see its
+  // doc comment for why this gate matters (team events never get the
+  // singles-only mission-matchup panel).
+  isTeamEvent: boolean;
   rosterByTeamId?: Map<string, Player[]>;
   itcLeagueId?: string | null;
   itcByUserId?: Record<string, ItcRanking | null>;
@@ -100,6 +104,7 @@ export default function OverviewPanel({
           myBcpUserId={myRound.myBcpUserId}
           players={myRound.players}
           myTeamPlayerId={myRound.myTeamPlayerId}
+          isTeamEvent={myRound.isTeamEvent}
           rosterByTeamId={myRound.rosterByTeamId}
           itcLeagueId={myRound.itcLeagueId}
           itcByUserId={myRound.itcByUserId}

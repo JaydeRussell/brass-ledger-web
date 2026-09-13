@@ -6,7 +6,9 @@ import ItcBadge from "../shared/itcBadge";
 import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
+import MissionMatchupPanel from "./missionMatchupPanel";
 import TeamRosterFallback from "./teamRosterFallback";
+import { isDisposition } from "../../lib/dispositions";
 import TeamItcComparison from "../shared/teamItcComparison";
 import Spinner from "../shared/spinner";
 import Card from "../ui/card";
@@ -47,6 +49,14 @@ type MyRoundCardProps = {
   // teamPlayerId -> that team's roster, already built once by the caller
   // for Roster/Pairings (see app/page.tsx's rosterByTeamId).
   rosterByTeamId?: Map<string, Player[]>;
+  // Whether this event is a team event — set by the caller from
+  // eventInfo.teamEvent. Decides whether a resolved opponent gets the
+  // singles-only MissionMatchupPanel (when both sides' Force Dispositions
+  // are known) or today's PlayerStatsPanel — team events always get
+  // PlayerStatsPanel, since Force-Disposition primary missions are a
+  // singles mission-pack mechanic, not something this app infers for
+  // team formats.
+  isTeamEvent: boolean;
   // Already-fetched by the caller for other tabs' ITC badges — passed
   // through to TeamRosterFallback's roster rows below rather than
   // fetching a second copy just for this card.
@@ -117,6 +127,7 @@ export default function MyRoundCard({
   myBcpUserId,
   players,
   myTeamPlayerId,
+  isTeamEvent,
   rosterByTeamId,
   itcLeagueId,
   itcByUserId,
@@ -174,6 +185,18 @@ export default function MyRoundCard({
     ? rosterByTeamId?.get(pairing.opponentTeamPlayerId)
     : undefined;
 
+  // "My own" roster entry, looked up the same way PlayerFactionDetails
+  // already looks up the opponent's (by bcpUserId, from the same
+  // already-fetched event roster) — used only to find my own Force
+  // Disposition for the mission-matchup gate below.
+  const myPlayer = myBcpUserId ? players.find((p) => p.bcpUserId === myBcpUserId) : undefined;
+  const opponentPlayer = resolved.opponentBcpUserId
+    ? players.find((p) => p.bcpUserId === resolved.opponentBcpUserId)
+    : undefined;
+  const myDisposition = isDisposition(myPlayer?.disposition) ? myPlayer?.disposition : undefined;
+  const opponentDisposition = isDisposition(opponentPlayer?.disposition) ? opponentPlayer?.disposition : undefined;
+  const showMissionMatchup = !isTeamEvent && myDisposition !== undefined && opponentDisposition !== undefined;
+
   return (
     <Card className="p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
@@ -229,11 +252,15 @@ export default function MyRoundCard({
 
       {resolved.opponentBcpUserId && (
         <div className="mt-3 border-t border-surface-border pt-3">
-          <PlayerStatsPanel
-            mode="player"
-            bcpUserId={resolved.opponentBcpUserId}
-            playerName={resolved.opponentName}
-          />
+          {showMissionMatchup && myDisposition && opponentDisposition ? (
+            <MissionMatchupPanel myDisposition={myDisposition} opponentDisposition={opponentDisposition} />
+          ) : (
+            <PlayerStatsPanel
+              mode="player"
+              bcpUserId={resolved.opponentBcpUserId}
+              playerName={resolved.opponentName}
+            />
+          )}
         </div>
       )}
 

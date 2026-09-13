@@ -279,6 +279,56 @@ stale, rather than appending to it forever.
     `eventSettings.test.ts`'s dropdown-open case.
   - **Not yet clicked through live** — same caveat as the sync work
     above.
+- **"Your round" mission-matchup panel (singles 40k events)** — for a
+  singles event where both players' Force Dispositions are known
+  (`Player.disposition`, already fetched — see `types/player.d.ts`),
+  `MyRoundCard` now shows each side's actual Primary Mission, a
+  plain-language matchup summary, tactical suggestions, each mission's
+  full VP-scoring rules, and the three official deployment-map layouts —
+  in place of the opponent's BCP stats (`PlayerStatsPanel`), which team
+  events (and singles events without disposition data) still get
+  unchanged. All static/hand-authored, no runtime fetch:
+  - `app/lib/dispositions.ts`, `missions.ts`, `missionMatrix.ts` — the
+    canonical 5 Force Dispositions and the Warhammer Event Companion
+    v1.2's 25-entry disposition→mission matrix (missions are asymmetric —
+    each side can get a different mission from the same pairing).
+  - `app/lib/missionScoring.ts` — full round-by-round VP scoring for all
+    25 missions, transcribed from the Primary Missions Print Sheets.
+    **Known gap, tracked, not blocking**: ~9 special-action terms
+    (sensor sweep, committed sabotage, triangulated, etc.) are cited
+    inline ("see your mission card's reverse side") rather than defined —
+    their exact rule text is on the physical card backs, which weren't in
+    the PDF this was transcribed from. See `MISSING_GLOSSARY_TERMS` in
+    `app/lib/missionMatchups.ts` and the `TODO(mission-glossary)` comments
+    in `missionScoring.ts`.
+  - `app/lib/missionMatchups.ts` — 15 hand-authored matchup write-ups
+    (one per unordered disposition pair) and `deploymentMapImages()`.
+  - `app/lib/missionSources.ts` — version/date stamps for the three
+    source PDFs (Event Companion v1.2, Print Sheets, Core Rules) — update
+    this alongside the data modules whenever GW revises the mission pack.
+  - `public/deployment-maps/` — 45 WebP images (~6MB total, cropped from
+    the Event Companion's pages 9–53 via `scripts/crop-deployment-maps.sh`,
+    a one-off script, not part of `npm test`/`build`/`dev`) — 15
+    directories (`<disposition>-vs-<disposition>`, slugs sorted so lookup
+    is order-independent) × layouts A/B/C.
+  - `app/components/pairings/missionMatchupPanel.tsx` — the new panel;
+    `myRoundCard.tsx` gates it behind a new required `isTeamEvent` prop
+    (threaded from `eventInfo.teamEvent` via `overviewPanel.tsx`) plus
+    both sides having a known disposition — this gating is load-bearing,
+    not cosmetic, since a team event's resolved individual board already
+    reaches the `PlayerStatsPanel` branch today.
+  - Full test coverage (`npm test`/`npm run lint`/`npx tsc --noEmit`/
+    `npm run build` all pass) for every new data module and the new
+    component, plus extended `myRoundCard.test.ts`/`overviewPanel.test.ts`
+    coverage of the gating. **Confirmed working live 2026-09-13** — a
+    real singles 40k pairing with known dispositions on both sides
+    (Disruption vs. Reconnaissance) rendered the matchup summary,
+    tactical suggestions, expandable full VP-scoring rules, and all
+    three deployment-map images (correct `disruption-vs-reconnaissance`
+    slug, all 200s, no console errors). Remember to rebuild the Docker
+    container first (`cd ../brass-ledger-api && ./run.sh -d --build`) —
+    `localhost:3000` isn't source-mounted, see the backend repo's
+    `CLAUDE.md`.
 
 ## What's NOT yet done / verified
 
