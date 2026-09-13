@@ -19,6 +19,7 @@ test("shows a loading message while checking", () => {
       pairing: null,
       board: null,
       players: [],
+      isTeamEvent: false,
     })
   );
   assert.match(html, /Checking your round/);
@@ -33,6 +34,7 @@ test("shows the error message on failure", () => {
       pairing: null,
       board: null,
       players: [],
+      isTeamEvent: false,
     })
   );
   assert.match(html, /Couldn&#x27;t load your round: boom/);
@@ -47,6 +49,7 @@ test("shows a fallback when nothing is published for the current round", () => {
       pairing: null,
       board: null,
       players: [],
+      isTeamEvent: false,
     })
   );
   assert.match(html, /No pairing published for round 3 yet\./);
@@ -69,6 +72,7 @@ test("shows an individual pairing's table, opponent, and their faction", () => {
       pairing,
       board: null,
       players,
+      isTeamEvent: false,
     })
   );
   assert.match(html, /Table 5/);
@@ -103,6 +107,7 @@ test("shows the opponent's disposition and ITC badge, when known", () => {
       pairing,
       board: null,
       players: playersWithDisposition,
+      isTeamEvent: false,
       itcByUserId: { "u-rival": { points: 1465.4, placing: 15 } },
       itcLeagueId: "league-2026",
     })
@@ -112,6 +117,9 @@ test("shows the opponent's disposition and ITC badge, when known", () => {
   // (desktop) adds points — both render server-side, toggled by CSS.
   assert.match(html, /<span class="sm:hidden">#15<\/span>/);
   assert.match(html, /<span class="hidden sm:inline">#15 · 1465 pts<\/span>/);
+  // My own disposition is unknown in this scenario, so even though the
+  // opponent's is known, the mission-matchup panel shouldn't render.
+  assert.match(html, /Loading player stats/);
 });
 
 test("shows an unpublished pairing's opponent without a score", () => {
@@ -130,6 +138,7 @@ test("shows an unpublished pairing's opponent without a score", () => {
       pairing,
       board: null,
       players,
+      isTeamEvent: false,
     })
   );
   assert.match(html, /unpublished/);
@@ -155,6 +164,7 @@ test("shows a decided game's score", () => {
       pairing,
       board: null,
       players,
+      isTeamEvent: false,
     })
   );
   assert.match(html, /80–20/);
@@ -178,6 +188,7 @@ test("a team-level pairing (no resolved board) shows the opposing team, no oppon
       pairing,
       board: null,
       players,
+      isTeamEvent: true,
     })
   );
   assert.match(html, /Team Rival/);
@@ -207,6 +218,7 @@ test("a team-level pairing with no resolved board shows both sides' rosters when
       pairing,
       board: null,
       players,
+      isTeamEvent: true,
       myTeamPlayerId: "tp-1",
       rosterByTeamId,
     })
@@ -238,6 +250,7 @@ test("a team pairing shows a neutral avg-ITC comparison when ITC data is availab
       pairing,
       board: null,
       players,
+      isTeamEvent: true,
       myTeamPlayerId: "tp-1",
       rosterByTeamId,
       itcByUserId: { "u-me": { points: 1500 }, "u-rival": { points: 1400 } },
@@ -274,10 +287,99 @@ test("a resolved board orients my side out from the opponent's, regardless of ra
       board,
       myBcpUserId: "u-me",
       players,
+      isTeamEvent: true,
     })
   );
   assert.match(html, /Table 12/);
   // I'm player2 on the raw board, so the opponent shown should be player1 (Rival).
   assert.match(html, /vs[\s\S]*Rival/);
+  assert.match(html, /Loading player stats/);
+});
+
+test("singles event, both dispositions known: shows the mission-matchup panel instead of player stats", () => {
+  const pairing: MyPairing = {
+    round: 2,
+    table: 5,
+    published: true,
+    isDone: false,
+    opponentName: "Rival",
+    opponentUserId: "u-rival",
+  };
+  const playersWithDispositions: Player[] = [
+    { id: "p1", name: "Me", faction: "Orks", disposition: "Purge the Foe", bcpUserId: "u-me" },
+    { id: "p2", name: "Rival", faction: "Necrons", disposition: "Take and Hold", bcpUserId: "u-rival" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false,
+      error: null,
+      round: 2,
+      pairing,
+      board: null,
+      myBcpUserId: "u-me",
+      players: playersWithDispositions,
+      isTeamEvent: false,
+    })
+  );
+  // Purge the Foe vs Take and Hold -> my mission is Unstoppable Force.
+  assert.match(html, /Unstoppable Force/);
+  assert.match(html, /Immovable Object/);
+  assert.ok(!html.includes("Loading player stats"));
+});
+
+test("team event, both dispositions known: still falls back to player stats", () => {
+  const pairing: MyPairing = {
+    round: 2,
+    table: 5,
+    published: true,
+    isDone: false,
+    opponentName: "Rival",
+    opponentUserId: "u-rival",
+  };
+  const playersWithDispositions: Player[] = [
+    { id: "p1", name: "Me", faction: "Orks", disposition: "Purge the Foe", bcpUserId: "u-me" },
+    { id: "p2", name: "Rival", faction: "Necrons", disposition: "Take and Hold", bcpUserId: "u-rival" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false,
+      error: null,
+      round: 2,
+      pairing,
+      board: null,
+      myBcpUserId: "u-me",
+      players: playersWithDispositions,
+      isTeamEvent: true,
+    })
+  );
+  assert.match(html, /Loading player stats/);
+  assert.ok(!html.includes("Unstoppable Force"));
+});
+
+test("singles event, only one side's disposition known: falls back to player stats", () => {
+  const pairing: MyPairing = {
+    round: 2,
+    table: 5,
+    published: true,
+    isDone: false,
+    opponentName: "Rival",
+    opponentUserId: "u-rival",
+  };
+  const oneSidedDispositions: Player[] = [
+    { id: "p1", name: "Me", faction: "Orks", bcpUserId: "u-me" },
+    { id: "p2", name: "Rival", faction: "Necrons", disposition: "Take and Hold", bcpUserId: "u-rival" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false,
+      error: null,
+      round: 2,
+      pairing,
+      board: null,
+      myBcpUserId: "u-me",
+      players: oneSidedDispositions,
+      isTeamEvent: false,
+    })
+  );
   assert.match(html, /Loading player stats/);
 });

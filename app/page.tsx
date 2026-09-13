@@ -1155,6 +1155,7 @@ function HomeContent() {
                     myBcpUserId: myRoundInfo.bcpUserId,
                     players,
                     myTeamPlayerId: myRoundInfo.teamPlayerId,
+                    isTeamEvent,
                     rosterByTeamId,
                     itcLeagueId,
                     itcByUserId: itcRankings,

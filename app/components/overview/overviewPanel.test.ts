@@ -174,6 +174,7 @@ test("renders a 'Your round' card first when myRound is supplied", () => {
         pairing: { round: 2, table: 7, published: true, isDone: false, opponentName: "Rival" },
         board: null,
         players: [],
+        isTeamEvent: true,
       },
       following: [],
       onGoToRoster: () => {},
@@ -194,4 +195,49 @@ test("omits the 'Your round' card when myRound is absent", () => {
     })
   );
   assert.ok(!html.includes("Your round"));
+});
+
+test("threads eventInfo.teamEvent into MyRoundCard's isTeamEvent gate", () => {
+  const dispositionPlayers: Player[] = [
+    { id: "p1", name: "Me", faction: "Orks", disposition: "Purge the Foe", bcpUserId: "u-me" },
+    { id: "p2", name: "Rival", faction: "Necrons", disposition: "Take and Hold", bcpUserId: "u-rival" },
+  ];
+  const myRound = {
+    round: 2,
+    loading: false,
+    error: null,
+    pairing: {
+      round: 2,
+      table: 7,
+      published: true,
+      isDone: false,
+      opponentName: "Rival",
+      opponentUserId: "u-rival",
+    },
+    board: null,
+    myBcpUserId: "u-me",
+    players: dispositionPlayers,
+  };
+
+  const singles = renderToStaticMarkup(
+    React.createElement(OverviewPanel, {
+      eventInfo: { ...baseEvent, teamEvent: false },
+      myRound: { ...myRound, isTeamEvent: false },
+      following: [],
+      onGoToRoster: () => {},
+      onGoToPairings: () => {},
+    })
+  );
+  assert.match(singles, /Unstoppable Force/);
+
+  const team = renderToStaticMarkup(
+    React.createElement(OverviewPanel, {
+      eventInfo: { ...baseEvent, teamEvent: true },
+      myRound: { ...myRound, isTeamEvent: true },
+      following: [],
+      onGoToRoster: () => {},
+      onGoToPairings: () => {},
+    })
+  );
+  assert.ok(!team.includes("Unstoppable Force"));
 });

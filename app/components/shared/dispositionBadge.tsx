@@ -1,4 +1,5 @@
 import Badge from "../ui/badge";
+import { isDisposition, type Disposition } from "../../lib/dispositions";
 
 type DispositionBadgeProps = {
   disposition?: string;
@@ -10,7 +11,9 @@ type DispositionBadgeProps = {
 // Hold (holding ground) as success/green, Priority Assets (what to watch)
 // as warning/amber, Reconnaissance (quiet, low-key) as neutral/gray, and
 // Disruption — the odd one out — gets the app's own brass accent.
-const DISPOSITIONS: Record<string, { label: string; tone: "neutral" | "brass" | "danger" | "success" | "warning" }> = {
+// Keyed on the canonical Disposition type (app/lib/dispositions.ts) so a
+// missing entry here is a compile error, not a silent gap.
+const DISPOSITIONS: Record<Disposition, { label: string; tone: "neutral" | "brass" | "danger" | "success" | "warning" }> = {
   "Purge the Foe": { label: "Purge", tone: "danger" },
   Reconnaissance: { label: "Recon", tone: "neutral" },
   "Priority Assets": { label: "Priority", tone: "warning" },
@@ -33,6 +36,6 @@ const DISPOSITIONS: Record<string, { label: string; tone: "neutral" | "brass" | 
 export default function DispositionBadge({ disposition }: DispositionBadgeProps) {
   if (!disposition) return null;
 
-  const known = DISPOSITIONS[disposition];
+  const known = isDisposition(disposition) ? DISPOSITIONS[disposition] : undefined;
   return <Badge tone={known?.tone ?? "neutral"}>{known?.label ?? disposition}</Badge>;
 }
