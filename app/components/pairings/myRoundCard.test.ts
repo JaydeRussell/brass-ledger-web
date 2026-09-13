@@ -82,6 +82,38 @@ test("shows an individual pairing's table, opponent, and their faction", () => {
   assert.match(html, /Loading player stats/);
 });
 
+test("shows the opponent's disposition and ITC badge, when known", () => {
+  const pairing: MyPairing = {
+    round: 2,
+    table: 5,
+    published: true,
+    isDone: false,
+    opponentName: "Rival",
+    opponentUserId: "u-rival",
+  };
+  const playersWithDisposition: Player[] = [
+    players[0],
+    { id: "p2", name: "Rival", faction: "Necrons", disposition: "Purge the Foe", bcpUserId: "u-rival" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false,
+      error: null,
+      round: 2,
+      pairing,
+      board: null,
+      players: playersWithDisposition,
+      itcByUserId: { "u-rival": { points: 1465.4, placing: 15 } },
+      itcLeagueId: "league-2026",
+    })
+  );
+  assert.match(html, /Purge the Foe/);
+  // The compact (mobile) label carries just the placing, the full label
+  // (desktop) adds points — both render server-side, toggled by CSS.
+  assert.match(html, /<span class="sm:hidden">#15<\/span>/);
+  assert.match(html, /<span class="hidden sm:inline">#15 · 1465 pts<\/span>/);
+});
+
 test("shows an unpublished pairing's opponent without a score", () => {
   const pairing: MyPairing = {
     round: 2,

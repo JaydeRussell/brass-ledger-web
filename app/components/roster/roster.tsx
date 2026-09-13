@@ -1,25 +1,6 @@
 "use client";
 import type { ItcRanking } from "../../lib/bcp";
-import DispositionBadge from "../shared/dispositionBadge";
-import ItcBadge from "../shared/itcBadge";
-import PlayerStatsLink from "../shared/playerStatsLink";
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
-}
-
-function Avatar({ name }: { name: string }) {
-  return (
-    <div
-      aria-hidden
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-text-secondary"
-    >
-      {initials(name)}
-    </div>
-  );
-}
+import PlayerCard from "./playerCard";
 
 type TeamRosterProps = {
   teamName: string;
@@ -85,59 +66,15 @@ export default function TeamRoster({
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {players.map((player) => {
-              const ranking = player.bcpUserId ? itcRankings?.[player.bcpUserId] : undefined;
-              const hasBadgeRow = Boolean(player.disposition) || Boolean(ranking);
-              return (
-              <li
-                key={player.id}
-                className="flex flex-col gap-2 rounded-md border border-surface-border p-2.5"
-              >
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <Avatar name={player.name} />
-                  <div className="min-w-36 flex-1">
-                    <p className="truncate text-sm font-medium text-text-primary">
-                      <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
-                      {player.homeClub && <span className="ml-1.5 font-normal text-text-tertiary">({player.homeClub})</span>}
-                    </p>
-                    <p className="truncate text-xs text-text-secondary">
-                      {player.faction}
-                      {/* When subFaction holds a Force Disposition value
-                          (see types/player.d.ts), it's shown as the badge
-                          instead — repeating it here as "faction — Purge
-                          the Foe" would mislabel a disposition as a
-                          sub-faction. */}
-                      {player.subFaction && player.subFaction !== player.disposition && ` — ${player.subFaction}`}
-                    </p>
-                  </div>
-                  {player.list && (
-                    <a
-                      href={player.list}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="shrink-0 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
-                    >
-                      list
-                    </a>
-                  )}
-                </div>
-                {/* Disposition + ITC on their own row, indented to align
-                    under the name/faction text (avatar width + gap)
-                    rather than crowding the name row on narrow screens. */}
-                {hasBadgeRow && (
-                  <div className="flex flex-wrap items-center gap-2 pl-[52px]">
-                    <DispositionBadge disposition={player.disposition} />
-                    <ItcBadge
-                      ranking={ranking}
-                      bcpUserId={player.bcpUserId}
-                      leagueId={itcLeagueId}
-                      title={`View ${player.name}'s full ITC history on BCP`}
-                    />
-                  </div>
-                )}
+            {players.map((player) => (
+              <li key={player.id}>
+                <PlayerCard
+                  player={player}
+                  itcLeagueId={itcLeagueId}
+                  itcRanking={player.bcpUserId ? itcRankings?.[player.bcpUserId] : undefined}
+                />
               </li>
-              );
-            })}
+            ))}
           </ul>
         )}
       </div>

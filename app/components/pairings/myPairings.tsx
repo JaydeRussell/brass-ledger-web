@@ -7,8 +7,10 @@ import {
   type MyPairing,
   type TeamBoardMatchup,
 } from "../../lib/bcp";
+import { resolveRosterPlayer } from "../../lib/players";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import ItcBadge from "../shared/itcBadge";
+import PlayerCard from "../shared/playerCard";
 import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import Spinner from "../shared/spinner";
@@ -354,51 +356,34 @@ export default function MyPairings({
                       {boardState?.matchups.map((m, mi) => (
                         <div
                           key={mi}
-                          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-surface-2 px-2 py-1.5 text-xs"
+                          className="rounded-md border border-surface-border bg-surface-2 px-2 py-1.5 text-xs"
                         >
-                          <span className="w-8 shrink-0 text-text-tertiary">
-                            {m.table ? `Bd ${m.table}` : ""}
-                          </span>
-                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                            <span className="truncate">
-                              <PlayerStatsLink name={m.player1Name} bcpUserId={m.player1UserId} />
+                          <div className="flex items-center justify-between gap-2 pb-1">
+                            <span className="text-text-tertiary">
+                              {m.table ? `Board ${m.table}` : "Board"}
                             </span>
-                            <ItcBadge
-                              ranking={
-                                m.player1UserId ? boardItcByUserId[m.player1UserId] : undefined
-                              }
-                              bcpUserId={m.player1UserId}
-                              leagueId={itcLeagueId}
-                              title={`View ${m.player1Name}'s full ITC history on BCP`}
-                              size="xs"
+                            {m.player1Score !== undefined && m.player2Score !== undefined && (
+                              <span
+                                className={`font-medium ${
+                                  SCORE_OUTCOME_CLASSES[classifyScore(m.player1Score, m.player2Score)]
+                                }`}
+                              >
+                                {m.player1Score}–{m.player2Score}
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <PlayerCard
+                              player={resolveRosterPlayer(m.player1UserId, m.player1Name, players)}
+                              ranking={m.player1UserId ? boardItcByUserId[m.player1UserId] : undefined}
+                              itcLeagueId={itcLeagueId}
                             />
-                            <PlayerFactionDetails bcpUserId={m.player1UserId} players={players} />
-                          </span>
-                          <span className="text-text-tertiary">vs</span>
-                          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                            <span className="truncate">
-                              <PlayerStatsLink name={m.player2Name} bcpUserId={m.player2UserId} />
-                            </span>
-                            <ItcBadge
-                              ranking={
-                                m.player2UserId ? boardItcByUserId[m.player2UserId] : undefined
-                              }
-                              bcpUserId={m.player2UserId}
-                              leagueId={itcLeagueId}
-                              title={`View ${m.player2Name}'s full ITC history on BCP`}
-                              size="xs"
+                            <PlayerCard
+                              player={resolveRosterPlayer(m.player2UserId, m.player2Name, players)}
+                              ranking={m.player2UserId ? boardItcByUserId[m.player2UserId] : undefined}
+                              itcLeagueId={itcLeagueId}
                             />
-                            <PlayerFactionDetails bcpUserId={m.player2UserId} players={players} />
-                          </span>
-                          {m.player1Score !== undefined && m.player2Score !== undefined && (
-                            <span
-                              className={`ml-auto shrink-0 font-medium ${
-                                SCORE_OUTCOME_CLASSES[classifyScore(m.player1Score, m.player2Score)]
-                              }`}
-                            >
-                              {m.player1Score}–{m.player2Score}
-                            </span>
-                          )}
+                          </div>
                         </div>
                       ))}
                     </div>

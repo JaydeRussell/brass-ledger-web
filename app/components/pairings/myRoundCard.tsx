@@ -2,6 +2,8 @@
 import React from "react";
 import type { ItcRanking, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
+import ItcBadge from "../shared/itcBadge";
+import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
 import TeamRosterFallback from "./teamRosterFallback";
@@ -159,9 +161,6 @@ export default function MyRoundCard({
   }
 
   const resolved = board ? resolveFromBoard(board, myBcpUserId) : resolveFromPairing(pairing);
-  const opponentPlayer = resolved.opponentBcpUserId
-    ? players.find((p) => p.bcpUserId === resolved.opponentBcpUserId)
-    : undefined;
   const scoreOutcome =
     resolved.myScore !== undefined && resolved.opponentScore !== undefined
       ? classifyScore(resolved.myScore, resolved.opponentScore)
@@ -187,11 +186,7 @@ export default function MyRoundCard({
           {resolved.table ? `Table ${resolved.table}` : "Table TBD"}
         </span>
         <span className="min-w-0 flex-1 truncate text-text-primary">
-          vs{" "}
-          <PlayerStatsLink name={resolved.opponentName} bcpUserId={resolved.opponentBcpUserId} />
-          {opponentPlayer?.faction && (
-            <span className="ml-1.5 text-xs text-text-tertiary">({opponentPlayer.faction})</span>
-          )}
+          vs <PlayerStatsLink name={resolved.opponentName} bcpUserId={resolved.opponentBcpUserId} />
         </span>
         {!resolved.published ? (
           <span className="shrink-0 text-xs text-text-tertiary">unpublished</span>
@@ -207,6 +202,18 @@ export default function MyRoundCard({
           <span className="shrink-0 text-xs text-warning-600 dark:text-warning-400">in progress</span>
         )}
       </div>
+
+      {resolved.opponentBcpUserId && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <PlayerFactionDetails bcpUserId={resolved.opponentBcpUserId} players={players} />
+          <ItcBadge
+            ranking={itcByUserId?.[resolved.opponentBcpUserId]}
+            bcpUserId={resolved.opponentBcpUserId}
+            leagueId={itcLeagueId}
+            title={`View ${resolved.opponentName}'s full ITC history on BCP`}
+          />
+        </div>
+      )}
 
       {pairing.opponentTeamPlayerId && itcByUserId && (myRoster?.length || opponentRoster?.length) ? (
         <div className="mt-2">
@@ -237,6 +244,7 @@ export default function MyRoundCard({
             side1Players={myRoster ?? []}
             side2Name={resolved.opponentName}
             side2Players={opponentRoster ?? []}
+            itcByUserId={itcByUserId}
             itcLeagueId={itcLeagueId}
           />
         </div>

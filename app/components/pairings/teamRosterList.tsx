@@ -1,7 +1,6 @@
 "use client";
 import type { ItcRanking } from "../../lib/bcp";
-import ItcBadge from "../shared/itcBadge";
-import PlayerStatsLink from "../shared/playerStatsLink";
+import PlayerCard from "../shared/playerCard";
 
 type TeamRosterListProps = {
   name: string;
@@ -20,19 +19,11 @@ export default function TeamRosterList({ name, players, itcByUserId, itcLeagueId
       <p className="text-xs font-semibold text-text-tertiary">{name}</p>
       <ul className="flex flex-col gap-1">
         {players.map((player) => (
-          <li
-            key={player.id}
-            className="flex items-center gap-1.5 rounded-md bg-surface-2 px-2 py-1 text-xs"
-          >
-            <span className="min-w-0 flex-1 truncate text-text-secondary">
-              <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
-            </span>
-            <ItcBadge
+          <li key={player.id} className="rounded-md bg-surface-2 px-2 py-1">
+            <PlayerCard
+              player={player}
               ranking={player.bcpUserId ? itcByUserId?.[player.bcpUserId] : undefined}
-              bcpUserId={player.bcpUserId}
-              leagueId={itcLeagueId}
-              title={`View ${player.name}'s full ITC history on BCP`}
-              size="xs"
+              itcLeagueId={itcLeagueId}
             />
           </li>
         ))}
