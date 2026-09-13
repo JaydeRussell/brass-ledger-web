@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.11.0",
+    date: "2026-09-13",
+    title: "Player cards, mission matchups, and admin alerts",
+    highlights: [
+      "\"Your round\" (and its team-roster fallback) now shows each player's army, disposition, and ITC rating on a shared player card, reused across Roster, Pairings, and the Round board — a player's name now links to their published army list when one exists, falling back to their stats page otherwise.",
+      "Disposition tags now abbreviate and color-code by tone instead of one flat pill, and ITC ranking badges got a full gradient redesign — including, when signed in, an option to color relative to your own ranking instead of only the absolute scale.",
+      "For a singles 40k pairing where both players' Force Dispositions are known, \"Your round\" now shows each side's actual Primary Mission, a plain-language matchup summary, tactical suggestions, full VP-scoring rules, and the three official deployment-map layouts, in place of the opponent's BCP stats.",
+      "Admins are now emailed the moment a new account signs up pending approval, instead of only finding out by checking the admin page.",
+    ],
+  },
+  {
     version: "0.10.0",
     date: "2026-09-12",
     title: "Overview, Placings, and Admin polish",
