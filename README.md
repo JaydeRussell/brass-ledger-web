@@ -18,7 +18,9 @@ The page is split into tabs mirroring BCP's own event page:
   always all of them, no picking who to see. Whoever you're following (see
   below) sorts to the front and gets a highlighted card, and shows their
   already-published BCP ITC ranking (e.g. "ITC #15 · 1465 pts", linking to
-  their full history on BCP) once it's loaded.
+  their full history on BCP) once it's loaded. For events using 40k 11th
+  edition's Force Disposition mission system, each player's disposition
+  (Purge, Recon, Priority, T&H, Disruption) shows as a color-coded tag.
 - **Pairings**: browse the full pairings board for any round (every
   matchup, not just one you're following), plus a round-by-round summary
   if you are following someone. Completed matchups show their final score,
@@ -40,11 +42,27 @@ tab, each with its own round-by-round pairings summary on the Pairings
 tab. This only ever displays pairing/placing data BCP has already
 published; it never computes or predicts anything.
 
-**Sign in**: the "Sign in with Google" button in the header (via this
-app's own backend) unlocks account-backed features — following and
-recent events sync across devices, and a player-stats page with a
-placing-over-time trend. Every read-only feature above works the same
-whether you're signed in or not.
+**Sign in**: "Sign in with Google" (via this app's own backend), reachable
+from the account section at the top of the header's hamburger menu. A new
+sign-up starts pending until an admin approves it (or rejects it) from
+`/admin`. Once approved, linking your BCP profile (open an event you
+played in and pick your own name, or paste a profile link/id as a
+fallback) unlocks:
+- **My Events** (`/my-events`) — every BCP event tied to your profile,
+  split into Past/Ongoing/Future tabs, each card expandable to a summary
+  and a link to that event's own page here.
+- **Calendar** (`/calendar`) — the same Ongoing/Future events as a month
+  grid.
+- **Player Stats** — a placing-over-time trend for your own profile
+  (`/stats`), or for any player whose name links out to their stats page
+  elsewhere in the app (`/players/[bcpUserId]`) — still requires being
+  signed in like every other account page, just not linking your own
+  profile, since that player's BCP id is already known from the link.
+- Following and recent events syncing across devices instead of staying
+  per-browser.
+
+Every read-only feature above (Overview/Roster/Pairings/Placings,
+Following, Search) works the same whether you're signed in or not.
 
 **This app deliberately does not score, rank, or suggest pairings.**
 Challengers Cup's event pack bans "AI programs, algorithms, or

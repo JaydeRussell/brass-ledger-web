@@ -36,7 +36,7 @@ test("shows a disposition badge only for players who have one", () => {
   const html = renderToStaticMarkup(
     React.createElement(TeamRoster, { teamName: "Team A", players: withDisposition })
   );
-  assert.match(html, /Reconnaissance/);
+  assert.match(html, /Recon/);
 });
 
 test("doesn't repeat the disposition as a subfaction suffix when BCP reused that field for it", () => {
@@ -47,7 +47,8 @@ test("doesn't repeat the disposition as a subfaction suffix when BCP reused that
     React.createElement(TeamRoster, { teamName: "Team A", players: withDisposition })
   );
   assert.ok(!html.includes("Aeldari — Reconnaissance"));
-  assert.equal((html.match(/Reconnaissance/g) ?? []).length, 1);
+  assert.ok(!html.includes("Reconnaissance"));
+  assert.equal((html.match(/Recon/g) ?? []).length, 1);
 });
 
 test("shows a placeholder message when the team has no players yet", () => {

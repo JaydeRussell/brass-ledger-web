@@ -5,6 +5,7 @@ import ClientErrorLogger from "./components/shared/clientErrorLogger";
 import { NavProvider } from "./components/nav/navContext";
 import NavDrawer from "./components/nav/navDrawer";
 import Footer from "./components/layout/footer";
+import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,11 +56,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
       >
         <ClientErrorLogger />
-        <NavProvider>
-          <NavDrawer />
-          {children}
-          <Footer />
-        </NavProvider>
+        <ViewerItcProvider>
+          <NavProvider>
+            <NavDrawer />
+            {children}
+            <Footer />
+          </NavProvider>
+        </ViewerItcProvider>
       </body>
     </html>
   );

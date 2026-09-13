@@ -28,9 +28,13 @@
  * `danger`/`success`/`warning` are semantic states (errors/rejected,
  * approved/confirmed, pending) — deliberately distinct hues from brass
  * and from each other so a status badge never reads as "themed" rather
- * than "meaningful." lib/scoreColor.ts's win/draw/loss + ITC-rank
- * gradients are a separate, deliberately self-contained system (see that
- * file's own comments) and are not built from these tokens.
+ * than "meaningful." lib/scoreColor.ts's win/draw/loss gradient is a
+ * separate, deliberately self-contained system (see that file's own
+ * comments); its ITC-rank gradient, however, *is* built partly from these
+ * tokens (brass/success/warning/danger, hand-converted to sRGB there,
+ * since a computed inline style can't reference a CSS custom property),
+ * plus one extra blue anchor at its weak end that isn't a token here at
+ * all — update both places together if one changes.
  * --------------------------------------------------------------------- */
 :root {
   /* Surfaces + text (light mode) */
