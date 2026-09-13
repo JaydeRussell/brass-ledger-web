@@ -82,7 +82,7 @@ test("surfaces the opponent's faction, disposition, and list link on a published
     React.createElement(MyPairings, { ...baseProps, pairings, upToRound: 1, players })
   );
   assert.match(html, /\(Necrons\)/);
-  assert.match(html, /Purge the Foe/);
+  assert.match(html, />Purge</);
   assert.match(html, /href="https:\/\/example\.com\/list\.pdf"/);
 });
 

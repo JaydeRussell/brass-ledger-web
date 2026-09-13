@@ -107,7 +107,7 @@ test("shows the opponent's disposition and ITC badge, when known", () => {
       itcLeagueId: "league-2026",
     })
   );
-  assert.match(html, /Purge the Foe/);
+  assert.match(html, />Purge</);
   // The compact (mobile) label carries just the placing, the full label
   // (desktop) adds points — both render server-side, toggled by CSS.
   assert.match(html, /<span class="sm:hidden">#15<\/span>/);

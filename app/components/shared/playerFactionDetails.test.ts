@@ -26,6 +26,6 @@ test("renders nothing without a matching bcpUserId in the roster", () => {
 test("shows faction, disposition, and a list link when the roster has them", () => {
   const html = renderStatic(React.createElement(PlayerFactionDetails, { bcpUserId: "u-rival", players }));
   assert.match(html, /\(Necrons\)/);
-  assert.match(html, /Purge the Foe/);
+  assert.match(html, />Purge</);
   assert.match(html, /href="https:\/\/example\.com\/list\.pdf"/);
 });

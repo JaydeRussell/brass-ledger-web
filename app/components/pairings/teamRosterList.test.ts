@@ -36,7 +36,7 @@ test("shows name+disposition on one row and faction+ITC badge on the next", () =
       itcLeagueId: "league-2026",
     })
   );
-  assert.match(html, /Jayde Russell[\s\S]*Purge the Foe/);
+  assert.match(html, /Jayde Russell[\s\S]*>Purge</);
   assert.match(html, /World Eaters/);
   assert.match(html, /<span class="sm:hidden">#15<\/span>/);
 });
