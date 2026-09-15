@@ -164,12 +164,40 @@ Recent (the last few sessions):
   (45 WebP images, 15 `<disposition>-vs-<disposition>` directories ×
   layouts A/B/C). Gated in `myRoundCard.tsx` behind `isTeamEvent` plus
   both sides having a known disposition. **Confirmed working live**
-  against a real singles pairing. **Known gap, tracked, not blocking**:
-  ~9 special-action terms (sensor sweep, committed sabotage, etc.) are
-  cited rather than defined in `missionScoring.ts` — their rule text is
-  on the physical mission-card backs, not in the source PDF this was
-  transcribed from (see `MISSING_GLOSSARY_TERMS` in
-  `missionMatchups.ts`).
+  against a real singles pairing. The ~9 special-action terms cited in
+  `missionScoring.ts` (sensor sweep, committed sabotage, etc.) — whose
+  rule text lives on the physical mission-card backs, not in the
+  front-faces-only PDF this project transcribes from — are now defined
+  in `app/lib/missionActionGlossary.ts` (sourced from a fan
+  transcription of the same mission deck on Wahapedia, cross-checked
+  against this project's own front-card text; see `missionSources.ts`'s
+  `wahapediaMissionDeck` entry) and shown in the mission-matchup panel's
+  per-mission rules disclosure. The old `MISSING_GLOSSARY_TERMS` gap in
+  `missionMatchups.ts` is resolved and that constant has been removed.
+  Its 15 matchup write-ups (`missionMatchups.ts`'s summaries/tactics)
+  were also re-examined against the full VP scoring and the new
+  glossary — 9 of the 15 had real inaccuracies fixed (the most
+  significant: the Disruption-mirror write-up treated Outmanoeuvre's
+  10VP enemy-home-objective control as a one-time bonus, when it's
+  actually checked every one of your turns you hold it).
+- **`/wiki` page** — a new public, unguarded top-level page (nav
+  drawer's "Wiki" link; same plain-server-component pattern as
+  `/about`/`/changelog`, no auth guard) covering the mission/matchup
+  glossary: the 5 Force Dispositions, the full disposition→mission
+  matrix, every Primary Mission's complete VP scoring (one
+  `<details>` per mission, grouped by disposition), and the special-
+  action glossary above. Not a duplicate data source — it renders
+  `missionMatrix.ts`/`missionScoring.ts`/`missionActionGlossary.ts`
+  directly. The per-mission scoring breakdown itself was extracted out
+  of `missionMatchupPanel.tsx` into a shared
+  `app/components/shared/missionScoringDetails.tsx` so both the wiki
+  and the mission-matchup panel render it from one place. Deliberately
+  scoped to reference material only (no tournament-format content, no
+  per-pairing tactics) — a plain content page today, but the eventual
+  destination if this project ever needs a broader 40k rules reference
+  (see the `warhammer-40k` Claude Code skill in `.claude/skills/`,
+  which already has full Core Rules + Event Companion content
+  transcribed and ready to draw from for that).
 - **Floating feedback widget (v0.12.0)** — a "Feedback" pill, bottom-
   right on every page (`app/components/feedback/feedbackWidget.tsx`,
   mounted once in `app/layout.tsx`), opens a small in-place panel
@@ -193,7 +221,6 @@ Recent (the last few sessions):
 
 ## What's NOT yet done / verified
 
-- The mission-matchup panel's special-action glossary gap (see above).
 - The feedback widget's admin alert email hasn't been confirmed to
   actually arrive in a real inbox yet (see above).
 

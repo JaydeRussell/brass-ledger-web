@@ -1,9 +1,9 @@
 import type { Disposition } from "../../lib/dispositions";
 import { getPrimaryMission } from "../../lib/missionMatrix";
-import { MISSION_SCORING, type MissionScoring } from "../../lib/missionScoring";
 import { getMissionMatchup, deploymentMapImages } from "../../lib/missionMatchups";
 import { MISSION_SOURCES } from "../../lib/missionSources";
 import type { MissionId } from "../../lib/missions";
+import MissionScoringDetails from "../shared/missionScoringDetails";
 
 type MissionMatchupPanelProps = {
   myDisposition: Disposition;
@@ -14,36 +14,15 @@ type MissionMatchupPanelProps = {
  * native <details>/<summary> disclosure rather than a useState toggle, so
  * this stays a plain hookless component (testable via testUtils.ts's
  * walk/find, same as dispositionBadge.tsx) and gets expand/collapse for
- * free with no JS. */
+ * free with no JS. The scoring breakdown itself is shared with the /wiki
+ * page — see missionScoringDetails.tsx. */
 function MissionRules({ label, missionId }: { label: string; missionId: MissionId }) {
-  const scoring: MissionScoring = MISSION_SCORING[missionId];
   return (
     <details className="text-sm">
       <summary className="cursor-pointer font-medium text-brass-600 dark:text-brass-400">
         {label}: {missionId} — full rules
       </summary>
-      <div className="mt-2 flex flex-col gap-2 border-l-2 border-surface-border pl-3">
-        {scoring.setup && <p className="text-xs italic text-text-secondary">{scoring.setup}</p>}
-        {scoring.bands.map((band) => (
-          <div key={band.when}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">{band.when}</p>
-            <ul className="mt-0.5 flex flex-col">
-              {band.conditions.map((condition) => (
-                <li
-                  key={condition.text}
-                  className="flex items-baseline justify-between gap-2 border-b border-surface-border py-1 text-text-secondary"
-                >
-                  <span>
-                    {condition.cumulative && <span className="text-text-tertiary">+ </span>}
-                    {condition.text}
-                  </span>
-                  <span className="shrink-0 font-medium text-text-primary">{condition.vp}VP</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+      <MissionScoringDetails missionId={missionId} />
     </details>
   );
 }
@@ -121,7 +100,10 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
       <p className="text-xs text-text-tertiary">
         Mission rules per {MISSION_SOURCES.eventCompanion.name} {MISSION_SOURCES.eventCompanion.version} (
         {MISSION_SOURCES.eventCompanion.asOf}) and {MISSION_SOURCES.printSheets.name} (
-        {MISSION_SOURCES.printSheets.asOf}) — subject to change if Games Workshop revises the mission pack.
+        {MISSION_SOURCES.printSheets.asOf}); special-action definitions above per{" "}
+        {MISSION_SOURCES.wahapediaMissionDeck.name} ({MISSION_SOURCES.wahapediaMissionDeck.asOf}, a fan
+        transcription, not an official Games Workshop source) — subject to change if Games Workshop revises the
+        mission pack.
       </p>
     </div>
   );

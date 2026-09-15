@@ -22,11 +22,11 @@ export type MissionScoring = {
   // card has one.
   setup?: string;
   bands: ScoringBand[];
-  // Names of MISSING_GLOSSARY_TERMS entries this mission's conditions
-  // reference (e.g. "sensor sweep") whose exact rule text lives on the
-  // physical card's reverse side, not in the front-faces-only PDF this
-  // was transcribed from. See missionMatchups.ts's MISSING_GLOSSARY_TERMS.
-  // TODO(mission-glossary): remove this field once those terms are defined.
+  // Special-action terms (e.g. "sensor sweep") this mission's conditions
+  // reference — each is a full Objective Action printed on the physical
+  // card's reverse side, not in the front-faces-only PDF this scoring data
+  // was transcribed from. See missionActionGlossary.ts's
+  // SPECIAL_ACTION_DEFINITIONS for the full rule text of each.
   specialTerms?: string[];
 };
 
@@ -34,8 +34,9 @@ export type MissionScoring = {
 // missionSources.ts's `printSheets` entry) — every mission's VP-scoring
 // numbers and thresholds are from the card fronts and are complete; a few
 // conditions cite a special action (see each entry's `specialTerms`) whose
-// full rule text is on the card backs, not yet transcribed (see the
-// TODO(mission-glossary) list in missionMatchups.ts).
+// full rule text is on the card backs — see missionActionGlossary.ts's
+// SPECIAL_ACTION_DEFINITIONS for that text (sourced separately, since the
+// card backs aren't in this front-faces-only PDF).
 export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
   // ---- Take and Hold ----
   "Battlefield Dominance": {
@@ -284,7 +285,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "A friendly unit secured the asset this turn (see your mission card's reverse side).",
+            text: "A friendly unit secured the asset this turn.",
             vp: 4,
           },
           {
@@ -335,7 +336,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "For each friendly unit that committed sabotage this turn (see your mission card's reverse side).",
+            text: "For each friendly unit that committed sabotage this turn.",
             vp: 3,
           },
           {
@@ -360,7 +361,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "A friendly unit performed a vanguard operation this turn (see your mission card's reverse side).",
+            text: "A friendly unit performed a vanguard operation this turn.",
             vp: 4,
           },
           { text: "One or more enemy units were destroyed this turn.", vp: 2 },
@@ -385,7 +386,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "A friendly unit performed a sensor sweep this turn (see your mission card's reverse side).",
+            text: "A friendly unit performed a sensor sweep this turn.",
             vp: 4,
           },
           {
@@ -452,7 +453,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         conditions: [
           { text: "You control one or more objectives (excluding your home objective).", vp: 4 },
           {
-            text: "One objective is triangulated (see your mission card's reverse side).",
+            text: "One objective is triangulated.",
             vp: 3,
           },
           { text: "Two objectives are triangulated.", vp: 6 },
@@ -506,7 +507,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Second Battle Round onwards — end of your turn",
         conditions: [
           {
-            text: "For each friendly unit that extracted intelligence this turn (see your mission card's reverse side).",
+            text: "For each friendly unit that extracted intelligence this turn.",
             vp: 7,
           },
         ],
@@ -532,7 +533,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "One or more enemy units were surveilled this turn (see your mission card's reverse side), unless each of those units is within range of an objective with one or more operation markers within range of it.",
+            text: "One or more enemy units were surveilled this turn, unless each of those units is within range of an objective with one or more operation markers within range of it.",
             vp: 4,
           },
         ],
@@ -559,7 +560,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "For each terrain area trapped this turn (see your mission card's reverse side).",
+            text: "For each terrain area trapped this turn.",
             vp: 2,
           },
           { text: "For each of those terrain areas that is an objective.", vp: 3, cumulative: true },
@@ -646,7 +647,7 @@ export const MISSION_SCORING: Record<MissionId, MissionScoring> = {
         when: "Any Battle Round — end of your turn",
         conditions: [
           {
-            text: "For each objective that is decoyed (see your mission card's reverse side).",
+            text: "For each objective that is decoyed.",
             vp: 2,
           },
           {

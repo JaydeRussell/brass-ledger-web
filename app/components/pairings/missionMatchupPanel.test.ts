@@ -53,6 +53,19 @@ test("a mirror matchup shows the same mission for both sides", () => {
   assert.match(html, /Their mission: <\/span><span class="[^"]*">Gather Intel/);
 });
 
+test("shows a special-action definition for a mission that cites one", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(MissionMatchupPanel, {
+      myDisposition: "Disruption",
+      opponentDisposition: "Reconnaissance",
+    })
+  );
+  // Disruption vs. Reconnaissance pairs Smoke and Mirrors ("decoyed") with
+  // Surveil the Foe ("surveilled") — both cite a specialTerms entry.
+  assert.match(html, /Decoy objective action/);
+  assert.match(html, /Surveil the Foe objective action/);
+});
+
 test("shows the source version/date footnote", () => {
   const html = renderToStaticMarkup(
     React.createElement(MissionMatchupPanel, {
