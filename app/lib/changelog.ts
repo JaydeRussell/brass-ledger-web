@@ -23,6 +23,16 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.13.0",
+    date: "2026-09-14",
+    title: "Warhammer 40k wiki",
+    highlights: [
+      "A new \"Wiki\" page (nav drawer, no account needed) covers the mission-matchup panel's reference data in one browsable place: the 5 Force Dispositions, the full disposition matchup matrix, every Primary Mission's complete VP scoring, and a glossary of special mission-card actions.",
+      "The mission-matchup panel now explains the special mission-card actions it references (sensor sweep, committed sabotage, vanguard operation, and others) instead of just citing them — the rule text was missing until now because it only appears on the physical cards' reverse sides.",
+      "Corrected several mission-matchup summaries and tactics that didn't match the actual scoring rules once double-checked — most notably, the Disruption-mirror write-up now reflects that controlling the enemy's home objective in Outmanoeuvre scores every turn you hold it, not just once.",
+    ],
+  },
+  {
     version: "0.12.0",
     date: "2026-09-14",
     title: "Feedback widget",
