@@ -11,7 +11,7 @@ import packageJson from "../../../package.json" with { type: "json" };
  */
 export default function Footer() {
   return (
-    <footer className="px-4 py-6 text-center text-xs text-text-tertiary">
+    <footer className="px-4 py-6 text-center text-xs text-text-tertiary print:hidden">
       Brass Ledger{" "}
       <Link href="/changelog" className="hover:underline">
         v{packageJson.version}

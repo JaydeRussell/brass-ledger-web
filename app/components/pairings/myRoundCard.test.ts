@@ -15,6 +15,7 @@ test("shows a loading message while checking", () => {
     React.createElement(MyRoundCard, {
       loading: true,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing: null,
       board: null,
@@ -30,6 +31,7 @@ test("shows the error message on failure", () => {
     React.createElement(MyRoundCard, {
       loading: false,
       error: "boom",
+      eventId: "evt-1",
       round: 2,
       pairing: null,
       board: null,
@@ -45,6 +47,7 @@ test("shows a fallback when nothing is published for the current round", () => {
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 3,
       pairing: null,
       board: null,
@@ -68,6 +71,7 @@ test("shows an individual pairing's table, opponent, and their faction", () => {
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -103,6 +107,7 @@ test("shows the opponent's disposition and ITC badge, when known", () => {
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -134,6 +139,7 @@ test("shows an unpublished pairing's opponent without a score", () => {
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -160,6 +166,7 @@ test("shows a decided game's score", () => {
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -184,6 +191,7 @@ test("a team-level pairing (no resolved board) shows the opposing team, no oppon
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -214,6 +222,7 @@ test("a team-level pairing with no resolved board shows both sides' rosters when
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -246,6 +255,7 @@ test("a team pairing shows a neutral avg-ITC comparison when ITC data is availab
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -282,6 +292,7 @@ test("a resolved board orients my side out from the opponent's, regardless of ra
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board,
@@ -313,6 +324,7 @@ test("singles event, both dispositions known: shows the mission-matchup panel in
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -344,6 +356,7 @@ test("team event, both dispositions known: still falls back to player stats", ()
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,
@@ -373,6 +386,7 @@ test("singles event, only one side's disposition known: falls back to player sta
     React.createElement(MyRoundCard, {
       loading: false,
       error: null,
+      eventId: "evt-1",
       round: 2,
       pairing,
       board: null,

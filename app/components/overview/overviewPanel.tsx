@@ -3,7 +3,7 @@ import type { EventInfo, ItcRanking, MyPairing, TeamBoardMatchup } from "../../l
 import MyRoundCard from "../pairings/myRoundCard";
 import LinkifiedText from "../shared/linkifiedText";
 import TeamItcComparison from "../shared/teamItcComparison";
-import Spinner from "../shared/spinner";
+import Skeleton from "../shared/skeleton";
 import Card from "../ui/card";
 import Button from "../ui/button";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
@@ -24,6 +24,9 @@ type FollowedSummary = {
 // out, no linked BCP profile, not on this event's roster, or the event
 // hasn't started), in which case OverviewPanel renders exactly as before.
 type MyRoundSummary = {
+  // Threaded straight into MyRoundCard's own eventId prop — see its doc
+  // comment (scopes RoundNotes' private per-round notes to this event).
+  eventId: string;
   round: number;
   loading: boolean;
   error: string | null;
@@ -98,6 +101,7 @@ export default function OverviewPanel({
         <MyRoundCard
           loading={myRound.loading}
           error={myRound.error}
+          eventId={myRound.eventId}
           round={myRound.round}
           pairing={myRound.pairing}
           board={myRound.board}
@@ -145,12 +149,17 @@ export default function OverviewPanel({
           </>
         ) : (
           <div aria-live="polite">
-            <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <Spinner size="sm" />
-              <span>Loading event…</span>
+            <span className="sr-only">Loading event…</span>
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mt-2 h-4 w-48" />
+            <Skeleton className="mt-1.5 h-3 w-64" />
+            <div className="mt-3 flex flex-col gap-2 border-t border-surface-border pt-3">
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="h-3 w-52" />
+              <Skeleton className="h-3 w-36" />
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-text-tertiary">
+              <p className="mt-3 text-xs text-text-tertiary">
                 Taking longer than usual — this is a first look at this event, so it&apos;s asking
                 Best Coast Pairings directly.
               </p>

@@ -521,6 +521,15 @@ export type PlacingEntry = {
   // individual-event row; a team-event row's `name` is the team itself,
   // not one person, so there's no single account to point it at.
   bcpUserId?: string;
+  // faction/subFaction: same story as bcpUserId above — only ever set
+  // for an individual-event row (see internal/bcp/placings.go's
+  // bcpPlacingRecord on the backend). `faction` is BCP's own free-text
+  // string, not normalized against this app's faction lists elsewhere
+  // (e.g. "Space Marines (Astartes)", confirmed against a real event —
+  // see lib/superFaction.ts, which is built to tolerate that kind of
+  // drift rather than assume an exact canonical name).
+  faction?: string;
+  subFaction?: string;
 };
 
 /**

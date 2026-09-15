@@ -36,17 +36,17 @@ mock.module("../../lib/bcp.ts", {
 mock.module("../../lib/clientLog.ts", { namedExports: { logClientEvent: () => {} } });
 const { default: PlayerStatsPanel } = await import("./playerStatsPanel.tsx");
 
-test("shows a loading spinner on first paint, before stats have loaded", () => {
+test("shows a loading skeleton on first paint, before stats have loaded", () => {
   const html = renderToStaticMarkup(React.createElement(PlayerStatsPanel, { bcpUserId: "u1" }));
   assert.match(html, /Loading player stats…/);
-  assert.match(html, /animate-spin/);
+  assert.match(html, /animate-pulse/);
   // useDelayedFlag starts false — the "taking longer than usual" hint
   // only appears once the 3-second threshold has actually elapsed, never
   // on the very first render.
   assert.ok(!html.includes("Taking longer than usual"));
 });
 
-test("mode: player also shows a loading spinner on first paint", () => {
+test("mode: player also shows a loading skeleton on first paint", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlayerStatsPanel, { bcpUserId: "u1", mode: "player", playerName: "Alexandria" })
   );

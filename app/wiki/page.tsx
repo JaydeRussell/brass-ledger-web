@@ -2,6 +2,7 @@ import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import Card from "../components/ui/card";
 import MissionScoringDetails from "../components/shared/missionScoringDetails";
+import MatchupLookup from "../components/wiki/matchupLookup";
 import { DISPOSITIONS, type Disposition } from "../lib/dispositions";
 import { MISSION_MATRIX } from "../lib/missionMatrix";
 import { SPECIAL_ACTION_DEFINITIONS } from "../lib/missionActionGlossary";
@@ -89,6 +90,16 @@ export default function WikiPage() {
               </tbody>
             </table>
           </div>
+        </Card>
+
+        <Card className="p-4">
+          <h2 className="mb-2 text-sm font-semibold text-text-primary">Matchup lookup</h2>
+          <p className="mb-3 text-xs text-text-secondary">
+            Pick any two dispositions to see the full write-up, tactics, VP scoring, and
+            deployment maps for that pairing — the same content the &quot;Your round&quot; panel
+            shows for a real pairing, without needing to be in one.
+          </p>
+          <MatchupLookup />
         </Card>
 
         {DISPOSITIONS.map((disposition) => (

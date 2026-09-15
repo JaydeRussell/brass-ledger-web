@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NavProvider } from "./navContext.tsx";
+import { CommandPaletteProvider } from "../shared/commandPaletteContext.tsx";
 
 // NavDrawer is now built on ui/dialog.tsx's Radix-backed Dialog, which
 // portals its content to document.body. Under a plain react-dom/server
@@ -31,16 +32,26 @@ mock.module("next/navigation", {
 });
 const { default: NavDrawer } = await import("./navDrawer.tsx");
 
+function renderInProviders() {
+  return renderToStaticMarkup(
+    React.createElement(
+      CommandPaletteProvider,
+      null,
+      React.createElement(NavProvider, null, React.createElement(NavDrawer))
+    )
+  );
+}
+
 test("mounts without throwing while closed", () => {
   currentPath = "/";
   assert.doesNotThrow(() => {
-    renderToStaticMarkup(React.createElement(NavProvider, null, React.createElement(NavDrawer)));
+    renderInProviders();
   });
 });
 
 test("mounts without throwing regardless of the current path", () => {
   currentPath = "/my-events";
   assert.doesNotThrow(() => {
-    renderToStaticMarkup(React.createElement(NavProvider, null, React.createElement(NavDrawer)));
+    renderInProviders();
   });
 });
