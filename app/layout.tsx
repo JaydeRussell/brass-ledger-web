@@ -5,6 +5,7 @@ import ClientErrorLogger from "./components/shared/clientErrorLogger";
 import { NavProvider } from "./components/nav/navContext";
 import NavDrawer from "./components/nav/navDrawer";
 import Footer from "./components/layout/footer";
+import FeedbackWidget from "./components/feedback/feedbackWidget";
 import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
@@ -61,6 +62,7 @@ export default function RootLayout({
             <NavDrawer />
             {children}
             <Footer />
+            <FeedbackWidget />
           </NavProvider>
         </ViewerItcProvider>
       </body>
