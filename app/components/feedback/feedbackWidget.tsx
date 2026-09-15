@@ -79,7 +79,7 @@ export default function FeedbackWidget() {
         type="button"
         onClick={() => setIsOpen(true)}
         aria-label="Report a bug or suggest something"
-        className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-full border border-surface-border bg-surface-1 px-3.5 py-2.5 text-sm font-medium text-text-primary shadow-lg hover:bg-surface-2"
+        className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-full border border-surface-border bg-surface-1 px-3.5 py-2.5 text-sm font-medium text-text-primary shadow-lg hover:bg-surface-2 print:hidden"
       >
         <svg aria-hidden viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0">
           <path
@@ -96,12 +96,12 @@ export default function FeedbackWidget() {
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={close} aria-hidden />
+      <div className="fixed inset-0 z-40 bg-black/30 print:hidden" onClick={close} aria-hidden />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="feedback-widget-title"
-        className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-surface-border bg-surface-1 p-4 shadow-xl"
+        className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-surface-border bg-surface-1 p-4 shadow-xl print:hidden"
       >
         <div className="flex items-center justify-between">
           <h2 id="feedback-widget-title" className="text-sm font-semibold text-text-primary">

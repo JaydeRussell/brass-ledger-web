@@ -4,7 +4,7 @@ import { fetchMyStats, fetchPlayerStats, type MyStats, type PlacingWithField } f
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
 import PlacingTrendChart from "./placingTrendChart";
 import ItcBadge from "../shared/itcBadge";
-import Spinner from "../shared/spinner";
+import Skeleton from "../shared/skeleton";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
@@ -155,9 +155,12 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
   if (loading) {
     return (
       <Card role="status" aria-live="polite" className="p-4 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Spinner size="sm" />
-          <span className="text-sm text-text-secondary">Loading player stats…</span>
+        <span className="sr-only">Loading player stats…</span>
+        <Skeleton className="h-4 w-28" />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-14 min-w-[6rem] flex-1" />
+          ))}
         </div>
         {slowLoad && (
           <p className="mt-2 text-xs text-text-tertiary">

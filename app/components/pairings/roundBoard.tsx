@@ -13,6 +13,7 @@ import PlayerCard from "../shared/playerCard";
 import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
+import Skeleton from "../shared/skeleton";
 import Spinner from "../shared/spinner";
 import TeamRosterFallback from "./teamRosterFallback";
 import Button from "../ui/button";
@@ -228,13 +229,15 @@ export default function RoundBoard({
         {error && <ErrorAlert size="sm">Couldn&apos;t load round {round}: {error}</ErrorAlert>}
 
         {!error && loading && (
-          <div className="p-2">
-            <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <Spinner size="sm" />
-              <span>Loading round {round}…</span>
+          <div className="p-2" aria-live="polite">
+            <span className="sr-only">Loading round {round}…</span>
+            <div className="flex flex-col gap-1.5">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-9 w-full" />
+              ))}
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-text-tertiary">
+              <p className="mt-2 text-xs text-text-tertiary">
                 Taking longer than usual — first look at this round.
               </p>
             )}

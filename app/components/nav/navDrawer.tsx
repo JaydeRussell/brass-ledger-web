@@ -5,16 +5,8 @@ import { useNav } from "./navContext";
 import AccountSection from "./accountSection";
 import { Dialog, DialogClose } from "../ui/dialog";
 import { useCurrentUser } from "../../lib/auth";
-
-const BASE_LINKS = [
-  { href: "/", label: "Event" },
-  { href: "/my-events", label: "My Events" },
-  { href: "/calendar", label: "Calendar" },
-  { href: "/stats", label: "Player Stats" },
-  { href: "/wiki", label: "Wiki" },
-  { href: "/about", label: "About" },
-  { href: "/changelog", label: "Changelog" },
-];
+import { NAV_LINKS as BASE_LINKS } from "../../lib/navLinks";
+import { useCommandPalette } from "../shared/commandPaletteContext";
 
 /**
  * The left-hand hamburger menu itself, mounted once in app/layout.tsx so
@@ -48,6 +40,7 @@ export default function NavDrawer() {
   // props. Only used here to role-gate the Admin link.
   const { user } = useCurrentUser();
   const links = user?.role === "admin" ? [...BASE_LINKS, { href: "/admin", label: "Admin" }] : BASE_LINKS;
+  const { open: openCommandPalette } = useCommandPalette();
 
   return (
     <Dialog
@@ -77,27 +70,44 @@ export default function NavDrawer() {
         </DialogClose>
       </div>
 
-      <AccountSection />
+      {/* flex-1 + overflow-y-auto so a tall account section (now including
+          the accent-theme swatch grid) plus every nav link can't overflow
+          past the Dialog panel's fixed inset-y-0 height on a short
+          viewport — the header row above stays put while this scrolls. */}
+      <div className="flex-1 overflow-y-auto">
+        <AccountSection />
 
-      <nav className="flex flex-col gap-1 p-2">
-        {links.map((link) => {
-          const active = pathname === link.href;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={close}
-              className={`rounded-md px-3 py-2 text-sm font-medium ${
-                active
-                  ? "bg-brass-500/15 text-brass-600 dark:text-brass-400"
-                  : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-              }`}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
+        <nav className="flex flex-col gap-1 p-2">
+          <button
+            type="button"
+            onClick={() => {
+              close();
+              openCommandPalette();
+            }}
+            className="flex items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          >
+            Quick search
+            <span className="text-xs text-text-tertiary">⌘K</span>
+          </button>
+          {links.map((link) => {
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={close}
+                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                  active
+                    ? "bg-brass-500/15 text-brass-600 dark:text-brass-400"
+                    : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </Dialog>
   );
 }

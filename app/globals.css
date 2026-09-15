@@ -95,6 +95,107 @@
   --text-tertiary: oklch(0.52 0.012 260);
 }
 
+/* ---------------------------------------------------------------------
+ * Accent themes — alternate `--brass-*` ramps, applied via a
+ * `data-accent="…"` attribute on <html> (see lib/theme.ts's AccentTheme/
+ * useAccentTheme and components/ui/accentThemePicker.tsx), independent of
+ * light/dark mode above: every theme works in either. "brass" itself is
+ * the default and has no override block — it's just :root's values.
+ *
+ * Every ramp keeps the exact same lightness at each of the five stops as
+ * brass (0.88/0.75/0.68/0.58/0.3) and only varies hue/chroma, so anything
+ * that depends on a stop's contrast today (e.g. themeToggle.tsx's fixed
+ * dark text sitting on `bg-brass-500`) keeps working unchanged for every
+ * theme, not just brass.
+ * --------------------------------------------------------------------- */
+[data-accent="ultramarine"] {
+  --brass-200: oklch(0.88 0.03 258);
+  --brass-400: oklch(0.75 0.08 256);
+  --brass-500: oklch(0.68 0.11 254);
+  --brass-600: oklch(0.58 0.11 252);
+  --brass-900: oklch(0.3 0.09 250);
+}
+
+[data-accent="sanguine"] {
+  --brass-200: oklch(0.88 0.05 16);
+  --brass-400: oklch(0.75 0.12 15);
+  --brass-500: oklch(0.68 0.17 15);
+  --brass-600: oklch(0.58 0.17 14);
+  --brass-900: oklch(0.3 0.11 12);
+}
+
+[data-accent="verdant"] {
+  --brass-200: oklch(0.88 0.04 142);
+  --brass-400: oklch(0.75 0.09 140);
+  --brass-500: oklch(0.68 0.12 138);
+  --brass-600: oklch(0.58 0.12 136);
+  --brass-900: oklch(0.3 0.08 132);
+}
+
+[data-accent="plague-bloom"] {
+  --brass-200: oklch(0.88 0.03 104);
+  --brass-400: oklch(0.75 0.06 102);
+  --brass-500: oklch(0.68 0.08 100);
+  --brass-600: oklch(0.58 0.08 98);
+  --brass-900: oklch(0.3 0.06 95);
+}
+
+[data-accent="necron-emerald"] {
+  --brass-200: oklch(0.88 0.03 178);
+  --brass-400: oklch(0.75 0.07 176);
+  --brass-500: oklch(0.68 0.1 174);
+  --brass-600: oklch(0.58 0.1 172);
+  --brass-900: oklch(0.3 0.07 168);
+}
+
+[data-accent="waaagh"] {
+  --brass-200: oklch(0.88 0.07 132);
+  --brass-400: oklch(0.75 0.15 130);
+  --brass-500: oklch(0.68 0.19 128);
+  --brass-600: oklch(0.58 0.19 126);
+  --brass-900: oklch(0.3 0.12 122);
+}
+
+[data-accent="amethyst"] {
+  --brass-200: oklch(0.88 0.05 302);
+  --brass-400: oklch(0.75 0.11 301);
+  --brass-500: oklch(0.68 0.15 300);
+  --brass-600: oklch(0.58 0.15 299);
+  --brass-900: oklch(0.3 0.1 296);
+}
+
+[data-accent="hive-bloom"] {
+  --brass-200: oklch(0.88 0.06 328);
+  --brass-400: oklch(0.75 0.13 327);
+  --brass-500: oklch(0.68 0.17 326);
+  --brass-600: oklch(0.58 0.17 325);
+  --brass-900: oklch(0.3 0.11 320);
+}
+
+[data-accent="tau-cyan"] {
+  --brass-200: oklch(0.88 0.04 218);
+  --brass-400: oklch(0.75 0.09 216);
+  --brass-500: oklch(0.68 0.12 214);
+  --brass-600: oklch(0.58 0.12 212);
+  --brass-900: oklch(0.3 0.08 208);
+}
+
+[data-accent="custodian-gold"] {
+  --brass-200: oklch(0.88 0.08 98);
+  --brass-400: oklch(0.75 0.16 94);
+  --brass-500: oklch(0.68 0.21 90);
+  --brass-600: oklch(0.58 0.21 86);
+  --brass-900: oklch(0.3 0.13 80);
+}
+
+[data-accent="khorne-crimson"] {
+  --brass-200: oklch(0.88 0.06 38);
+  --brass-400: oklch(0.75 0.13 36);
+  --brass-500: oklch(0.68 0.18 34);
+  --brass-600: oklch(0.58 0.18 32);
+  --brass-900: oklch(0.3 0.14 28);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -153,4 +254,42 @@ body {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* ---------------------------------------------------------------------
+ * Print
+ *
+ * Forces plain black-on-white surfaces/text regardless of the visitor's
+ * light/dark mode (see lib/theme.ts) — a printed page shouldn't carry a
+ * dark-mode visitor's dark background to the printer. `.dark` is
+ * included in the override selector since it can still be the active
+ * class at print time (this doesn't un-toggle it, just out-ranks its
+ * surface/text values here). The accent ramp itself (`--brass-*`) is
+ * deliberately left alone — it only ever colors interactive/accent
+ * surfaces, never body text (see this file's own `brass` doc comment
+ * above), so whichever accent theme is active still prints fine as
+ * ordinary colored ink/toner, same as any other colored text.
+ *
+ * `.overflow-x-auto` (roster/pairings/placings tables, all built with
+ * that exact utility class for their on-screen horizontal scroll) is
+ * switched to `overflow: visible` — a scrollbar and a clipped-off-screen
+ * table column are both meaningless on a printed page; the content
+ * should just print in full instead of being cut at the container's
+ * screen-width edge.
+ * --------------------------------------------------------------------- */
+@media print {
+  :root,
+  .dark {
+    --surface-0: white;
+    --surface-1: white;
+    --surface-2: oklch(0.96 0.003 260);
+    --surface-border: oklch(0.75 0.006 260);
+    --text-primary: black;
+    --text-secondary: oklch(0.35 0.006 260);
+    --text-tertiary: oklch(0.5 0.006 260);
+  }
+
+  .overflow-x-auto {
+    overflow: visible;
+  }
 }

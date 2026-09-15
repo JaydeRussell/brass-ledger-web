@@ -6,6 +6,8 @@ import { NavProvider } from "./components/nav/navContext";
 import NavDrawer from "./components/nav/navDrawer";
 import Footer from "./components/layout/footer";
 import FeedbackWidget from "./components/feedback/feedbackWidget";
+import { CommandPaletteProvider } from "./components/shared/commandPaletteContext";
+import CommandPalette from "./components/shared/commandPalette";
 import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
@@ -34,13 +36,16 @@ export const metadata: Metadata = {
   description: "Tournament companion for Warhammer 40k: rosters, pairings, and placings pulled straight from Best Coast Pairings, in one place.",
 };
 
-// Resolves and applies the visitor's light/dark/system theme choice
-// before first paint — see lib/theme.ts for the same logic as real,
-// testable TypeScript (this string is necessarily a standalone
-// duplicate: it has to run synchronously in <head>, before any app code
-// loads, to avoid a flash of the wrong theme on every page load, not
-// just first visit).
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||((t===null||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`;
+// Resolves and applies the visitor's light/dark/system theme choice, plus
+// their accent-color theme, before first paint — see lib/theme.ts for the
+// same logic as real, testable TypeScript (this string is necessarily a
+// standalone duplicate: it has to run synchronously in <head>, before any
+// app code loads, to avoid a flash of the wrong theme on every page load,
+// not just first visit). The accent half doesn't validate the stored
+// value against ACCENT_THEMES — an unrecognized `data-accent` simply
+// matches no globals.css override block, so :root's brass values apply,
+// same end result as validating.
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||((t===null||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);var a=localStorage.getItem("accentTheme");if(a)document.documentElement.setAttribute("data-accent",a);}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -58,12 +63,15 @@ export default function RootLayout({
       >
         <ClientErrorLogger />
         <ViewerItcProvider>
-          <NavProvider>
-            <NavDrawer />
-            {children}
-            <Footer />
-            <FeedbackWidget />
-          </NavProvider>
+          <CommandPaletteProvider>
+            <NavProvider>
+              <NavDrawer />
+              {children}
+              <Footer />
+              <FeedbackWidget />
+            </NavProvider>
+            <CommandPalette />
+          </CommandPaletteProvider>
         </ViewerItcProvider>
       </body>
     </html>

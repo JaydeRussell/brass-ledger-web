@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { logClientEvent } from "./clientLog.ts";
+import type { AccentTheme } from "./theme.ts";
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
@@ -39,6 +40,10 @@ export type CurrentUser = {
   // — the account-level counterpart to app/lib/theme.ts's localStorage
   // fallback for a signed-out guest. See useTheme()'s `account` param.
   themePreference: "light" | "dark" | "system";
+  // One of AccentTheme's 12 values (internal/user.ValidAccentThemes,
+  // migration 0009) — the account-level counterpart to useAccentTheme()'s
+  // localStorage fallback, same pattern as themePreference above.
+  accentTheme: AccentTheme;
 };
 
 /**

@@ -168,6 +168,7 @@ test("renders a 'Your round' card first when myRound is supplied", () => {
     React.createElement(OverviewPanel, {
       eventInfo: baseEvent,
       myRound: {
+        eventId: "evt-1",
         round: 2,
         loading: false,
         error: null,
@@ -203,6 +204,7 @@ test("threads eventInfo.teamEvent into MyRoundCard's isTeamEvent gate", () => {
     { id: "p2", name: "Rival", faction: "Necrons", disposition: "Take and Hold", bcpUserId: "u-rival" },
   ];
   const myRound = {
+    eventId: "evt-1",
     round: 2,
     loading: false,
     error: null,

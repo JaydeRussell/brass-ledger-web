@@ -8,9 +8,11 @@ import PlayerStatsLink from "../shared/playerStatsLink";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
 import MissionMatchupPanel from "./missionMatchupPanel";
 import TeamRosterFallback from "./teamRosterFallback";
+import RoundNotes from "./roundNotes";
+import HeadToHead from "./headToHead";
 import { isDisposition } from "../../lib/dispositions";
 import TeamItcComparison from "../shared/teamItcComparison";
-import Spinner from "../shared/spinner";
+import Skeleton from "../shared/skeleton";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
@@ -18,6 +20,9 @@ import { useDelayedFlag } from "../../lib/useDelayedFlag";
 type MyRoundCardProps = {
   loading: boolean;
   error: string | null;
+  // This event's id — used only to scope RoundNotes' private per-round
+  // notes (roundNotes.tsx) to the right event.
+  eventId: string;
   // The round this card is showing — eventInfo.ended ? numberOfRounds :
   // currentRound, computed once by the caller (app/page.tsx already
   // computes this same value for its own board-round state).
@@ -121,6 +126,7 @@ function resolveFromPairing(pairing: MyPairing): ResolvedOpponent {
 export default function MyRoundCard({
   loading,
   error,
+  eventId,
   round,
   pairing,
   board,
@@ -147,14 +153,15 @@ export default function MyRoundCard({
 
   if (loading) {
     return (
-      <Card className="p-4 shadow-sm">
+      <Card className="p-4 shadow-sm" aria-live="polite">
         <p className="font-semibold text-text-primary">Your round</p>
-        <div className="mt-2 flex items-center gap-2 text-sm text-text-secondary">
-          <Spinner size="sm" />
-          <span>Checking your round…</span>
+        <span className="sr-only">Checking your round…</span>
+        <div className="mt-2 flex flex-col gap-1.5">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-3 w-56" />
         </div>
         {slowLoad && (
-          <p className="mt-1 text-xs text-text-tertiary">Taking longer than usual.</p>
+          <p className="mt-2 text-xs text-text-tertiary">Taking longer than usual.</p>
         )}
       </Card>
     );
@@ -167,6 +174,7 @@ export default function MyRoundCard({
         <p className="mt-1 text-sm text-text-secondary">
           No pairing published for round {round} yet.
         </p>
+        <RoundNotes eventId={eventId} round={round} />
       </Card>
     );
   }
@@ -238,6 +246,12 @@ export default function MyRoundCard({
         </div>
       )}
 
+      <HeadToHead
+        myBcpUserId={myBcpUserId}
+        opponentBcpUserId={resolved.opponentBcpUserId}
+        opponentName={resolved.opponentName}
+      />
+
       {pairing.opponentTeamPlayerId && itcByUserId && (myRoster?.length || opponentRoster?.length) ? (
         <div className="mt-2">
           <TeamItcComparison
@@ -276,6 +290,8 @@ export default function MyRoundCard({
           />
         </div>
       ) : null}
+
+      <RoundNotes eventId={eventId} round={round} />
     </Card>
   );
 }

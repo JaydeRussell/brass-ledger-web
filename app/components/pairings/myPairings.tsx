@@ -13,6 +13,7 @@ import ItcBadge from "../shared/itcBadge";
 import PlayerCard from "../shared/playerCard";
 import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
+import Skeleton from "../shared/skeleton";
 import Spinner from "../shared/spinner";
 import TeamRosterFallback from "./teamRosterFallback";
 import Button from "../ui/button";
@@ -219,13 +220,15 @@ export default function MyPairings({
         {error && <ErrorAlert size="sm">Couldn&apos;t load pairings: {error}</ErrorAlert>}
 
         {!error && loading && (
-          <div className="p-2">
-            <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <Spinner size="sm" />
-              <span>Checking published rounds…</span>
+          <div className="p-2" aria-live="polite">
+            <span className="sr-only">Checking published rounds…</span>
+            <div className="flex flex-col gap-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-11 w-full" />
+              ))}
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-text-tertiary">
+              <p className="mt-2 text-xs text-text-tertiary">
                 Taking longer than usual — first look at this event.
               </p>
             )}

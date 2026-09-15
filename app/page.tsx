@@ -1147,6 +1147,7 @@ function HomeContent() {
             myRound={
               myRoundInfo
                 ? {
+                    eventId,
                     round: boardRound ?? 0,
                     loading: myPairingState.loading,
                     error: myPairingState.error,

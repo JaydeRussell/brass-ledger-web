@@ -88,7 +88,12 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
               {/* eslint-disable-next-line @next/next/no-img-element -- a
                   pre-cropped local static asset, not a remote/optimizable
                   image (see the plan's rationale for skipping next/image). */}
-              <img src={layout.src} alt={`Layout ${layout.layout} for this deployment`} className="w-full" />
+              <img
+                src={layout.src}
+                alt={`Layout ${layout.layout} for this deployment`}
+                loading="lazy"
+                className="w-full"
+              />
               <span className="block bg-surface-2 py-0.5 text-center text-xs text-text-secondary">
                 Layout {layout.layout}
               </span>

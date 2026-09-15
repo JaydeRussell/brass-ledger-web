@@ -1,9 +1,11 @@
 "use client";
 import React from "react";
 import type { PlacingEntry } from "../../lib/bcp";
+import { computePlacingBadges, type PlacingBadge } from "../../lib/placingBadges";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
-import Spinner from "../shared/spinner";
+import Skeleton from "../shared/skeleton";
+import Badge from "../ui/badge";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
 import TeamRosterList from "../pairings/teamRosterList";
@@ -59,11 +61,13 @@ function PlacingRow({
   metricNames,
   highlighted,
   roster,
+  badge,
 }: {
   entry: PlacingEntry;
   metricNames: string[];
   highlighted: boolean;
   roster?: Player[];
+  badge?: PlacingBadge;
 }) {
   const [expanded, setExpanded] = React.useState(false);
   const canExpand = Boolean(roster?.length);
@@ -80,6 +84,16 @@ function PlacingRow({
         <td className="px-2 py-1.5 text-text-secondary">{entry.placing ?? "—"}</td>
         <td className="truncate px-2 py-1.5 font-medium text-text-primary">
           <PlayerStatsLink name={entry.name} bcpUserId={entry.bcpUserId} />
+          {badge?.bestSuperFaction && (
+            <Badge tone="brass" className="ml-1.5" title={`Best-placed ${badge.bestSuperFaction} player`}>
+              Best {badge.bestSuperFaction}
+            </Badge>
+          )}
+          {badge?.bestFaction && (
+            <Badge tone="brass" className="ml-1.5" title={`Best-placed ${badge.bestFaction} player`}>
+              Best {badge.bestFaction}
+            </Badge>
+          )}
           {canExpand && (
             <span aria-hidden className="ml-1.5 text-xs text-text-tertiary">
               {expanded ? "▲" : "▼"}
@@ -120,6 +134,9 @@ export default function PlacingsTable({
 }: PlacingsTableProps) {
   const metricNames = leadWithWinLoss(entries[0]?.metrics.map((m) => m.name) ?? []);
   const slowLoad = useDelayedFlag(loading);
+  // Pure over `entries` (no new prop threaded in from a caller) — see
+  // computePlacingBadges' own doc comment.
+  const badges = React.useMemo(() => computePlacingBadges(entries), [entries]);
 
   return (
     <Card className="overflow-hidden shadow-sm">
@@ -132,13 +149,15 @@ export default function PlacingsTable({
         {error && <ErrorAlert size="sm">Couldn&apos;t load placings: {error}</ErrorAlert>}
 
         {!error && loading && (
-          <div className="p-2">
-            <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <Spinner size="sm" />
-              <span>Loading placings…</span>
+          <div className="p-2" aria-live="polite">
+            <span className="sr-only">Loading placings…</span>
+            <div className="flex flex-col gap-1">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-7 w-full" />
+              ))}
             </div>
             {slowLoad && (
-              <p className="mt-1 text-xs text-text-tertiary">
+              <p className="mt-2 text-xs text-text-tertiary">
                 Taking longer than usual — first look at this event.
               </p>
             )}
@@ -174,6 +193,7 @@ export default function PlacingsTable({
                     metricNames={metricNames}
                     highlighted={followedIds?.has(entry.id) ?? false}
                     roster={rosterByTeamId?.get(entry.id)}
+                    badge={badges.get(entry.id)}
                   />
                 ))}
               </tbody>
