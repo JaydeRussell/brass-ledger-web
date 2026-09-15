@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.12.0",
+    date: "2026-09-14",
+    title: "Feedback widget",
+    highlights: [
+      "A new \"Feedback\" button, bottom-right on every page, opens a small form for reporting a bug or suggesting something — no page navigation, no account required. If you're signed in, it shows a plain \"Submitting as\" line and attaches your account for follow-up.",
+    ],
+  },
+  {
     version: "0.11.0",
     date: "2026-09-13",
     title: "Player cards, mission matchups, and admin alerts",
