@@ -1,25 +1,6 @@
 import type { Disposition } from "./dispositions";
 import { dispositionSlug } from "./dispositions";
 
-// Special-action terms cited by missionScoring.ts (e.g. "sensor sweep")
-// whose exact rule text lives on the physical mission card's reverse side,
-// not in the front-faces-only "Primary Missions Print Sheets" PDF this
-// content was transcribed from (see missionSources.ts's `printSheets`
-// entry). TODO(mission-glossary): replace each citation in
-// missionScoring.ts with the real definition once that text is available,
-// and remove this list.
-export const MISSING_GLOSSARY_TERMS: readonly string[] = [
-  "Surveilled",
-  "Sensor sweep",
-  "Committed sabotage",
-  "Secured the asset",
-  "Vanguard operation",
-  "Extracted intelligence",
-  "Triangulated",
-  "Trapped",
-  "Decoyed",
-];
-
 export type MissionMatchup = {
   // The two dispositions this write-up covers — order doesn't matter,
   // lookup is unordered (see getMissionMatchup). Equal values means this
@@ -63,7 +44,7 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
     summary:
       "Take and Hold scores Determined Acquisition, which rewards seizing objectives you didn't already hold — especially deep in your opponent's territory. Disruption scores Death Trap, which rewards trapping terrain areas (a reverse-side action) and killing enemies caught inside them.",
     tactics: [
-      "Take and Hold should keep moving — an objective you already held last turn earns nothing new, so contest ground you don't hold yet, especially on the opponent's side of the table.",
+      "Take and Hold should keep moving — the Any Battle Round band only pays for objectives you didn't hold at the start of the turn, so parking on ground you already control earns nothing extra from it (the Round-2-onwards band still pays flat VP for everything you hold, new or not) — prioritize contesting new ground, especially on the opponent's side of the table.",
       "Disruption's big lever is terrain, not objectives directly — claim terrain areas early (especially ones that double as objectives) and use them to ambush anyone who parks a unit inside.",
       "Because Determined Acquisition rewards pushing into enemy territory, Disruption should expect pressure on its own side and keep answers there.",
     ],
@@ -71,7 +52,7 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
   {
     dispositions: ["Take and Hold", "Reconnaissance"],
     summary:
-      "Take and Hold scores Purge and Secure, which needs kills specifically near objectives, not anywhere on the table. Reconnaissance scores Reconnaissance Sweep, which rewards spreading 3-4 units across different table quarters plus a flat VP for any kill at all.",
+      "Take and Hold scores Purge and Secure, which needs kills specifically near objectives, not anywhere on the table. Reconnaissance scores Reconnaissance Sweep, which rewards spreading 3-4 units across different table quarters plus 1VP for every enemy unit killed anywhere on the table.",
     tactics: [
       "Take and Hold should pull fights onto objectives — a kill in the open scores nothing here, the same kill next to an objective does.",
       "Reconnaissance's spread requirement pulls against clumping up for one big alpha strike — plan deployment and movement with that spread in mind from turn one.",
@@ -81,11 +62,11 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
   {
     dispositions: ["Take and Hold", "Priority Assets"],
     summary:
-      "Take and Hold scores Inescapable Dominion, a map-control grind with a large single payoff for holding the opponent's home objective at the end. Priority Assets scores Secure Asset, built around a reverse-side asset-securing action plus punishing kills near central objectives.",
+      "Take and Hold scores Inescapable Dominion, a map-control grind whose own-territory majority bonus and its end-of-battle enemy-home-objective bonus are both worth about the same (4-5VP) — there's no one big finisher to build a plan around. Priority Assets scores Secure Asset, built around a reverse-side asset-securing action plus punishing kills near central objectives.",
     tactics: [
-      "Take and Hold should treat the opponent's home objective as the real prize — 5VP at the very end is worth planning a late push for, not just holding your own side.",
+      "Take and Hold should still plan a late push at the opponent's home objective — 5VP at the very end is worth about as much as a full round's objective-count swing, so it's worth the detour even though it isn't a huge spike.",
       "Priority Assets should use the asset-securing action every round it can — it's VP independent of who's winning the objective fight.",
-      "Both sides benefit from majority objective control from Round 2, so early skirmishing over the middle objectives matters to both.",
+      "Inescapable Dominion rewards holding more objectives than your opponent from Round 2 on, while Secure Asset just cares about hitting its own objective-count thresholds (1+, then 3+) — different mechanics, but early skirmishing over the middle objectives still matters to both.",
     ],
   },
   {
@@ -94,7 +75,7 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
       "A mirror: both of you play Meatgrinder — any kill scores, objective holding from Round 2 is a flat bonus, out-killing your own previous turn is a bonus, and the opponent's home objective is a big finisher.",
     tactics: [
       "The \"more kills than last turn\" band rewards escalating aggression, not constant grinding — pace commitments so each turn can outdo the last rather than spending everything on Round 2.",
-      "Since both sides score identically, the game is decided by trading efficiently, not by holding more ground — don't spend units to grab objectives that don't need defending.",
+      "Since both sides score identically, objective holding (4VP a round from Round 2 on) is just as reliable a VP source here as kills — don't fixate on the kill race and forget to actually sit on ground you can hold.",
       "The home-objective finisher is worth planning a dedicated push for once the kill race is close.",
     ],
   },
@@ -103,7 +84,7 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
     summary:
       "Purge the Foe scores Punishment, a targeted-kill mission — you only score for killing the specific 1-3 units you \"condemn\" that turn — with a huge 8VP home-objective finisher. Disruption scores Delaying Action, which pays for any kill plus holding a central and an expansion objective at once.",
     tactics: [
-      "Purge the Foe should condemn units it can actually reach and kill that turn, not just the biggest threat — condemning something out of range wastes the whole turn's scoring chance.",
+      "Purge the Foe should condemn units it has a real chance of killing soon — condemned status lasts from the start of your turn through the start of your next one, so a condemned unit that dies to overwatch or a counter-charge during your opponent's turn still scores; condemning something with no plausible route to death in either turn is what actually wastes the choice.",
       "Disruption doesn't care which units die, so it can happily trade down or pick off easy kills anywhere on the table.",
       "Disruption's central-plus-expansion bonus rewards spreading control across objective types — don't stack every holding on one flank.",
       "Punishment's home-objective payoff (8VP) is the single biggest number in this matchup — worth a dedicated late push if the game is close.",
@@ -114,9 +95,9 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
     summary:
       "Purge the Foe scores Consecrate, where kills turn units into \"consecration units\" that consecrate nearby objectives at end of turn. Reconnaissance scores Triangulation, a pure objective mission built on a reverse-side action that pays off steeply once you triangulate three objectives at once.",
     tactics: [
-      "Purge the Foe should kill near the objectives it wants to hold, not just anywhere — a kill next to an empty objective sets up next turn's VP, a kill in open ground doesn't.",
+      "Purge the Foe should kill within reach of an objective it can then stand near — consecration is checked at the end of the very same turn the kill happens, so positioning the killing unit by objectives before your turn ends is what scores it, not a separate follow-up turn.",
       "Triangulation's reward jumps sharply from two to three objectives (6VP to 10VP) — it's worth stretching to hit three at once rather than settling for two.",
-      "Purge the Foe's biggest single prize is consecrating the enemy's own home objective — that needs a unit alive and killing right next to it, so plan an approach there specifically.",
+      "Consecrating the enemy's own home objective is worth a flat 5VP, and — going by the card's \"has been consecrated\" phrasing — looks like a one-time achievement rather than something you need to still be holding at the final bell (worth double-checking against a physical card). It's not actually the mission's biggest number either way: 3+ objectives consecrated in a single turn pays 6VP and can repeat round after round, so don't chase the home-objective prize at the expense of the recurring one.",
     ],
   },
   {
@@ -124,7 +105,7 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
     summary:
       "Purge the Foe scores Destroyer's Wrath, which pays extremely well (6VP) for simply holding more objectives than your opponent, on top of ordinary kill VP. Priority Assets scores Vital Link, which rewards building operation markers around central objectives and stacking objective-type bonuses toward a 10VP home-objective finisher.",
     tactics: [
-      "Destroyer's Wrath's majority bonus is the richest \"just hold more ground\" reward in this matchup — prioritize objective count over chasing every kill.",
+      "Destroyer's Wrath's majority bonus (6VP) is the richest repeating, every-round reward in this matchup — prioritize objective count over chasing every kill. (Vital Link's 10VP home-objective finisher is bigger, but it only pays out once, at the end — see below.)",
       "Priority Assets should invest early in placing operation markers near central objectives — the bonus rewards setup over the course of the game, not one big turn.",
       "Priority Assets' home-objective finisher (10VP) is worth committing a mobile unit toward late, since Destroyer's Wrath has no equivalent single deep prize to race for.",
     ],
@@ -132,11 +113,11 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
   {
     dispositions: ["Disruption", "Disruption"],
     summary:
-      "A mirror: both of you play Outmanoeuvre — a flat, escalating reward for holding objectives (4/5/6VP as the game goes on) plus a flat 10VP for outright controlling the enemy's home objective at any point.",
+      "A mirror: both of you play Outmanoeuvre. Its real engine is 10VP at the end of every single one of your turns you control the enemy's home objective — not a one-time bonus — on top of an escalating reward for holding your own other objectives (4/5/6VP as the game goes on).",
     tactics: [
       "The per-objective reward escalates round over round, so the same held objective is worth more late than early — don't trade units to hold ground in Round 1 you can't keep past Round 3.",
-      "A single successful raid on the enemy home objective is worth grabbing and immediately defending — 10VP for one objective dwarfs the escalating per-objective rate.",
-      "Symmetric missions turn on efficiency, not scheme — the winner is whoever spends fewer resources per objective held.",
+      "Controlling the enemy's home objective pays 10VP at the end of every one of your turns you hold it, not just once — seize it by Round 2 and hold it through Round 5 and that's potentially 40VP, dwarfing everything else in the mission. Racing for it and then holding it is very likely the dominant play in this mirror.",
+      "Because that 10VP is checked every turn, losing the enemy home objective even briefly costs you that turn's VP and hands your opponent the same shot at it — commit real defensive resources to holding it once you have it, not just enough to take it.",
     ],
   },
   {
@@ -154,15 +135,15 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
     summary:
       "The most directly interlocking pairing in the matrix: Disruption's Locate and Deny places five operation markers outside its deployment zone and scores for narrowing them down to one survivor, while Priority Assets' Extract Relic scores for doing the exact same thing to Disruption's markers from the other side.",
     tactics: [
-      "Disruption should spread its five markers so no single push threatens more than one or two at once — losing them too fast hands Priority Assets easy VP on the same objective.",
+      "Disruption's own mission rewards it too for getting down to exactly one surviving marker, as long as a Disruption unit — not an enemy one — is holding that terrain area, so this isn't simply \"markers lost = bad for Disruption.\" It's a race to be the side standing on the last marker's terrain when the dust settles; defend whichever marker you can most realistically hold to the end rather than spreading defense evenly across all five.",
       "Priority Assets should identify which of Disruption's markers is easiest to isolate and contest that one specifically, rather than spreading pressure evenly across all five.",
-      "Both sides also score for kills near objectives, so this matchup rewards fighting near the terrain areas holding those markers rather than off in open ground.",
+      "Both sides also score for kills near objectives specifically — not the marker-holding terrain areas, which sit outside deployment zones and aren't necessarily objectives at all — so don't assume defending a marker's ground also covers this bonus, or neglect the real objectives while doing it.",
     ],
   },
   {
     dispositions: ["Reconnaissance", "Reconnaissance"],
     summary:
-      "A mirror: both of you play Gather Intel — a strong Round-1 rush for the centre, then a long operation-marker buildup (via a reverse-side \"extracted intelligence\" action) that pays off heavily at the very end.",
+      "A mirror: both of you play Gather Intel — a strong Round-1 rush for the centre, then the mission's real engine kicks in: a repeatable, 7VP-per-unit reverse-side \"extracted intelligence\" action available every round from Round 2 on, with a smaller bonus for operation-marker count and placement at the very end.",
     tactics: [
       "The Round-1 central-objective VP (6) is the richest early-game reward in this mirror — prioritize contesting the centre turn one over anything else.",
       "The end-of-battle bonuses reward marker count and one marker's location separately, so don't just drop markers wherever's safe — route at least one toward the opponent's home objective over the course of the game.",
@@ -184,7 +165,7 @@ export const MISSION_MATCHUPS: readonly MissionMatchup[] = [
     summary:
       "A mirror: both of you play Sabotage — a repeatable reverse-side sabotage action, paying extra for doing it deep in your opponent's own territory, on top of ordinary objective holding.",
     tactics: [
-      "The deep-territory bonus is cumulative per unit, so sending several cheap, expendable units to sabotage inside the opponent's deployment zone outscores one big push.",
+      "The deep bonus only needs the sabotaging unit within range of an objective in your opponent's territory — their half of the board, not specifically their deployment zone — and it's cumulative per unit, so sending several cheap, expendable units to do it outscores committing everything to one push.",
       "This mission has no big late-game finisher, unlike most of this matrix — VP is earned steadily every round, so don't hold back \"for a big Round 5 push\" the way some other missions reward.",
       "Objective holding from Round 2 is a flat, easy-to-neglect bonus here — don't skip it while chasing sabotage actions on the far side of the table.",
     ],
