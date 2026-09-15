@@ -99,7 +99,7 @@ re-derived from history again.
 
 ---
 
-# Current status (as of 2026-09-07) — read this first in a new session
+# Current status (as of 2026-09-14) — read this first in a new session
 
 This section is a snapshot for picking the project back up, not a
 permanent rule — feel free to rewrite/replace it entirely once it's
@@ -107,282 +107,118 @@ stale, rather than appending to it forever.
 
 ## What's built and working
 
-- **BCP data display** (`app/lib/bcp.ts`, the tab components) — done,
-  tested, stable. Now a thin client for the backend's `internal/bcp`
-  proxy rather than talking to BCP directly. Not touched recently.
-- **Google sign-in (frontend half)** — `app/lib/auth.ts` (a
-  `credentials: "include"` fetch client for the backend's
-  `/auth/google/login`, `/api/me`, `/auth/logout`) and
-  `app/components/auth/authStatus.tsx` (the header's "Sign in with
-  Google" button / signed-in avatar+dropdown), wired into `app/page.tsx`.
-  Both have passing unit tests. Sign-in doesn't unlock any feature yet —
-  it's groundwork for cross-device follows/notes.
-- **Client-side logging** — `app/lib/clientLog.ts` posts structured
-  events (auth status checks, sign-out attempts, uncaught
-  errors/unhandled rejections via `app/components/shared/clientErrorLogger.tsx`,
-  mounted in `app/layout.tsx`) to `app/api/log/route.ts`, which appends
-  them to `logs/frontend.log` (`LOG_FILE`, see `.env.example`).
-  Backend has the equivalent (`logs/backend.log`) — the two are meant to
-  be read together when debugging a failed sign-in.
-- **Navigation** — a left-hand hamburger menu replaced the old
-  header-right `AuthStatus` dropdown (`app/components/nav/`:
-  `navContext.tsx`'s `NavProvider`/`useNav` for the shared open/closed
-  state, `hamburgerButton.tsx`, `navDrawer.tsx`, `accountSection.tsx`),
-  mounted once in `app/layout.tsx` around `{children}` so every page
-  (`/` and `/my-events`) shares one drawer instance. Design call made
-  here (the user explicitly deferred on this — "not sure which is more
-  idiomatic"): the signed-in account sits at the *top* of the drawer,
-  above the "Event"/"My Events" nav links, rather than as a third link
-  itself or a page of its own — it's the one thing true regardless of
-  which page you're on, closer to a mobile app's account card above its
-  menu items than a nav destination. `accountSection.tsx` is
-  `AuthStatus`'s old avatar/name/sign-out guts minus the popover (the
-  drawer itself is already the "opened" state, so there's no need for a
-  second nested dropdown), built on a new shared `useCurrentUser()` hook
-  in `app/lib/auth.ts` (guards stale responses with a request-id ref
-  rather than a plain boolean `cancelled` flag, since both the mount
-  effect and a later manual `refresh()` call share the same function).
-- **My BCP events (past/present/future)** — **confirmed working
-  end-to-end with a real account** (linked a real profile, saw real
-  Present/Future/Past results — see "What's NOT yet done" below), and
-  since moved from `AuthStatus`'s account dropdown to its own dedicated
-  route, `app/my-events/page.tsx`, with Past/Ongoing/Future tabs
-  (URL-query-string-based, `?tab=...`, same pattern as the main page —
-  "Ongoing" is this page's label for the backend's `present` bucket).
-  `app/lib/myEvents.ts` (`parseBcpUserId`, `linkBcpProfile`,
-  `fetchMyEvents` — all `credentials: "include"` clients for the
-  backend's `/api/me/bcp-profile`/`/api/me/events`) is unchanged by the
-  move; the old `app/components/auth/myEventsPanel.tsx` was deleted and
-  its linking flow extracted into
-  `app/components/myEvents/bcpProfileLinker.tsx` (used directly by the
-  new page instead of nested inside a dropdown panel), with the event
-  list rendering split out into `app/components/myEvents/eventList.tsx`.
-  - **Linking flow**: the default is `RosterPicker` (inside
-    `bcpProfileLinker.tsx`) — open an event you played in (a
-    recent-events chip or a pasted URL/id) and click your own name; this
-    reuses `fetchBcpPlayers`'s already-fetched roster data, which
-    carries each player's BCP account id even though the UI doesn't
-    otherwise surface it (see `types/player.d.ts`'s `Player.bcpUserId`).
-    Pasting a raw profile URL/id (or the `.../v1/users/{id}` API request
-    URL you'd find in DevTools' Network tab) is kept as a manual
-    fallback, toggled via "Paste a link/id instead" — that used to be
-    the *only* option and was rough going, since BCP's own account page
-    doesn't link out to a public profile anywhere.
-  - `myEvents.ts` has full unit test coverage (including
-    `parseBcpUserId` handling both the public `/user/...` URL shape and
-    the API's `/v1/users/...` shape). The components don't (this project
-    has no React component test setup at all — every existing component
-    is untested the same way, so this isn't a gap specific to this
-    feature). `npm test`, `npm run lint`, and `npx tsc --noEmit` all
-    pass after the nav/My-Events-page restructuring — the restructuring
-    itself hasn't been clicked through live yet (see below).
-  - **Real bug found and fixed on the backend** during the first live
-    run: BCP's `/v1/eventplacings` pagination cursor (`nextKey`)
-    sometimes comes back as a raw, unencoded JSON object instead of the
-    base64-encoded string every other page uses. See the backend repo's
-    `CLAUDE.md`/`internal/bcp/client.go`'s `decodeNextKey` for the fix —
-    worth knowing about if pagination on either history endpoint ever
-    errors again with a JSON-decode message.
-- **Component test coverage** — every component now has at least one
-  `.test.ts` file (there were previously zero; only pure-logic
-  `app/lib/*.test.ts` files existed). This project has no network access
-  to install jsdom/@testing-library/react/tsx (confirmed via 403s from
-  the npm registry both in Claude's cloud sandbox and on-device), so this
-  is a hand-rolled setup instead:
-  - `scripts/tsx-test-loader.mjs` — a custom Node ESM loader (registered
-    via `node --experimental-loader` in `package.json`'s `test` script)
-    that strips TypeScript and compiles JSX to `React.createElement`
-    calls using only the `@babel/parser`/`traverse`/`generator`/`types`
-    packages already present as transitive deps (no preset/plugin
-    packages needed). Also patches around two resolution gaps: bare
-    extensionless relative imports, and a `next/navigation` package-
-    exports bug under plain Node ESM.
-  - `app/lib/testUtils.ts` — two DOM-free testing techniques, picked per
-    component depending on whether it uses hooks: `renderStatic` (wraps
-    `react-dom/server`'s `renderToStaticMarkup`) for structural/content
-    assertions on any component; `walk`/`find`/`findAll` for calling a
-    *hookless* component directly as a plain function and invoking its
-    real `onClick`/`onChange` props for genuine interaction coverage.
-    Neither can simulate a click that triggers a *stateful* transition
-    (e.g. opening a dropdown) — flagged inline wherever a test's coverage
-    stops short for that reason.
-  - Every `*.test.ts` alongside its component (not `.tsx` — the loader's
-    JSX transform is only exercised for the actual component files it
-    imports, tests themselves are written in plain `React.createElement`
-    calls or JSX depending on what's more readable, since the loader
-    handles both). 105 tests total as of the restructuring above (see
-    "Real bug found" note); `npm test`/`npm run lint`/`npx tsc --noEmit`
-    all pass.
-- **Cross-device sync for follows + recent events** — the two pieces of
-  state that used to live only in per-browser `localStorage` (see "What's
-  NOT yet done" below, now resolved) now persist to a signed-in account
-  via the backend's new sync routes (see the backend repo's `CLAUDE.md`
-  for the full route list):
-  - `app/lib/follows.ts` (new) — the `Followed`/`followedKey`
-    definitions moved here from `app/page.tsx`, plus `fetchFollows`/
-    `addFollow`/`removeFollow`, `credentials: "include"` clients for
-    `/api/me/events/:eventId/follows`.
-  - `app/lib/recentEvents.ts` (extended, not replaced) — the original
-    `loadRecentEvents`/`recordRecentEvent` localStorage functions are
-    unchanged and still used for a signed-out/guest visitor; new
-    `fetchRecentEventsFromServer`/`recordRecentEventOnServer` functions
-    are the `credentials: "include"` clients for `/api/me/recent-events`,
-    used only when signed in.
-  - `app/page.tsx` — reads `useCurrentUser()`'s `{ user, checked }` and
-    branches on it: the mount-hydration effect fetches from the server
-    instead of localStorage once `checked` is true and `user` is
-    non-null; `stopFollowing`/`startFollowing` call
-    `removeFollow`/`addFollow` (fire-and-forget, logged on failure via
-    `clientLog.ts`, matching this project's "fail quietly" rule for
-    third-party APIs even though this is our own backend) instead of
-    `writeLocalStorage` when signed in; `handleChangeEvent` re-fetches
-    follows for the new event from the server instead of reading
-    localStorage. A signed-out visitor's behavior is unchanged from
-    before this work. Deliberately per-action (add one follow / remove
-    one follow) rather than "replace the whole list on every change" —
-    see the backend's `RegisterSyncRoutes` doc comment for why.
-  - Full unit test coverage for the new/changed `app/lib` functions
-    (`follows.test.ts`, extended `recentEvents.test.ts`) using the same
-    fake-fetch-by-URL pattern as `myEvents.test.ts`. `app/page.tsx`
-    itself has no test file — consistent with this project's existing
-    convention that page-level orchestration components aren't unit
-    tested, only the `app/lib` functions they call.
-  - **Not yet verified**: no real Postgres, no live click-through of an
-    actual follow/unfollow or event-revisit syncing across two browser
-    sessions — only `go test` (backend, in-memory fake store) and
-    `npm test`/`npm run lint`/`npx tsc --noEmit` (frontend) so far. Worth
-    a real pass before trusting it the way "My BCP events" now is.
-- **My Events cards now link to the event page** — the backend half
-  (stale-event reclassification) is in the backend repo's `CLAUDE.md`.
-  On the frontend:
-  - `app/components/myEvents/eventList.tsx`'s `EventCard` is now
-    click-to-expand (a plain `useState`, toggled by wrapping the existing
-    one-line summary in a `<button aria-expanded=...>`) — collapsed by
-    default, same summary as before; the first click expands it in place
-    to repeat that summary as a small `<dl>` overview plus a
-    "View event page →" `next/link` to `` `/?event=${eventId}` ``.
-    Clicking again collapses it.
-  - `app/page.tsx` — the mount-hydration effect now reads `?event=` off
-    the URL (see its comment starting "A `?event=<id>` in the URL")
-    before falling back to the locally-stored event id: if present, it
-    wins, gets written to `localStorage` as the new current event (same
-    as switching via the settings gear), and is then stripped back out
-    of the URL in that same effect once hydration's done with it — a
-    one-shot "open this event" link, not persistent URL state.
-    `updateQuery` also unconditionally strips `event` from every future
-    query update, belt-and-suspenders, so it can never resurface.
-  - No test file changes needed for `app/page.tsx` (not unit tested, per
-    the existing convention noted above); `eventList.test.ts` got one new
-    case asserting a card starts collapsed (`aria-expanded="false"`, no
-    "View event page" text) — the actual click-to-expand interaction
-    can't be simulated without jsdom, same documented limitation as
-    `eventSettings.test.ts`'s dropdown-open case.
-  - **Not yet clicked through live** — same caveat as the sync work
-    above.
-- **"Your round" mission-matchup panel (singles 40k events)** — for a
-  singles event where both players' Force Dispositions are known
-  (`Player.disposition`, already fetched — see `types/player.d.ts`),
-  `MyRoundCard` now shows each side's actual Primary Mission, a
-  plain-language matchup summary, tactical suggestions, each mission's
-  full VP-scoring rules, and the three official deployment-map layouts —
-  in place of the opponent's BCP stats (`PlayerStatsPanel`), which team
-  events (and singles events without disposition data) still get
-  unchanged. All static/hand-authored, no runtime fetch:
-  - `app/lib/dispositions.ts`, `missions.ts`, `missionMatrix.ts` — the
-    canonical 5 Force Dispositions and the Warhammer Event Companion
-    v1.2's 25-entry disposition→mission matrix (missions are asymmetric —
-    each side can get a different mission from the same pairing).
-  - `app/lib/missionScoring.ts` — full round-by-round VP scoring for all
-    25 missions, transcribed from the Primary Missions Print Sheets.
-    **Known gap, tracked, not blocking**: ~9 special-action terms
-    (sensor sweep, committed sabotage, triangulated, etc.) are cited
-    inline ("see your mission card's reverse side") rather than defined —
-    their exact rule text is on the physical card backs, which weren't in
-    the PDF this was transcribed from. See `MISSING_GLOSSARY_TERMS` in
-    `app/lib/missionMatchups.ts` and the `TODO(mission-glossary)` comments
-    in `missionScoring.ts`.
-  - `app/lib/missionMatchups.ts` — 15 hand-authored matchup write-ups
-    (one per unordered disposition pair) and `deploymentMapImages()`.
-  - `app/lib/missionSources.ts` — version/date stamps for the three
-    source PDFs (Event Companion v1.2, Print Sheets, Core Rules) — update
-    this alongside the data modules whenever GW revises the mission pack.
-  - `public/deployment-maps/` — 45 WebP images (~6MB total, cropped from
-    the Event Companion's pages 9–53 via `scripts/crop-deployment-maps.sh`,
-    a one-off script, not part of `npm test`/`build`/`dev`) — 15
-    directories (`<disposition>-vs-<disposition>`, slugs sorted so lookup
-    is order-independent) × layouts A/B/C.
-  - `app/components/pairings/missionMatchupPanel.tsx` — the new panel;
-    `myRoundCard.tsx` gates it behind a new required `isTeamEvent` prop
-    (threaded from `eventInfo.teamEvent` via `overviewPanel.tsx`) plus
-    both sides having a known disposition — this gating is load-bearing,
-    not cosmetic, since a team event's resolved individual board already
-    reaches the `PlayerStatsPanel` branch today.
-  - Full test coverage (`npm test`/`npm run lint`/`npx tsc --noEmit`/
-    `npm run build` all pass) for every new data module and the new
-    component, plus extended `myRoundCard.test.ts`/`overviewPanel.test.ts`
-    coverage of the gating. **Confirmed working live 2026-09-13** — a
-    real singles 40k pairing with known dispositions on both sides
-    (Disruption vs. Reconnaissance) rendered the matchup summary,
-    tactical suggestions, expandable full VP-scoring rules, and all
-    three deployment-map images (correct `disruption-vs-reconnaissance`
-    slug, all 200s, no console errors). Remember to rebuild the Docker
-    container first (`cd ../brass-ledger-api && ./run.sh -d --build`) —
-    `localhost:3000` isn't source-mounted, see the backend repo's
-    `CLAUDE.md`.
+Stable, not touched recently unless noted below:
+
+- **BCP data display** (`app/lib/bcp.ts`, the tab components) — a thin
+  client for the backend's `internal/bcp` proxy.
+- **Google sign-in** (`app/lib/auth.ts`'s `useCurrentUser()`) —
+  confirmed working end-to-end with a real account.
+- **Navigation** — a left-hand hamburger drawer (`app/components/nav/`:
+  `navContext.tsx`, `hamburgerButton.tsx`, `navDrawer.tsx`,
+  `accountSection.tsx`), mounted once in `app/layout.tsx`. The
+  signed-in account sits at the top of the drawer, above the nav links
+  — a deliberate design call, closer to a mobile app's account card
+  than a nav destination of its own.
+- **My BCP events** (`/my-events`, Past/Ongoing/Future tabs,
+  `app/lib/myEvents.ts`) — confirmed working end-to-end with a real
+  account, including a real BCP API bug found and fixed along the way
+  (an unencoded pagination cursor — see the backend repo's `CLAUDE.md`).
+- **Cross-device sync for follows + recent events** (`app/lib/follows.ts`,
+  `app/lib/recentEvents.ts`) — persists to a signed-in account via the
+  backend's sync routes; a signed-out visitor still uses `localStorage`
+  only, unchanged.
+- **Client-side logging** (`app/lib/clientLog.ts` → `/api/log` →
+  `logs/frontend.log`) — meant to be read alongside the backend's
+  `logs/backend.log` when debugging.
+- **Component test coverage** — every component has at least one
+  `.test.ts`. This project has no network access to install
+  jsdom/@testing-library/react, so it's a hand-rolled DOM-free setup
+  instead: `scripts/tsx-test-loader.mjs` (a custom Node ESM loader that
+  strips TS and compiles JSX) plus `app/lib/testUtils.ts`'s two
+  techniques (`renderStatic` for any component's structural/content
+  assertions; `walk`/`find`/`findAll` for a *hookless* component's real
+  interaction coverage) — see that file's doc comment for the full
+  picture. Neither can simulate a click that triggers a stateful
+  transition (opening a dropdown/modal), so that's always verified live
+  in a real browser instead and flagged inline in the relevant test file.
+- **CI/CD** (`.github/workflows/`) — lint/test/build/npm-audit on every
+  push/PR; auto-deploy to Cloudflare (with a smoke test) on every push
+  to `main`, gated on `test` passing (a required branch-protection
+  check). Dependabot keeps deps current weekly.
+
+Recent (the last few sessions):
+
+- **"Your round" mission-matchup panel (singles 40k events, v0.11.0)** —
+  when both players' Force Dispositions are known in a singles event,
+  `MyRoundCard` shows each side's actual Primary Mission, a
+  plain-language matchup write-up, tactical suggestions, full
+  VP-scoring rules, and the three official deployment-map layouts, in
+  place of the opponent's BCP stats. All static/hand-authored — no
+  runtime fetch: `app/lib/dispositions.ts`/`missions.ts`/
+  `missionMatrix.ts` (the canonical 5 dispositions and the Event
+  Companion's 25-entry disposition→mission matrix), `missionScoring.ts`
+  (full round-by-round VP scoring for all 25 missions),
+  `missionMatchups.ts` (15 hand-authored matchup write-ups),
+  `missionSources.ts` (source-PDF version stamps — update alongside the
+  data whenever GW revises the mission pack), `public/deployment-maps/`
+  (45 WebP images, 15 `<disposition>-vs-<disposition>` directories ×
+  layouts A/B/C). Gated in `myRoundCard.tsx` behind `isTeamEvent` plus
+  both sides having a known disposition. **Confirmed working live**
+  against a real singles pairing. **Known gap, tracked, not blocking**:
+  ~9 special-action terms (sensor sweep, committed sabotage, etc.) are
+  cited rather than defined in `missionScoring.ts` — their rule text is
+  on the physical mission-card backs, not in the source PDF this was
+  transcribed from (see `MISSING_GLOSSARY_TERMS` in
+  `missionMatchups.ts`).
+- **Floating feedback widget (v0.12.0)** — a "Feedback" pill, bottom-
+  right on every page (`app/components/feedback/feedbackWidget.tsx`,
+  mounted once in `app/layout.tsx`), opens a small in-place panel
+  (Bug/Suggestion toggle, message, optional contact email) posting to
+  the backend's new public `POST /api/feedback` (`app/lib/feedback.ts`).
+  Deliberately not built on `ui/dialog.tsx`'s Radix `Dialog` — that
+  portals to `document.body`, invisible to this project's SSR-based
+  tests — so it's a plain conditionally-rendered backdrop+panel
+  instead, trading Radix's focus-trap/Escape-to-close for a form that
+  stays structurally testable. Shows a "Submitting as {name}" line when
+  signed in; the backend attaches that account to the admin alert email
+  for triage context, but it's never required — anyone, signed in or
+  not, can submit. **Confirmed working live**: submitted a real report,
+  got the success confirmation, and saw `POST /api/feedback` → 202 in
+  `logs/backend.log`. **Not yet confirmed**: whether the admin alert
+  email actually lands in a real inbox — Resend wasn't configured in
+  the local dev stack this was tested against; it reuses the same
+  `RESEND_API_KEY`/`EMAIL_FROM_ADDRESS`/`ADMIN_EMAILS` as the existing
+  signup alert, so if that's live in production this should just work,
+  but nobody's watched an inbox for it yet.
 
 ## What's NOT yet done / verified
 
-- ~~Nobody has actually clicked through a real Google sign-in yet~~ —
-  **confirmed working 2026-09-07** via `./run.sh`. See the backend
-  repo's `CLAUDE.md` "Current status" section for the log evidence —
-  both this app's `logs/frontend.log` and the backend's
-  `logs/backend.log` corroborated the same successful sign-in.
-- ~~My BCP events hasn't been clicked through with a real account yet~~
-  — **confirmed working**, including finding and fixing a real BCP API
-  quirk along the way (see "What's built and working" above). That was
-  before the nav/My-Events-page restructuring, though — the hamburger
-  menu, the account section's new home in the drawer, and the dedicated
-  `/my-events` route with its Past/Ongoing/Future tabs are all verified
-  only via `npx tsc --noEmit`/`npm run lint`/`npm test` so far, not a
-  live click-through (`next dev`/`next build` can't run via
-  `device_bash` on this arm64 VM — see "Environment quirks" below).
-  Worth a real pass before trusting it the way the underlying
-  linking/classification logic has been.
-- ~~Following/recent-events/notes still live in per-browser
-  `localStorage`, not synced to the signed-in account~~ — following and
-  recent events are now synced for a signed-in account (see "What's
-  built and working" above); a signed-out visitor still uses
-  `localStorage` only, unchanged. "Notes" was never actually specced
-  beyond the old TODO-list mention — nothing planned there unless raised
-  again.
-- ~~No CI yet.~~ **Stale as of 2026-09-12** — GitHub Actions CI/CD has
-  existed since early this session (`.github/workflows/ci.yml`): lint/
-  test/build/npm-audit on every push and PR, then an
-  auto-deploy-to-Cloudflare-via-vinext-with-smoke-test job on every push
-  to `main`, gated on `test` passing. `test` is a required status check
-  on `main`'s branch protection. Dependabot
-  (`.github/dependabot.yml`) keeps npm packages and Actions versions
-  current on a weekly cadence.
+- The mission-matchup panel's special-action glossary gap (see above).
+- The feedback widget's admin alert email hasn't been confirmed to
+  actually arrive in a real inbox yet (see above).
 
 ## Environment quirks that will trip up a new session
 
-**As of 2026-09-07, work happens directly in a terminal on the user's own
-Mac**, and this frontend is treated as part of the same working session
-as the backend repo (`brass-ledger-api`, sibling directory) rather
-than a separate context to hand off to — see that repo's `CLAUDE.md`
-"Environment quirks" section for the full explanation. The old
-bridge/cloud-sandbox split (`device_bash` VM vs. a separate cloud
-sandbox, edit-then-`SendUserFile`+`device_commit_files` to sync changes
-across) no longer applies.
+Work happens directly in a terminal on the user's own Mac, and this
+frontend is treated as part of the same working session as the backend
+repo (`brass-ledger-api`, sibling directory) rather than a separate
+context to hand off to — see that repo's `CLAUDE.md` "Environment
+quirks" section for the full explanation.
 
-- `npm test`, `npm run lint`, and `npx tsc --noEmit` all work fine and
-  are what this project leans on for verification.
-- `npm run build` now succeeds cleanly (confirmed 2026-09-07, Next.js 16
-  + Turbopack). The previous "Failed to load SWC binary for linux/arm64"
-  error was specific to the old sandboxed Linux VM (a missing optional
-  native binary there, not a real bug) and doesn't reproduce on this
-  native darwin/arm64 terminal — safe to rely on a real `npm run build`
-  for verification now instead of deferring it to Docker/the user.
+- `npm test`, `npm run lint`, `npx tsc --noEmit`, and `npm run build`
+  all work fine natively (Next.js 16 + Turbopack) and are what this
+  project leans on for verification.
+- **The browser-testable `localhost:3000` runs as a Docker container**
+  (`brass-ledger-frontend`, started via `../brass-ledger-api/run.sh` →
+  `docker compose up --build`), built from a snapshot of the source —
+  only `logs/` is bind-mounted, not the app code. Editing files on disk
+  does **not** get picked up until the image is rebuilt:
+  `cd ../brass-ledger-api && ./run.sh -d --build` (~30s). Before
+  concluding a live-test failure is a real bug, check `docker ps`/
+  `docker inspect <container> --format '{{.Created}}'` against recent
+  edit times and rebuild first — discovered 2026-09-12/13 chasing a
+  phantom "still loading" bug on the mission-matchup panel that turned
+  out to just be a stale image.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
