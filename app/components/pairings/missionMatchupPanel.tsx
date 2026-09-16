@@ -1,6 +1,6 @@
 import type { Disposition } from "../../lib/dispositions";
 import { getPrimaryMission } from "../../lib/missionMatrix";
-import { getMissionMatchup, deploymentMapImages } from "../../lib/missionMatchups";
+import { deploymentMapImages } from "../../lib/missionMatchups";
 import { MISSION_SOURCES } from "../../lib/missionSources";
 import type { MissionId } from "../../lib/missions";
 import MissionScoringDetails from "../shared/missionScoringDetails";
@@ -31,18 +31,22 @@ function MissionRules({ label, missionId }: { label: string; missionId: MissionI
  * "Your round"'s singles-event replacement for PlayerStatsPanel: given both
  * players' Force Dispositions, looks up each side's actual Primary Mission
  * (missionMatrix.ts, from the Warhammer Event Companion's disposition
- * matrix), a plain-language matchup summary and tactical suggestions
- * (missionMatchups.ts, hand-authored), each side's full VP-scoring rules
- * (missionScoring.ts, transcribed from the Primary Missions Print Sheets),
- * and the three alternate deployment-map layouts for this pairing. All
- * static/precomputed — no fetch, nothing to keep in sync live. See
- * myRoundCard.tsx for the gating (singles events only, both dispositions
- * known) that decides when this renders instead of PlayerStatsPanel.
+ * matrix), each side's full VP-scoring rules (missionScoring.ts,
+ * transcribed from the Primary Missions Print Sheets), and the three
+ * alternate deployment-map layouts for this pairing. All static/precomputed
+ * — no fetch, nothing to keep in sync live. See myRoundCard.tsx for the
+ * gating (singles events only, both dispositions known) that decides when
+ * this renders instead of PlayerStatsPanel.
+ *
+ * Used to also show a hand-authored plain-language matchup summary and
+ * tactical suggestions (missionMatchups.ts's MISSION_MATCHUPS) — removed,
+ * along with that data and its lookup function, since they didn't add
+ * enough over the mission names/VP rules/deployment maps to earn the
+ * space.
  */
 export default function MissionMatchupPanel({ myDisposition, opponentDisposition }: MissionMatchupPanelProps) {
   const myMission = getPrimaryMission(myDisposition, opponentDisposition);
   const opponentMission = getPrimaryMission(opponentDisposition, myDisposition);
-  const matchup = getMissionMatchup(myDisposition, opponentDisposition);
   const layouts = deploymentMapImages(myDisposition, opponentDisposition);
 
   return (
@@ -56,17 +60,6 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
           <span className="text-text-tertiary">Their mission: </span>
           <span className="font-semibold text-text-primary">{opponentMission}</span>
         </p>
-      </div>
-
-      <p className="text-sm text-text-secondary">{matchup.summary}</p>
-
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">How to play it out</p>
-        <ul className="mt-1 flex list-disc flex-col gap-1 pl-4 text-sm text-text-secondary">
-          {matchup.tactics.map((tip) => (
-            <li key={tip}>{tip}</li>
-          ))}
-        </ul>
       </div>
 
       <div className="flex flex-col gap-1.5">

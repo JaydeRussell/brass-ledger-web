@@ -4,7 +4,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import MissionMatchupPanel from "./missionMatchupPanel.tsx";
 
-test("shows both sides' missions, summary, tactics, and rules for a known pairing", () => {
+test("shows both sides' missions and rules for a known pairing", () => {
   const html = renderToStaticMarkup(
     React.createElement(MissionMatchupPanel, {
       myDisposition: "Purge the Foe",
@@ -13,7 +13,6 @@ test("shows both sides' missions, summary, tactics, and rules for a known pairin
   );
   assert.match(html, /Unstoppable Force/);
   assert.match(html, /Immovable Object/);
-  assert.match(html, /How to play it out/);
   // The full-rules disclosure is collapsed (a native <details>), but its
   // content is still present in the static markup either way.
   assert.match(html, /You control one or more central objectives/);

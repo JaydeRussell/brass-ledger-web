@@ -28,11 +28,6 @@ export const MISSION_SOURCES = {
     asOf: "2026-07-07",
     note: "No GW-published version for this print export — asOf is this PDF's own generation timestamp. Every mission's VP scoring comes from here; a handful of conditions cite a special action whose exact definition is on the physical card's reverse side, not in this front-faces export — see the `wahapediaMissionDeck` entry below for where that text actually came from.",
   },
-  coreRules: {
-    name: "Warhammer 40,000 Core Rules",
-    asOf: "2026-06-01",
-    note: "No in-document edition or version string at all — asOf is this PDF file's own metadata date. Used only as background (battle round/phase structure) when writing matchup tactics, not as a data source.",
-  },
   wahapediaMissionDeck: {
     name: "Wahapedia — Warhammer 40,000 Mission Deck 2026-27",
     asOf: "2026-09-14",
