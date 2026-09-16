@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
-import type { PlacingEntry } from "../../lib/bcp";
+import type { MyPairing, PlacingEntry } from "../../lib/bcp";
 import { computePlacingBadges, type PlacingBadge } from "../../lib/placingBadges";
+import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
 import Skeleton from "../shared/skeleton";
@@ -31,46 +32,124 @@ type PlacingsTableProps = {
   // Absent (or empty for a given id) for a singles event, where a
   // placing row is already one person — such a row just doesn't expand.
   rosterByTeamId?: Map<string, Player[]>;
+  // Each entry's round-by-round pairing result (see
+  // fetchPlacingRoundScores' doc comment in lib/bcp.ts), keyed the same
+  // way rosterByTeamId is — entry.id. Where present for a row, it
+  // replaces that row's plain win/loss-record value with a per-round
+  // score strip (e.g. "62 / 91 / 74", color-coded win/loss). Absent (or
+  // empty for a given id) just falls back to BCP's own aggregate value,
+  // same as before this existed.
+  roundScoresById?: Map<string, MyPairing[]>;
 };
 
 // A metric whose name looks like a win/loss-derived record (BCP's own
 // "Match Points", a literal "Wins" count, etc.) — moved to the front of
 // the columns regardless of where BCP's own metrics array happens to put
 // it, since it's the number most players actually track first (roadmap
-// #7). A metric already in front, or no match at all, is left as-is.
+// #7). Excludes anything that also looks like the opponent-win-rate
+// metric below (BCP's real "Oppt. Game Win %" name matches both, being
+// itself win-shaped), which would otherwise get mistaken for the record.
 const WIN_LOSS_METRIC_PATTERN = /win|match points|record|w\/l/i;
 
-function leadWithWinLoss(names: string[]): string[] {
-  const idx = names.findIndex((name) => WIN_LOSS_METRIC_PATTERN.test(name));
+// BCP's "Oppt. Game Win %" tiebreaker (or an equivalently-named opponent
+// win-rate metric) — excluded from the record match above, nothing more;
+// it's just one more metric that lives behind the expand toggle like
+// everything else BCP publishes.
+const OPPONENT_WIN_PCT_METRIC_PATTERN = /opp(?:onent|t)?\.?\s*(?:game\s*)?win/i;
+
+const isRecordMetric = (name: string) =>
+  WIN_LOSS_METRIC_PATTERN.test(name) && !OPPONENT_WIN_PCT_METRIC_PATTERN.test(name);
+
+// The one column shown on a collapsed row; everything else BCP publishes
+// moves behind the row's expand toggle rather than crowding the table
+// (roadmap #7 follow-up).
+function orderMetricColumns(names: string[]): string[] {
+  const idx = names.findIndex(isRecordMetric);
   if (idx <= 0) return names;
   const reordered = [...names];
-  const [winLoss] = reordered.splice(idx, 1);
-  reordered.unshift(winLoss);
+  const [record] = reordered.splice(idx, 1);
+  reordered.unshift(record);
   return reordered;
 }
 
+// Which of the visible columns is the win/loss record — that's the one
+// column a per-round score strip (see RoundScoreStrip below) stands in
+// for, when round data is available, and the one whose header reads
+// "Record" (see PlacingsTable) instead of BCP's often narrower literal
+// name ("Wins", "Match Points", ...). Undefined if this event's metrics
+// don't have one, in which case neither the strip nor the rename apply.
+function findRecordMetricName(names: string[]): string | undefined {
+  return names.find(isRecordMetric);
+}
+
 /**
- * One placings row. For a team event with a roster available for this
- * entry's team (see rosterByTeamId), the row expands in place to show
- * that team's already-published roster — same reuse-not-recompute
- * posture as TeamRosterFallback elsewhere. A singles-event row (no
- * roster passed) just isn't expandable.
+ * A compact "62 / 91 / 74" round-by-round score strip, each round
+ * colored by its own win/loss/draw margin (see lib/scoreColor.ts) —
+ * BCP's own already-published per-round score for this entry, not a
+ * recomputed record. Stands in for the plain record column value on a
+ * row where round data is available (see findRecordMetricName above).
+ */
+function RoundScoreStrip({ pairings }: { pairings: MyPairing[] }) {
+  return (
+    <span className="whitespace-nowrap">
+      {pairings.map((p, i) => (
+        <React.Fragment key={p.round}>
+          {i > 0 && <span className="text-text-tertiary"> / </span>}
+          <span
+            className={
+              p.myScore !== undefined && p.opponentScore !== undefined
+                ? SCORE_OUTCOME_CLASSES[classifyScore(p.myScore, p.opponentScore)]
+                : "text-text-tertiary"
+            }
+            title={`Round ${p.round}${
+              p.myScore !== undefined && p.opponentScore !== undefined
+                ? `: ${p.myScore}–${p.opponentScore} vs ${p.opponentName}`
+                : ""
+            }`}
+          >
+            {p.myScore ?? "—"}
+          </span>
+        </React.Fragment>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * One placings row. Only the lead record column (see orderMetricColumns)
+ * shows on the collapsed row; the rest of whatever BCP publishes for this
+ * event — including opponent win rate — plus (for a team event with a
+ * roster available for this entry's team, see rosterByTeamId) that
+ * team's already-published roster, reveal in place when the row is
+ * expanded — same reuse-not-recompute posture as TeamRosterFallback
+ * elsewhere. A row with neither hidden metrics nor a roster just isn't
+ * expandable. Any "Best in Faction"/"Best in Super Faction" badge (see
+ * computePlacingBadges) gets its own centered column between Name and
+ * the record, rather than crowding inline after the name and expand
+ * chevron — most rows have no badge at all, so a dedicated column keeps
+ * the ones that do from looking cluttered.
  */
 function PlacingRow({
   entry,
-  metricNames,
+  visibleMetricNames,
+  hiddenMetricNames,
+  recordMetricName,
+  roundScores,
   highlighted,
   roster,
   badge,
 }: {
   entry: PlacingEntry;
-  metricNames: string[];
+  visibleMetricNames: string[];
+  hiddenMetricNames: string[];
+  recordMetricName?: string;
+  roundScores?: MyPairing[];
   highlighted: boolean;
   roster?: Player[];
   badge?: PlacingBadge;
 }) {
   const [expanded, setExpanded] = React.useState(false);
-  const canExpand = Boolean(roster?.length);
+  const canExpand = Boolean(roster?.length) || hiddenMetricNames.length > 0;
 
   return (
     <>
@@ -84,32 +163,57 @@ function PlacingRow({
         <td className="px-2 py-1.5 text-text-secondary">{entry.placing ?? "—"}</td>
         <td className="truncate px-2 py-1.5 font-medium text-text-primary">
           <PlayerStatsLink name={entry.name} bcpUserId={entry.bcpUserId} />
-          {badge?.bestSuperFaction && (
-            <Badge tone="brass" className="ml-1.5" title={`Best-placed ${badge.bestSuperFaction} player`}>
-              Best {badge.bestSuperFaction}
-            </Badge>
-          )}
-          {badge?.bestFaction && (
-            <Badge tone="brass" className="ml-1.5" title={`Best-placed ${badge.bestFaction} player`}>
-              Best {badge.bestFaction}
-            </Badge>
-          )}
           {canExpand && (
             <span aria-hidden className="ml-1.5 text-xs text-text-tertiary">
               {expanded ? "▲" : "▼"}
             </span>
           )}
         </td>
-        {metricNames.map((name) => (
+        <td className="px-2 py-1.5">
+          {badge?.bestSuperFaction && (
+            <Badge tone="brass" title={`Best-placed ${badge.bestSuperFaction} player`}>
+              Best {badge.bestSuperFaction}
+            </Badge>
+          )}
+          {badge?.bestFaction && (
+            <Badge
+              tone="brass"
+              className={badge.bestSuperFaction ? "ml-1.5" : ""}
+              title={`Best-placed ${badge.bestFaction} player`}
+            >
+              Best {badge.bestFaction}
+            </Badge>
+          )}
+        </td>
+        {visibleMetricNames.map((name) => (
           <td key={name} className="px-2 py-1.5 text-right text-text-secondary">
-            {entry.metrics.find((m) => m.name === name)?.value ?? "—"}
+            {name === recordMetricName && roundScores && roundScores.length > 0 ? (
+              <RoundScoreStrip pairings={roundScores} />
+            ) : (
+              entry.metrics.find((m) => m.name === name)?.value ?? "—"
+            )}
           </td>
         ))}
       </tr>
       {expanded && canExpand && (
         <tr className="border-t border-surface-border">
-          <td colSpan={2 + metricNames.length} className="px-2 pb-2 pt-1">
-            <TeamRosterList name={entry.name} players={roster ?? []} />
+          <td colSpan={3 + visibleMetricNames.length} className="px-2 pb-2 pt-1">
+            {hiddenMetricNames.length > 0 && (
+              <dl className="mb-2 flex flex-wrap justify-end gap-2">
+                {hiddenMetricNames.map((name) => (
+                  <div
+                    key={name}
+                    className="flex flex-col-reverse items-center gap-0.5 rounded-lg bg-surface-2 px-2.5 py-1.5"
+                  >
+                    <dt className="text-[10px] text-text-tertiary">{name}</dt>
+                    <dd className="text-xs font-semibold text-text-primary">
+                      {entry.metrics.find((m) => m.name === name)?.value ?? "—"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {roster && roster.length > 0 && <TeamRosterList name={entry.name} players={roster} />}
           </td>
         </tr>
       )}
@@ -121,7 +225,9 @@ function PlacingRow({
  * Standings as BCP has already computed and published them. The metric
  * columns are whatever BCP reports for this event (e.g. Wins, Battle
  * Points, Wins SoS) rather than hardcoded — this only displays published
- * numbers, it doesn't calculate them.
+ * numbers, it doesn't calculate them. Only the record column stays
+ * visible on a collapsed row; the rest (opponent win rate included) live
+ * behind each row's own expand toggle (see orderMetricColumns/PlacingRow).
  */
 export default function PlacingsTable({
   entries,
@@ -131,8 +237,12 @@ export default function PlacingsTable({
   emptyMessage,
   onRefresh,
   rosterByTeamId,
+  roundScoresById,
 }: PlacingsTableProps) {
-  const metricNames = leadWithWinLoss(entries[0]?.metrics.map((m) => m.name) ?? []);
+  const orderedMetricNames = orderMetricColumns(entries[0]?.metrics.map((m) => m.name) ?? []);
+  const visibleMetricNames = orderedMetricNames.slice(0, 1);
+  const hiddenMetricNames = orderedMetricNames.slice(1);
+  const recordMetricName = findRecordMetricName(orderedMetricNames);
   const slowLoad = useDelayedFlag(loading);
   // Pure over `entries` (no new prop threaded in from a caller) — see
   // computePlacingBadges' own doc comment.
@@ -178,9 +288,10 @@ export default function PlacingsTable({
                 <tr className="text-left text-xs text-text-secondary">
                   <th className="px-2 py-1.5 font-medium">#</th>
                   <th className="px-2 py-1.5 font-medium">Name</th>
-                  {metricNames.map((name) => (
+                  <th className="px-2 py-1.5 font-medium" aria-hidden />
+                  {visibleMetricNames.map((name) => (
                     <th key={name} className="px-2 py-1.5 text-right font-medium">
-                      {name}
+                      {name === recordMetricName ? "Record" : name}
                     </th>
                   ))}
                 </tr>
@@ -190,7 +301,10 @@ export default function PlacingsTable({
                   <PlacingRow
                     key={entry.id}
                     entry={entry}
-                    metricNames={metricNames}
+                    visibleMetricNames={visibleMetricNames}
+                    hiddenMetricNames={hiddenMetricNames}
+                    recordMetricName={recordMetricName}
+                    roundScores={roundScoresById?.get(entry.id)}
                     highlighted={followedIds?.has(entry.id) ?? false}
                     roster={rosterByTeamId?.get(entry.id)}
                     badge={badges.get(entry.id)}

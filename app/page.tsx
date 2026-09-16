@@ -28,6 +28,7 @@ import {
   fetchItcRanking,
   fetchMyIndividualPairings,
   fetchMyTeamPairings,
+  fetchPlacingRoundScores,
   fetchTeamPairingBoards,
   fetchRoundBoard,
   type BoardPairing,
@@ -340,6 +341,12 @@ function HomeContent() {
   // Same purpose as boardRefreshKey, for PlacingsTable's refresh button.
   const [placingsRefreshKey, setPlacingsRefreshKey] = React.useState(0);
   const placingsRefreshRequestedRef = React.useRef(false);
+  // Round-by-round score strip for each placing row — a pure enrichment
+  // of already-fetched round pairings (see fetchPlacingRoundScores' doc
+  // comment), so a load/refresh failure here just leaves this empty and
+  // PlacingsTable falls back to BCP's own aggregate metric instead of
+  // surfacing an error of its own.
+  const [placingRoundScores, setPlacingRoundScores] = React.useState<Map<string, MyPairing[]>>(new Map());
 
   // Client-only hydration from localStorage, run exactly once right after
   // mount — see the comment on `eventId`'s initial state above for why
@@ -828,6 +835,34 @@ function HomeContent() {
     };
   }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
 
+  // Round-by-round score strip for the Placings tab (see
+  // fetchPlacingRoundScores' doc comment) — same "only once the tab is
+  // open" gating as the placings fetch above, and rides the same manual
+  // refresh (placingsRefreshKey) rather than adding a second refresh
+  // control. Fails quietly: PlacingsTable already renders fine from
+  // `placings` alone, so a failure here just leaves the strip empty
+  // rather than surfacing a second error alongside placingsError.
+  useEffect(() => {
+    if (activeTab !== "placings" || !eventInfo) return;
+    const upToRound = eventInfo.ended ? eventInfo.numberOfRounds : eventInfo.currentRound;
+    if (upToRound <= 0) return;
+
+    let cancelled = false;
+    fetchPlacingRoundScores(eventId, eventInfo.teamEvent, upToRound)
+      .then((scores) => {
+        if (!cancelled) setPlacingRoundScores(scores);
+      })
+      .catch((err: unknown) => {
+        logClientEvent("warn", "fetching placing round scores failed, falling back to plain record", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
+
   const teams = useMemo(() => groupByTeam(players), [players]);
 
   const isFollowing = (key: string) => following.some((f) => followedKey(f) === key);
@@ -951,6 +986,7 @@ function HomeContent() {
     setBoardError(null);
     setPlacings([]);
     setPlacingsError(null);
+    setPlacingRoundScores(new Map());
   };
 
   const changeBoardRound = (round: number) => {
@@ -1338,6 +1374,7 @@ function HomeContent() {
             onRefresh={refreshPlacings}
             followedIds={followedIds}
             rosterByTeamId={rosterByTeamId}
+            roundScoresById={placingRoundScores}
             emptyMessage={
               searchQuery && placings.length > 0
                 ? `No placings match "${searchQuery}".`
