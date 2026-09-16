@@ -110,7 +110,7 @@ export default function WikiPage() {
                 const missionId = MISSION_MATRIX[disposition][opponent];
                 return (
                   <details key={opponent} className="text-sm">
-                    <summary className="cursor-pointer font-medium text-brass-600 dark:text-brass-400">
+                    <summary className="cursor-pointer font-medium text-brass-400">
                       {missionId} <span className="font-normal text-text-tertiary">— vs. {opponent}</span>
                     </summary>
                     <MissionScoringDetails missionId={missionId} />

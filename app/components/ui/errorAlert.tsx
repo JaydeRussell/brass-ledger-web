@@ -21,7 +21,7 @@ export default function ErrorAlert({ size = "md", className, children, ...props 
     <div
       role="alert"
       className={clsx(
-        "rounded-lg border border-danger-500/30 bg-danger-500/15 text-danger-600 dark:text-danger-400",
+        "rounded-lg border border-danger-500/30 bg-danger-500/15 text-danger-400",
         SIZE_CLASSES[size],
         className
       )}

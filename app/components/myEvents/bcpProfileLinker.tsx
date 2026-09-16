@@ -110,7 +110,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
       </div>
 
       {error && (
-        <div role="alert" className="mt-1 text-xs text-danger-600 dark:text-danger-400">
+        <div role="alert" className="mt-1 text-xs text-danger-400">
           {error}
         </div>
       )}
@@ -233,7 +233,7 @@ export default function BcpProfileLinker({ onLinked }: { onLinked: (bcpUserId: s
       )}
 
       {linkError && (
-        <div role="alert" className="mt-1 text-xs text-danger-600 dark:text-danger-400">
+        <div role="alert" className="mt-1 text-xs text-danger-400">
           {linkError}
         </div>
       )}

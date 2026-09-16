@@ -227,10 +227,10 @@ export default function MyRoundCard({
               {resolved.myScore}–{resolved.opponentScore}
             </span>
           ) : (
-            <span className="shrink-0 text-xs text-success-600 dark:text-success-400">done</span>
+            <span className="shrink-0 text-xs text-success-400">done</span>
           )
         ) : (
-          <span className="shrink-0 text-xs text-warning-600 dark:text-warning-400">in progress</span>
+          <span className="shrink-0 text-xs text-warning-400">in progress</span>
         )}
       </div>
 

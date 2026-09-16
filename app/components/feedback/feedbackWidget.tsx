@@ -165,7 +165,7 @@ export default function FeedbackWidget() {
             )}
 
             {status === "error" && errorMessage && (
-              <div role="alert" className="text-xs text-danger-600 dark:text-danger-400">
+              <div role="alert" className="text-xs text-danger-400">
                 {errorMessage}
               </div>
             )}

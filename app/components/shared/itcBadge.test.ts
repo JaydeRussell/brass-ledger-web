@@ -4,10 +4,10 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ItcBadge from "./itcBadge.tsx";
 
-// ItcBadge calls hooks (useState/useEffect for the viewer's dark-mode
-// preference), so it's tested via real SSR rather than direct-call — see
-// app/lib/testUtils.ts. Effects don't run under SSR, so every case below
-// exercises the (correct, matches-the-server) light-mode default.
+// ItcBadge calls useViewerItcRanking() (a hook), so it's tested via real
+// SSR rather than direct-call — see app/lib/testUtils.ts. Every case
+// below exercises the "no viewer ranking known yet" default, since that
+// hook's own fetch effect doesn't run under SSR.
 
 test("renders nothing while a ranking hasn't resolved yet or is null", () => {
   assert.equal(renderToStaticMarkup(React.createElement(ItcBadge, { ranking: undefined, title: "t" })), "");

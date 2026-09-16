@@ -84,7 +84,7 @@ export default function RefreshButton({
       {cooling && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-1 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10"
+          className="pointer-events-none absolute inset-x-1 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-white/10"
         >
           <div
             className="h-full bg-brass-500"

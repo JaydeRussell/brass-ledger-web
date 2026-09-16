@@ -56,14 +56,14 @@ function DayCell({ day, isToday, names }: { day: number; isToday: boolean; names
     <div
       className={`min-h-[4.5rem] rounded-md p-1 text-sm ${isToday ? "bg-brass-500/15" : ""}`}
     >
-      <span className={isToday ? "font-semibold text-brass-600 dark:text-brass-400" : "text-text-secondary"}>
+      <span className={isToday ? "font-semibold text-brass-400" : "text-text-secondary"}>
         {day}
       </span>
       {names.length > 0 && (
         <div className="mt-0.5 flex flex-col gap-0.5">
           <span
             title={names[0]}
-            className="truncate rounded-sm bg-brass-500/20 px-1 py-0.5 text-[10px] font-medium leading-tight text-brass-600 dark:text-brass-400"
+            className="truncate rounded-sm bg-brass-500/20 px-1 py-0.5 text-[10px] font-medium leading-tight text-brass-400"
           >
             {names[0]}
           </span>

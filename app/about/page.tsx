@@ -50,7 +50,7 @@ export default function AboutPage() {
         <Card className="p-4">
           <h2 className="mb-2 text-sm font-semibold text-text-primary">What&apos;s changed</h2>
           <p className="text-sm text-text-secondary">
-            <Link href="/changelog" className="text-brass-600 hover:underline dark:text-brass-400">
+            <Link href="/changelog" className="text-brass-400 hover:underline">
               See the changelog
             </Link>{" "}
             for what&apos;s shipped so far.

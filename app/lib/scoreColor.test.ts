@@ -39,29 +39,26 @@ test("SCORE_OUTCOME_CLASSES has a class for every ScoreOutcome classifyScore can
 
 // Table-driven: itcGradientStyle across the ranking range (below zero,
 // zero, mid-range, the max, and above the max — both by points and by
-// placing) in both light and dark mode — checking it always returns a
-// valid rgb() string and a plausible text color, and that it never throws
-// regardless of how extreme the input is.
+// placing) — checking it always returns a valid rgb() string and a
+// plausible text color, and that it never throws regardless of how
+// extreme the input is.
 test("itcGradientStyle", () => {
-  const cases: { name: string; ranking: { points: number; placing?: number }; isDark: boolean }[] = [
-    { name: "zero points, no placing, light mode", ranking: { points: 0 }, isDark: false },
-    { name: "zero points, no placing, dark mode", ranking: { points: 0 }, isDark: true },
-    { name: "mid-range points, no placing, light mode", ranking: { points: 750 }, isDark: false },
-    { name: "mid-range points, no placing, dark mode", ranking: { points: 750 }, isDark: true },
-    { name: "at the points ceiling, no placing, light mode", ranking: { points: 1500 }, isDark: false },
-    { name: "above the points ceiling clamps rather than erroring", ranking: { points: 5000 }, isDark: false },
-    { name: "negative points clamp rather than erroring", ranking: { points: -100 }, isDark: false },
-    { name: "rank 1 (best possible), light mode", ranking: { points: 2000, placing: 1 }, isDark: false },
-    { name: "rank 1 (best possible), dark mode", ranking: { points: 2000, placing: 1 }, isDark: true },
-    { name: "mid-pack rank, light mode", ranking: { points: 900, placing: 500 }, isDark: false },
-    { name: "deep in the field, light mode", ranking: { points: 300, placing: 9000 }, isDark: false },
-    { name: "beyond the placing floor clamps rather than erroring", ranking: { points: 100, placing: 50000 }, isDark: false },
+  const cases: { name: string; ranking: { points: number; placing?: number } }[] = [
+    { name: "zero points, no placing", ranking: { points: 0 } },
+    { name: "mid-range points, no placing", ranking: { points: 750 } },
+    { name: "at the points ceiling, no placing", ranking: { points: 1500 } },
+    { name: "above the points ceiling clamps rather than erroring", ranking: { points: 5000 } },
+    { name: "negative points clamp rather than erroring", ranking: { points: -100 } },
+    { name: "rank 1 (best possible)", ranking: { points: 2000, placing: 1 } },
+    { name: "mid-pack rank", ranking: { points: 900, placing: 500 } },
+    { name: "deep in the field", ranking: { points: 300, placing: 9000 } },
+    { name: "beyond the placing floor clamps rather than erroring", ranking: { points: 100, placing: 50000 } },
   ];
 
   const rgbPattern = /^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/;
 
   for (const tc of cases) {
-    const style = itcGradientStyle(tc.ranking, tc.isDark);
+    const style = itcGradientStyle(tc.ranking);
     assert.match(
       style.backgroundColor,
       rgbPattern,
@@ -72,12 +69,6 @@ test("itcGradientStyle", () => {
       `${tc.name}: color ${style.color} isn't one of the two expected text colors`
     );
   }
-});
-
-test("itcGradientStyle defaults to light mode when isDark is omitted", () => {
-  const withDefault = itcGradientStyle({ points: 750 });
-  const explicitLight = itcGradientStyle({ points: 750 }, false);
-  assert.deepEqual(withDefault, explicitLight);
 });
 
 // Parses "rgb(r, g, b)" back into numbers so a test can reason about how
@@ -142,13 +133,13 @@ test("placing differences matter far more near rank 1 than deep in the field", (
 // of where either one sits on the fixed absolute scale.
 test("itcGradientStyle colors relative to a given viewerRanking instead of the absolute scale", () => {
   const viewer = { points: 1000, placing: 500 };
-  const sameAsViewer = itcGradientStyle(viewer, false, viewer).backgroundColor;
-  const strongerThanViewer = itcGradientStyle({ points: 1400, placing: 50 }, false, viewer).backgroundColor;
-  const weakerThanViewer = itcGradientStyle({ points: 500, placing: 5000 }, false, viewer).backgroundColor;
+  const sameAsViewer = itcGradientStyle(viewer, viewer).backgroundColor;
+  const strongerThanViewer = itcGradientStyle({ points: 1400, placing: 50 }, viewer).backgroundColor;
+  const weakerThanViewer = itcGradientStyle({ points: 500, placing: 5000 }, viewer).backgroundColor;
 
   // A far-stronger opponent should sit closer to the absolute "elite" end
   // of the scale than someone merely at parity with the viewer does.
-  const eliteAbsolute = itcGradientStyle({ points: 1500, placing: 1 }, false).backgroundColor;
+  const eliteAbsolute = itcGradientStyle({ points: 1500, placing: 1 }).backgroundColor;
   assert.ok(
     colorDistance(strongerThanViewer, eliteAbsolute) < colorDistance(sameAsViewer, eliteAbsolute),
     "a much stronger opponent should read closer to the elite end than someone at parity with the viewer"
@@ -156,7 +147,7 @@ test("itcGradientStyle colors relative to a given viewerRanking instead of the a
 
   // A far-weaker opponent should sit closer to the absolute weakest end
   // than someone at parity with the viewer does.
-  const weakestAbsolute = itcGradientStyle({ points: 0 }, false).backgroundColor;
+  const weakestAbsolute = itcGradientStyle({ points: 0 }).backgroundColor;
   assert.ok(
     colorDistance(weakerThanViewer, weakestAbsolute) < colorDistance(sameAsViewer, weakestAbsolute),
     "a much weaker opponent should read closer to the weakest end than someone at parity with the viewer"
@@ -171,9 +162,9 @@ test("itcGradientStyle colors relative to a given viewerRanking instead of the a
 
 test("itcGradientStyle ignores a null/undefined viewerRanking and falls back to the absolute scale", () => {
   const ranking = { points: 1000, placing: 500 };
-  const withNull = itcGradientStyle(ranking, false, null);
-  const withUndefined = itcGradientStyle(ranking, false, undefined);
-  const withOmitted = itcGradientStyle(ranking, false);
+  const withNull = itcGradientStyle(ranking, null);
+  const withUndefined = itcGradientStyle(ranking, undefined);
+  const withOmitted = itcGradientStyle(ranking);
   assert.deepEqual(withNull, withOmitted);
   assert.deepEqual(withUndefined, withOmitted);
 });

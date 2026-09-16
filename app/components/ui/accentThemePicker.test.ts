@@ -5,30 +5,30 @@ import AccentThemePicker from "./accentThemePicker.tsx";
 import { renderStatic } from "../../lib/testUtils.ts";
 import { ACCENT_THEMES } from "../../lib/theme.ts";
 
-// AccentThemePicker uses useAccentTheme() internally (a hook), so — like
-// ThemeToggle — it can't be walked as a plain function; rendered via
-// renderStatic (real SSR) instead. SSR always sees the hook's initial
-// "brass" state (no localStorage to read on the server, and effects don't
-// run during SSR), so this only covers the initial render, not an actual
-// click switching themes — that's verified live in a real browser.
+// AccentThemePicker uses useAccentTheme() internally (a hook), so it
+// can't be walked as a plain function; rendered via renderStatic (real
+// SSR) instead. SSR always sees the hook's initial
+// "brass" accent (no localStorage to read on the server) and the
+// picker's own `expanded` state starting false, so this only covers the
+// initial collapsed render — expanding the grid and picking a swatch is
+// a stateful transition this project's hookless test helpers can't
+// simulate, so (like an actual theme switch) that's verified live in a
+// real browser instead.
 
-test("AccentThemePicker renders one radio per accent theme", () => {
+test("AccentThemePicker renders collapsed, showing only the active theme", () => {
   const html = renderStatic(React.createElement(AccentThemePicker));
   const buttons = html.split("<button").slice(1);
-  assert.equal(buttons.length, ACCENT_THEMES.length);
-  for (const option of ACCENT_THEMES) {
-    // renderToStaticMarkup HTML-escapes apostrophes (T'au Cyan) as &#x27;.
-    const escapedLabel = option.label.replace(/'/g, "&#x27;");
-    assert.match(html, new RegExp(`>${escapedLabel}<`));
-  }
+  assert.equal(buttons.length, 1);
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, />Brass</);
 });
 
-test("AccentThemePicker marks only brass as checked on initial (server) render", () => {
+test("AccentThemePicker's collapsed row doesn't leak the other 11 theme labels", () => {
   const html = renderStatic(React.createElement(AccentThemePicker));
-  const buttons = html.split("<button").slice(1);
-  const brassButton = buttons.find((b) => b.includes(">Brass<"));
-  const otherButtons = buttons.filter((b) => !b.includes(">Brass<"));
-  assert.equal(otherButtons.length, ACCENT_THEMES.length - 1);
-  assert.ok(brassButton?.includes('aria-checked="true"'));
-  otherButtons.forEach((b) => assert.ok(b.includes('aria-checked="false"')));
+  for (const option of ACCENT_THEMES) {
+    if (option.value === "brass") continue;
+    // renderToStaticMarkup HTML-escapes apostrophes (T'au Cyan) as &#x27;.
+    const escapedLabel = option.label.replace(/'/g, "&#x27;");
+    assert.doesNotMatch(html, new RegExp(`>${escapedLabel}<`));
+  }
 });

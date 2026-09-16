@@ -5,9 +5,9 @@ import MatchupLookup from "./matchupLookup.tsx";
 import { renderStatic } from "../../lib/testUtils.ts";
 import { DISPOSITIONS } from "../../lib/dispositions.ts";
 
-// MatchupLookup uses useState internally (a hook), so — like ThemeToggle
-// and AccentThemePicker — it can't be walked as a plain function.
-// Rendered via renderStatic (real SSR): confirms the initial render (both
+// MatchupLookup uses useState internally (a hook), so — like
+// AccentThemePicker — it can't be walked as a plain function. Rendered
+// via renderStatic (real SSR): confirms the initial render (both
 // selects offer all 5 dispositions, defaulting to the first one, with
 // MissionMatchupPanel's content underneath) but not an actual selection
 // change — that's verified live in a real browser.

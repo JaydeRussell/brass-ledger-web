@@ -328,7 +328,7 @@ export default function MyPairings({
                         </div>
                       )}
                       {boardState?.error && (
-                        <p className="px-1 py-1 text-xs text-danger-600 dark:text-danger-400">
+                        <p className="px-1 py-1 text-xs text-danger-400">
                           Couldn&apos;t load boards: {boardState.error}
                         </p>
                       )}
