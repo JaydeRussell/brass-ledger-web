@@ -1,10 +1,17 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import type { PlacingHistoryPoint } from "../../lib/myStats";
 
 type PlacingTrendChartProps = {
   // Chronological (oldest first) — see PlacingHistoryPoint's doc comment.
   points: PlacingHistoryPoint[];
+  // The trend line (+ its Placing/Percentile toggle) is only worth the
+  // space on your own /stats page — someone checking another player's
+  // record (the opponent quick-look on "Your round", or /players/
+  // [bcpUserId]) gets the plain event-history table only, no chart. The
+  // format filter still applies to the table either way.
+  showChart: boolean;
 };
 
 // "ITC points earned" was considered and dropped: BCP doesn't publish a
@@ -20,6 +27,12 @@ type PlacingTrendChartProps = {
 // (see internal/api/stats.go's StatsHandler doc comment on why win/loss
 // reconstruction was declined the same way).
 type Metric = "placing" | "percentile";
+
+type Format = NonNullable<PlacingHistoryPoint["category"]>;
+type FormatFilter = "all" | Format;
+
+const FORMAT_LABELS: Record<Format, string> = { gt: "GT", rtt: "RTT", team: "Team" };
+const FORMAT_ORDER: Format[] = ["gt", "rtt", "team"];
 
 const CHART_WIDTH = 480;
 const CHART_HEIGHT = 160;
@@ -71,12 +84,25 @@ function formatTick(v: number, metric: Metric): string {
 }
 
 /**
- * "My round"-style trend line: the signed-in (or viewed) player's placing
- * — or, toggled, percentile (placing ÷ that event's own published field
- * size) — across every already-concluded event with a known date, oldest
- * to newest. `points` (the event's own battle-points/format score) is
+ * An event-history section: every already-concluded event with a known
+ * date and placing, as a browsable table (newest first, event name
+ * linking out to that event's own page, same `/?event=` pattern
+ * EventList uses), plus — when `showChart` is true and there are at
+ * least two events in the current format filter — a "My round"-style
+ * trend line above it, oldest to newest (placing, or toggled,
+ * percentile). `points` (the event's own battle-points/format score) is
  * deliberately never plotted — see the Metric comment above — it only
- * ever shows up in the tooltip and the table view below the chart.
+ * ever shows up in the tooltip and the table.
+ *
+ * `showChart` is false for the two "someone else's record" contexts
+ * (MyRoundCard's opponent quick-look, /players/[bcpUserId]) — a trend
+ * line is worth the space on your own history, less so skimming an
+ * opponent's; see PlacingTrendChartProps' doc comment.
+ *
+ * The format filter (All/GT/RTT/Team, via each point's `category`) only
+ * appears once there's an actual choice to make — a player whose history
+ * is all one format gets no pills, same "don't show a toggle with
+ * nothing to toggle" rule the Percentile button already follows.
  *
  * Plotted by event *index*, not by actual date spacing — an evenly-spaced
  * line reads more clearly than one dominated by whatever gap happens to
@@ -89,269 +115,315 @@ function formatTick(v: number, metric: Metric): string {
  * vertical space. Percentile mode breaks the line wherever an event
  * never published a field size, rather than guessing — see linePath.
  */
-export default function PlacingTrendChart({ points }: PlacingTrendChartProps) {
+export default function PlacingTrendChart({ points, showChart }: PlacingTrendChartProps) {
   const [metric, setMetric] = React.useState<Metric>("placing");
+  const [format, setFormat] = React.useState<FormatFilter>("all");
   const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
-  const [tableExpanded, setTableExpanded] = React.useState(false);
   const svgRef = React.useRef<SVGSVGElement>(null);
 
-  if (points.length < 2) return null;
+  if (points.length === 0) return null;
 
-  const hasAnyFieldSize = points.some((p) => p.fieldSize !== undefined);
+  const availableFormats = FORMAT_ORDER.filter((f) => points.some((p) => p.category === f));
+  const activeFormat: FormatFilter = format !== "all" && !availableFormats.includes(format) ? "all" : format;
+  const filteredPoints = activeFormat === "all" ? points : points.filter((p) => p.category === activeFormat);
+
+  const hasAnyFieldSize = filteredPoints.some((p) => p.fieldSize !== undefined);
   const activeMetric: Metric = metric === "percentile" && !hasAnyFieldSize ? "placing" : metric;
+  const canChart = showChart && filteredPoints.length >= 2;
 
-  const values = points.map((p) => valueFor(p, activeMetric));
-  const definedValues = values.filter((v): v is number => v !== undefined);
-  const minV = Math.min(...definedValues);
-  const maxV = Math.max(...definedValues);
-  // A little vertical breathing room so the best/worst points aren't
-  // drawn flush against the chart edge; falls back to a fixed pad when
-  // every result is identical, so the scale never collapses to zero
-  // height.
-  const pad = Math.max(activeMetric === "placing" ? 1 : 2, (maxV - minV) * 0.1);
-  // Placing can't go below 1st; percentile can't go below 0%.
-  const domainMin = Math.max(activeMetric === "placing" ? 1 : 0, minV - pad);
-  const domainMax = maxV + pad;
-
-  const plotWidth = CHART_WIDTH - PAD_LEFT - PAD_RIGHT;
-  const plotHeight = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
-
-  const xAt = (i: number) =>
-    points.length === 1 ? PAD_LEFT : PAD_LEFT + (i / (points.length - 1)) * plotWidth;
-  // Inverted: a better (lower) value maps to a smaller y (higher on screen).
-  const yAt = (v: number) => PAD_TOP + ((v - domainMin) / (domainMax - domainMin || 1)) * plotHeight;
-
-  // Multiple sub-paths, breaking wherever this event has no value for the
-  // active metric (only possible in percentile mode) — a gap, not an
-  // interpolated guess.
-  let linePath = "";
-  let segmentOpen = false;
-  values.forEach((v, i) => {
-    if (v === undefined) {
-      segmentOpen = false;
-      return;
-    }
-    linePath += `${segmentOpen ? "L" : "M"}${xAt(i)},${yAt(v)} `;
-    segmentOpen = true;
-  });
-
-  const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const relX = ((e.clientX - rect.left) / rect.width) * CHART_WIDTH;
-    const fraction = (relX - PAD_LEFT) / plotWidth;
-    const nearest = Math.round(fraction * (points.length - 1));
-    setHoverIndex(Math.min(points.length - 1, Math.max(0, nearest)));
+  const selectFormat = (f: FormatFilter) => {
+    setFormat(f);
+    setHoverIndex(null); // indices shift when the underlying point list changes
   };
 
-  const latestIndex = points.length - 1;
-  const latest = points[latestIndex];
-  const latestValue = values[latestIndex];
-  const hovered = hoverIndex !== null ? points[hoverIndex] : null;
-  const hoveredValue = hoverIndex !== null ? values[hoverIndex] : undefined;
+  /** The trend line + tooltip — only meaningful with 2+ points, so this
+   * is called from the JSX below only when canChart is true. Kept as a
+   * plain closure (not a separate component) purely to scope its many
+   * chart-local derived values away from the table/filter logic above
+   * without threading them through props. */
+  function renderChart() {
+    const values = filteredPoints.map((p) => valueFor(p, activeMetric));
+    const definedValues = values.filter((v): v is number => v !== undefined);
+    const minV = Math.min(...definedValues);
+    const maxV = Math.max(...definedValues);
+    // A little vertical breathing room so the best/worst points aren't
+    // drawn flush against the chart edge; falls back to a fixed pad when
+    // every result is identical, so the scale never collapses to zero
+    // height.
+    const pad = Math.max(activeMetric === "placing" ? 1 : 2, (maxV - minV) * 0.1);
+    // Placing can't go below 1st; percentile can't go below 0%.
+    const domainMin = Math.max(activeMetric === "placing" ? 1 : 0, minV - pad);
+    const domainMax = maxV + pad;
+
+    const plotWidth = CHART_WIDTH - PAD_LEFT - PAD_RIGHT;
+    const plotHeight = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
+
+    const xAt = (i: number) => PAD_LEFT + (i / (filteredPoints.length - 1)) * plotWidth;
+    // Inverted: a better (lower) value maps to a smaller y (higher on screen).
+    const yAt = (v: number) => PAD_TOP + ((v - domainMin) / (domainMax - domainMin || 1)) * plotHeight;
+
+    // Multiple sub-paths, breaking wherever this event has no value for the
+    // active metric (only possible in percentile mode) — a gap, not an
+    // interpolated guess.
+    let linePath = "";
+    let segmentOpen = false;
+    values.forEach((v, i) => {
+      if (v === undefined) {
+        segmentOpen = false;
+        return;
+      }
+      linePath += `${segmentOpen ? "L" : "M"}${xAt(i)},${yAt(v)} `;
+      segmentOpen = true;
+    });
+
+    const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const relX = ((e.clientX - rect.left) / rect.width) * CHART_WIDTH;
+      const fraction = (relX - PAD_LEFT) / plotWidth;
+      const nearest = Math.round(fraction * (filteredPoints.length - 1));
+      setHoverIndex(Math.min(filteredPoints.length - 1, Math.max(0, nearest)));
+    };
+
+    const latestIndex = filteredPoints.length - 1;
+    const latest = filteredPoints[latestIndex];
+    const latestValue = values[latestIndex];
+    const hovered = hoverIndex !== null ? filteredPoints[hoverIndex] : null;
+    const hoveredValue = hoverIndex !== null ? values[hoverIndex] : undefined;
+
+    return (
+      <>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-text-tertiary">
+            {activeMetric === "placing" ? "Placing" : "Percentile"} · lower is better
+          </p>
+          <div
+            role="radiogroup"
+            aria-label="Chart metric"
+            className="flex gap-1 rounded-md border border-surface-border bg-surface-2 p-1"
+          >
+            {(["placing", "percentile"] as const).map((m) => {
+              const active = activeMetric === m;
+              const disabled = m === "percentile" && !hasAnyFieldSize;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  disabled={disabled}
+                  title={disabled ? "No event here has a published field size" : undefined}
+                  onClick={() => setMetric(m)}
+                  className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    active
+                      ? "bg-brass-500 text-[oklch(0.16_0.006_260)]"
+                      : "text-text-secondary hover:text-text-primary"
+                  }`}
+                >
+                  {m === "placing" ? "Placing" : "Percentile"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="relative mt-2">
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+            className="w-full"
+            role="img"
+            aria-label={`${activeMetric === "placing" ? "Placing" : "Percentile"} across ${filteredPoints.length} events, from ${
+              values[0] !== undefined ? formatValue(values[0], activeMetric) : "an event with no published field size"
+            } at ${filteredPoints[0].eventName} to ${
+              latestValue !== undefined ? formatValue(latestValue, activeMetric) : "an event with no published field size"
+            } at ${latest.eventName}`}
+            onPointerMove={handlePointerMove}
+            onPointerLeave={() => setHoverIndex(null)}
+          >
+            {/* Recessive gridlines at the domain's min/mid/max, each with a
+                tick label — the values not directly labeled on the line
+                itself still need to be readable somewhere. */}
+            {[domainMax, (domainMin + domainMax) / 2, domainMin].map((g, i) => (
+              <g key={i}>
+                <line
+                  x1={PAD_LEFT}
+                  x2={CHART_WIDTH - PAD_RIGHT}
+                  y1={yAt(g)}
+                  y2={yAt(g)}
+                  className="stroke-surface-2"
+                  strokeWidth={1}
+                />
+                <text
+                  x={PAD_LEFT - 6}
+                  y={yAt(g)}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  className="fill-text-tertiary"
+                  fontSize={9}
+                >
+                  {formatTick(g, activeMetric)}
+                </text>
+              </g>
+            ))}
+
+            <path
+              d={linePath}
+              fill="none"
+              className="stroke-brass-500"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+
+            {/* Crosshair — snaps to the nearest event on hover. */}
+            {hoverIndex !== null && (
+              <line
+                x1={xAt(hoverIndex)}
+                x2={xAt(hoverIndex)}
+                y1={PAD_TOP}
+                y2={CHART_HEIGHT - PAD_BOTTOM}
+                className="stroke-text-tertiary"
+                strokeWidth={1}
+              />
+            )}
+
+            {filteredPoints.map((p, i) => {
+              const v = values[i];
+              if (v === undefined) return null;
+              const isEndpoint = i === latestIndex;
+              const isHovered = i === hoverIndex;
+              return (
+                <g key={p.eventId + i}>
+                  {/* Oversized transparent hit target — ≥24px in screen
+                      space, comfortably bigger than the visible mark. */}
+                  <circle cx={xAt(i)} cy={yAt(v)} r={12} fill="transparent" />
+                  {(isEndpoint || isHovered) && (
+                    <circle cx={xAt(i)} cy={yAt(v)} r={4} className="fill-brass-500 stroke-surface-0" strokeWidth={2} />
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Direct label: only the most recent result, to avoid a number
+              on every point — the tooltip and table carry the rest. Skipped
+              entirely if the latest event has no value for this metric. */}
+          {latestValue !== undefined && (
+            <span
+              className="pointer-events-none absolute text-xs font-medium text-text-primary"
+              style={{
+                left: `${(xAt(latestIndex) / CHART_WIDTH) * 100}%`,
+                top: `${(yAt(latestValue) / CHART_HEIGHT) * 100}%`,
+                transform: "translate(-100%, -140%)",
+              }}
+            >
+              {formatValue(latestValue, activeMetric)}
+            </span>
+          )}
+
+          {hovered && hoverIndex !== null && (
+            <div
+              className="pointer-events-none absolute z-10 max-w-[12rem] -translate-x-1/2 -translate-y-full rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs shadow-md"
+              style={{
+                left: `${(xAt(hoverIndex) / CHART_WIDTH) * 100}%`,
+                top: `${(yAt(hoveredValue ?? domainMin) / CHART_HEIGHT) * 100}%`,
+              }}
+            >
+              <p className="font-semibold text-text-primary">
+                {hoveredValue !== undefined ? formatValue(hoveredValue, activeMetric) : "No field size published"}
+              </p>
+              {activeMetric === "placing" && hovered.fieldSize && (
+                <p className="text-text-tertiary">
+                  top {Math.round(percentileOf(hovered)!)}% of {hovered.fieldSize}
+                </p>
+              )}
+              {activeMetric === "percentile" && (
+                <p className="text-text-tertiary">
+                  {ordinal(hovered.placing)}
+                  {hovered.fieldSize ? ` of ${hovered.fieldSize}` : ""}
+                </p>
+              )}
+              <p className="truncate text-text-secondary">{hovered.eventName}</p>
+              <p className="text-text-tertiary">
+                {formatShortDate(hovered.eventDate)}
+                {hovered.points !== undefined && ` · ${hovered.points} pts`}
+              </p>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="mt-3 border-t border-surface-border pt-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-text-primary">Placing over time</h3>
-          <p className="text-xs text-text-tertiary">
-            {activeMetric === "placing" ? "Placing" : "Percentile"} · lower is better
-          </p>
-        </div>
-        <div
-          role="radiogroup"
-          aria-label="Chart metric"
-          className="flex gap-1 rounded-md border border-surface-border bg-surface-2 p-1"
-        >
-          {(["placing", "percentile"] as const).map((m) => {
-            const active = activeMetric === m;
-            const disabled = m === "percentile" && !hasAnyFieldSize;
-            return (
-              <button
-                key={m}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                disabled={disabled}
-                title={disabled ? "No event here has a published field size" : undefined}
-                onClick={() => setMetric(m)}
-                className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                  active
-                    ? "bg-brass-500 text-[oklch(0.16_0.006_260)]"
-                    : "text-text-secondary hover:text-text-primary"
-                }`}
-              >
-                {m === "placing" ? "Placing" : "Percentile"}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="relative mt-2">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          className="w-full"
-          role="img"
-          aria-label={`${activeMetric === "placing" ? "Placing" : "Percentile"} across ${points.length} events, from ${
-            values[0] !== undefined ? formatValue(values[0], activeMetric) : "an event with no published field size"
-          } at ${points[0].eventName} to ${
-            latestValue !== undefined ? formatValue(latestValue, activeMetric) : "an event with no published field size"
-          } at ${latest.eventName}`}
-          onPointerMove={handlePointerMove}
-          onPointerLeave={() => setHoverIndex(null)}
-        >
-          {/* Recessive gridlines at the domain's min/mid/max, each with a
-              tick label — the values not directly labeled on the line
-              itself still need to be readable somewhere. */}
-          {[domainMax, (domainMin + domainMax) / 2, domainMin].map((g, i) => (
-            <g key={i}>
-              <line
-                x1={PAD_LEFT}
-                x2={CHART_WIDTH - PAD_RIGHT}
-                y1={yAt(g)}
-                y2={yAt(g)}
-                className="stroke-surface-2"
-                strokeWidth={1}
-              />
-              <text
-                x={PAD_LEFT - 6}
-                y={yAt(g)}
-                textAnchor="end"
-                dominantBaseline="middle"
-                className="fill-text-tertiary"
-                fontSize={9}
-              >
-                {formatTick(g, activeMetric)}
-              </text>
-            </g>
-          ))}
-
-          <path
-            d={linePath}
-            fill="none"
-            className="stroke-brass-500"
-            strokeWidth={2}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-
-          {/* Crosshair — snaps to the nearest event on hover. */}
-          {hoverIndex !== null && (
-            <line
-              x1={xAt(hoverIndex)}
-              x2={xAt(hoverIndex)}
-              y1={PAD_TOP}
-              y2={CHART_HEIGHT - PAD_BOTTOM}
-              className="stroke-text-tertiary"
-              strokeWidth={1}
-            />
-          )}
-
-          {points.map((p, i) => {
-            const v = values[i];
-            if (v === undefined) return null;
-            const isEndpoint = i === latestIndex;
-            const isHovered = i === hoverIndex;
-            return (
-              <g key={p.eventId + i}>
-                {/* Oversized transparent hit target — ≥24px in screen
-                    space, comfortably bigger than the visible mark. */}
-                <circle cx={xAt(i)} cy={yAt(v)} r={12} fill="transparent" />
-                {(isEndpoint || isHovered) && (
-                  <circle cx={xAt(i)} cy={yAt(v)} r={4} className="fill-brass-500 stroke-surface-0" strokeWidth={2} />
-                )}
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Direct label: only the most recent result, to avoid a number
-            on every point — the tooltip and table carry the rest. Skipped
-            entirely if the latest event has no value for this metric. */}
-        {latestValue !== undefined && (
-          <span
-            className="pointer-events-none absolute text-xs font-medium text-text-primary"
-            style={{
-              left: `${(xAt(latestIndex) / CHART_WIDTH) * 100}%`,
-              top: `${(yAt(latestValue) / CHART_HEIGHT) * 100}%`,
-              transform: "translate(-100%, -140%)",
-            }}
-          >
-            {formatValue(latestValue, activeMetric)}
-          </span>
-        )}
-
-        {hovered && hoverIndex !== null && (
+        <h3 className="text-sm font-semibold text-text-primary">Event history</h3>
+        {availableFormats.length > 1 && (
           <div
-            className="pointer-events-none absolute z-10 max-w-[12rem] -translate-x-1/2 -translate-y-full rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs shadow-md"
-            style={{
-              left: `${(xAt(hoverIndex) / CHART_WIDTH) * 100}%`,
-              top: `${(yAt(hoveredValue ?? domainMin) / CHART_HEIGHT) * 100}%`,
-            }}
+            role="radiogroup"
+            aria-label="Format filter"
+            className="flex gap-1 rounded-md border border-surface-border bg-surface-2 p-1"
           >
-            <p className="font-semibold text-text-primary">
-              {hoveredValue !== undefined ? formatValue(hoveredValue, activeMetric) : "No field size published"}
-            </p>
-            {activeMetric === "placing" && hovered.fieldSize && (
-              <p className="text-text-tertiary">
-                top {Math.round(percentileOf(hovered)!)}% of {hovered.fieldSize}
-              </p>
-            )}
-            {activeMetric === "percentile" && (
-              <p className="text-text-tertiary">
-                {ordinal(hovered.placing)}
-                {hovered.fieldSize ? ` of ${hovered.fieldSize}` : ""}
-              </p>
-            )}
-            <p className="truncate text-text-secondary">{hovered.eventName}</p>
-            <p className="text-text-tertiary">
-              {formatShortDate(hovered.eventDate)}
-              {hovered.points !== undefined && ` · ${hovered.points} pts`}
-            </p>
+            {(["all", ...availableFormats] as const).map((f) => {
+              const active = activeFormat === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => selectFormat(f)}
+                  className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
+                    active ? "bg-brass-500 text-[oklch(0.16_0.006_260)]" : "text-text-secondary hover:text-text-primary"
+                  }`}
+                >
+                  {f === "all" ? "All" : FORMAT_LABELS[f]}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setTableExpanded((v) => !v)}
-        aria-expanded={tableExpanded}
-        className="mt-1 text-xs text-text-secondary hover:underline"
-      >
-        {tableExpanded ? "Hide" : "Show"} as a table
-      </button>
+      {canChart && renderChart()}
 
-      {tableExpanded && (
-        <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-surface-border">
-          <table className="w-full text-left text-xs">
-            <thead className="sticky top-0 bg-surface-1 text-text-tertiary">
-              <tr>
-                <th className="px-2 py-1 font-medium">Event</th>
-                <th className="px-2 py-1 font-medium">Date</th>
-                <th className="px-2 py-1 font-medium">Placing</th>
-                <th className="px-2 py-1 font-medium">Points</th>
+      <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-surface-border">
+        <table className="w-full text-left text-xs">
+          <thead className="sticky top-0 bg-surface-1 text-text-tertiary">
+            <tr>
+              <th className="px-2 py-1 font-medium">Event</th>
+              <th className="px-2 py-1 font-medium">Date</th>
+              <th className="px-2 py-1 font-medium">Faction</th>
+              <th className="px-2 py-1 font-medium">Placing</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Newest first — the reverse of filteredPoints/the chart
+                above (chronological, oldest first, since a trend line
+                reads left-to-right as time passing), but matching every
+                other browsable list in this app (My Events, Pairings,
+                Placings), which all read newest-first. */}
+            {[...filteredPoints].reverse().map((p, i) => (
+              <tr key={p.eventId + i} className="border-t border-surface-border">
+                <td className="px-2 py-1 text-text-primary">
+                  <Link href={`/?event=${encodeURIComponent(p.eventId)}`} className="hover:underline">
+                    {p.eventName}
+                  </Link>
+                </td>
+                <td className="px-2 py-1 text-text-secondary">{formatShortDate(p.eventDate)}</td>
+                <td className="px-2 py-1 text-text-secondary">{p.faction ?? "—"}</td>
+                <td className="px-2 py-1 text-text-secondary">
+                  {ordinal(p.placing)}
+                  {p.fieldSize ? ` of ${p.fieldSize}` : ""}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {points.map((p, i) => (
-                <tr key={p.eventId + i} className="border-t border-surface-border">
-                  <td className="px-2 py-1 text-text-primary">{p.eventName}</td>
-                  <td className="px-2 py-1 text-text-secondary">{formatShortDate(p.eventDate)}</td>
-                  <td className="px-2 py-1 text-text-secondary">
-                    {ordinal(p.placing)}
-                    {p.fieldSize ? ` of ${p.fieldSize}` : ""}
-                  </td>
-                  <td className="px-2 py-1 text-text-secondary">{p.points ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

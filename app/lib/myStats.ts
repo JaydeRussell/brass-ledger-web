@@ -56,6 +56,12 @@ export type PlacingWithField = {
  * plotted itself, since BCP's scoring scale varies by event format (a
  * battle-points GT and a primary/secondary RTT don't mean the same "90
  * points"), unlike placing, which is comparable across every event.
+ *
+ * `category` is the same "team"/"gt"/"rtt" bucket used for the
+ * bestPlacing* splits above — undefined if the backend's
+ * classifyEventCategory couldn't classify this event (see that
+ * function's doc comment). Lets PlacingTrendChart offer a per-format
+ * filter without a second request.
  */
 export type PlacingHistoryPoint = {
   eventId: string;
@@ -64,6 +70,8 @@ export type PlacingHistoryPoint = {
   placing: number;
   points?: number;
   fieldSize?: number;
+  faction?: string;
+  category?: "team" | "gt" | "rtt";
 };
 
 /**

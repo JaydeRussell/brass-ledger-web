@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { fetchMyStats, fetchPlayerStats, type MyStats, type PlacingWithField } from "../../lib/myStats";
+import { fetchMyStats, fetchPlayerStats, type MyStats, type PlacingHistoryPoint, type PlacingWithField } from "../../lib/myStats";
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
 import PlacingTrendChart from "./placingTrendChart";
 import ItcBadge from "../shared/itcBadge";
@@ -24,7 +24,7 @@ type PlayerStatsPanelProps = {
   playerName?: string;
 };
 
-function StatTile({ label, value, detail }: { label: string; value: string; detail?: string }) {
+function StatTile({ label, value, detail }: { label: string; value: React.ReactNode; detail?: string }) {
   return (
     <div className="flex min-w-[6rem] flex-1 flex-col items-center rounded-lg bg-surface-2 px-3 py-2 text-center">
       <span className="text-lg font-semibold text-text-primary">{value}</span>
@@ -56,6 +56,68 @@ function fieldDetail(p?: PlacingWithField): string | undefined {
   return `of ${p.fieldSize} · top ${percentile}%`;
 }
 
+// --- "Skill at a glance" summary tiles ------------------------------------
+//
+// Raw placing isn't comparable across a 12-player RTT and a 265-player GT
+// the way percentile (placing ÷ that event's own published field size)
+// is — the Best placing/GT/Teams/RTT tiles above already show raw placing
+// (useful in its own right, "how well did I do at large events"), so
+// these three summarize the same already-fetched `history` a different,
+// format-agnostic way: on average, recently, and how often. All three are
+// plain arithmetic over numbers BCP already published — same "no scoring
+// or ranking, just already-published numbers" rule the rest of this file
+// follows (see this component's own doc comment) — and, since this is a
+// per-player summary rather than anything that could feed a still-open
+// team pairing/board-assignment decision, isn't something that
+// restriction has ever applied to in the first place.
+
+/** "Top X%" — undefined if the event never published a field size. */
+function percentileOf(p: PlacingHistoryPoint): number | undefined {
+  if (!p.fieldSize) return undefined;
+  return Math.max(1, (p.placing / p.fieldSize) * 100);
+}
+
+function average(values: number[]): number {
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+/** Mean percentile across every event with a known field size — undefined if none. */
+export function avgPercentile(history: PlacingHistoryPoint[]): { avg: number; sampleSize: number } | undefined {
+  const values = history.map(percentileOf).filter((v): v is number => v !== undefined);
+  if (values.length === 0) return undefined;
+  return { avg: average(values), sampleSize: values.length };
+}
+
+// How many of the most-recent events (by date, not by "most recent with a
+// field size" — a gap in the true last few shouldn't quietly reach
+// further back) count toward "recent form".
+const RECENT_FORM_WINDOW = 5;
+
+/** Mean percentile across whichever of the last RECENT_FORM_WINDOW events
+ * (history is chronological, oldest first) have a known field size —
+ * undefined if none of them do. */
+export function recentFormPercentile(history: PlacingHistoryPoint[]): { avg: number; sampleSize: number } | undefined {
+  const values = history
+    .slice(-RECENT_FORM_WINDOW)
+    .map(percentileOf)
+    .filter((v): v is number => v !== undefined);
+  if (values.length === 0) return undefined;
+  return { avg: average(values), sampleSize: values.length };
+}
+
+// "Top quarter" (top 25%) is a fixed, round threshold — not itself a BCP
+// concept, just a plain-language cut point for "how often do you finish
+// near the top," same spirit as the trend chart's percentile mode.
+const TOP_QUARTER_THRESHOLD = 25;
+
+/** How many (of the events with a known field size) finished in the top
+ * 25% by percentile — undefined if none have a field size to judge by. */
+export function topQuarterRate(history: PlacingHistoryPoint[]): { count: number; eligible: number } | undefined {
+  const percentiles = history.map(percentileOf).filter((v): v is number => v !== undefined);
+  if (percentiles.length === 0) return undefined;
+  return { count: percentiles.filter((v) => v <= TOP_QUARTER_THRESHOLD).length, eligible: percentiles.length };
+}
+
 /** "Nov 2025" from a BCP date string, or undefined if it can't be parsed. */
 function formatMonthYear(iso?: string): string | undefined {
   if (!iso) return undefined;
@@ -65,14 +127,18 @@ function formatMonthYear(iso?: string): string | undefined {
 }
 
 /**
- * A player's stats — best placing (overall, and split GT vs Teams vs
- * RTT), each with the field size it was achieved in when BCP published
- * one ("of 53 · top 4%"), plus a per-faction breakdown, how long they've
- * been competing, and a current ITC score/rank badge once a game system
- * can be resolved. All straight from internal/api/stats.go's aggregation
- * of BCP's own already-published placing history — see the scope note
- * in app/page.tsx before adding anything that scores or ranks rather
- * than displays already-published numbers.
+ * A player's stats — a "skill at a glance" row (ITC rank, plus three
+ * plain percentile-based summaries: average, recent form, and top-quarter
+ * rate — see those functions' doc comment for why percentile rather than
+ * raw placing) up front, then best placing (overall, and split GT vs
+ * Teams vs RTT) each with the field size it was achieved in when BCP
+ * published one ("of 53 · top 4%"), a per-faction breakdown, and how long
+ * they've been competing. All straight from internal/api/stats.go's
+ * aggregation of BCP's own already-published placing history, or a plain
+ * average/rate computed from it here — see the scope note in app/page.tsx
+ * before adding anything beyond that (a suggestion, a subjective score,
+ * anything that could feed a still-open team pairing/board-assignment
+ * decision).
  *
  * Two modes, sharing everything but which endpoint they hit and a couple
  * of copy strings: "me" (the default) is the signed-in account's own
@@ -185,28 +251,72 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
     );
   }
 
+  const avgPct = avgPercentile(stats.history);
+  const recentForm = recentFormPercentile(stats.history);
+  const topQuarter = topQuarterRate(stats.history);
+  const hasGlanceTiles = Boolean(itcRanking) || Boolean(avgPct) || Boolean(recentForm) || Boolean(topQuarter);
+
   return (
     <Card className="p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Player stats</h2>
-          {formatMonthYear(stats.competingSince) && (
-            <p className="text-xs text-text-tertiary">
-              Competing since {formatMonthYear(stats.competingSince)}
-            </p>
-          )}
-        </div>
-        {itcRanking && (
-          <ItcBadge
-            ranking={itcRanking}
-            bcpUserId={bcpUserId}
-            leagueId={itcLeagueId}
-            title={mode === "player" ? `View ${playerName ?? "this player"}'s full ITC history on BCP` : "View your full ITC history on BCP"}
-          />
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold text-text-primary">Player stats</h2>
+        {formatMonthYear(stats.competingSince) && (
+          <p className="text-xs text-text-tertiary">Competing since {formatMonthYear(stats.competingSince)}</p>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Skill at a glance, first: format-agnostic summaries (ITC rank is
+          BCP's own already-published rating; the other three are plain
+          averages/rates over percentile — see those functions' doc
+          comment) — then the format-specific best-ever placings below,
+          for anyone who wants to drill into a particular format. Omitted
+          entirely (no empty row) for the rare player with no ITC rank and
+          no event that ever published a field size to compute a
+          percentile from. */}
+      {hasGlanceTiles && (
+        <div className="flex flex-wrap gap-2">
+          {itcRanking && (
+            <StatTile
+              label="ITC rank"
+              value={
+                <ItcBadge
+                  ranking={itcRanking}
+                  bcpUserId={bcpUserId}
+                  leagueId={itcLeagueId}
+                  title={
+                    mode === "player"
+                      ? `View ${playerName ?? "this player"}'s full ITC history on BCP`
+                      : "View your full ITC history on BCP"
+                  }
+                />
+              }
+            />
+          )}
+          {avgPct && (
+            <StatTile
+              label="Avg. percentile"
+              value={`Top ${Math.round(avgPct.avg)}%`}
+              detail={`avg. of ${avgPct.sampleSize} of ${stats.totalEvents} events`}
+            />
+          )}
+          {recentForm && (
+            <StatTile
+              label="Recent form"
+              value={`Top ${Math.round(recentForm.avg)}%`}
+              detail={`last ${recentForm.sampleSize} event${recentForm.sampleSize === 1 ? "" : "s"}`}
+            />
+          )}
+          {topQuarter && (
+            <StatTile
+              label="Top-quarter finishes"
+              value={`${Math.round((topQuarter.count / topQuarter.eligible) * 100)}%`}
+              detail={`${topQuarter.count} of ${topQuarter.eligible} events`}
+            />
+          )}
+        </div>
+      )}
+
+      <div className={`flex flex-wrap gap-2 ${hasGlanceTiles ? "mt-2 border-t border-surface-border pt-3" : ""}`}>
         <StatTile label="Events played" value={String(stats.totalEvents)} />
         <StatTile
           label="Best placing"
@@ -244,10 +354,13 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
         </div>
       )}
 
-      {/* A single point isn't a trend — render nothing rather than a
-          one-dot chart, same pattern MyRoundCard/OverviewPanel already
-          use for "not enough to show yet." */}
-      {stats.history.length >= 2 && <PlacingTrendChart points={stats.history} />}
+      {/* PlacingTrendChart handles its own "not enough points for a
+          trend line yet" case internally (still showing the event-
+          history table for as few as one event) — see its doc comment.
+          showChart is "me" mode only — a trend line isn't worth the
+          space when this is someone else's record (mode: "player"),
+          see PlacingTrendChartProps' doc comment. */}
+      {stats.history.length >= 1 && <PlacingTrendChart points={stats.history} showChart={mode === "me"} />}
     </Card>
   );
 }
