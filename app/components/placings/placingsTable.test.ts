@@ -185,11 +185,9 @@ test("shows a round-by-round score strip in the record column when round scores 
   assert.match(html, />62</);
   assert.match(html, />91</);
   assert.match(html, />74</);
-  // ...each round colored as a win or close win (all three were wins
-  // here; classifyScore grades round 2's 91-32 blowout a plain "win" and
-  // the two closer rounds a "closeWin" — see lib/scoreColor.ts) and none
+  // ...each round colored as a win (all three were wins here) and none
   // as a loss.
-  assert.ok((html.match(/text-success-400|text-lime-400/g) ?? []).length >= 3);
+  assert.ok((html.match(/text-success-400/g) ?? []).length >= 3);
   assert.ok(!html.includes("text-danger-400"));
 });
 

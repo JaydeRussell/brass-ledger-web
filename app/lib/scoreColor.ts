@@ -6,16 +6,7 @@
 
 // --- Round score outcome (5-way) -------------------------------------------
 
-export type ScoreOutcome = "loss" | "closeLoss" | "draw" | "closeWin" | "win";
-
-// How close a decided game counts as "close" rather than a plain win/loss:
-// the two scores' difference, as a fraction of their combined total, has
-// to be within this to count as close. E.g. 55–45 (a difference of 10 out
-// of 100 combined) is close; 65–35 isn't. Using a fraction of the combined
-// total (rather than a fixed point gap) keeps this meaningful across
-// different scoring scales (a 100-point primary+secondary score, a
-// smaller-scale format, etc.) without needing to know which one it is.
-const CLOSE_MARGIN_FRACTION = 0.1;
+export type ScoreOutcome = "loss" | "draw" | "win";
 
 /**
  * Classifies a decided game's result from `reference`'s point of view —
@@ -26,25 +17,24 @@ const CLOSE_MARGIN_FRACTION = 0.1;
  */
 export function classifyScore(reference: number, other: number): ScoreOutcome {
   if (reference === other) return "draw";
-  const diff = Math.abs(reference - other);
-  const total = reference + other;
-  const isClose = total > 0 && diff / total <= CLOSE_MARGIN_FRACTION;
-  if (reference > other) return isClose ? "closeWin" : "win";
-  return isClose ? "closeLoss" : "loss";
+  return reference > other ? "win" : "loss";
 }
 
-// A red (loss) -> orange -> amber (draw) -> lime -> green (win) spectrum.
-// The two ends are this app's real semantic danger/success tokens (see
-// globals.css) rather than raw Tailwind colors, matching every other
-// win/loss-adjacent state in the redesign; the two "close" steps and the
-// draw stay literal orange/lime/amber Tailwind classes deliberately — see
-// globals.css's token comment: this is one-off five-way score grading, not
-// a themed UI surface, so it doesn't need its own token family.
+// A flat red/yellow/green three-way, not a gradient — a "close" margin
+// used to read as a lighter shade partway between loss-red and win-green,
+// which made it genuinely hard to tell a loss from a draw at a glance
+// (they were all warm-toned). Distinct hues instead: red only ever means
+// loss, yellow only ever means draw, green only ever means win — yellow
+// over orange specifically so draw reads unmistakably apart from loss's
+// red rather than as a shade of it. The two ends are this app's real
+// semantic danger/success tokens (see globals.css) rather than raw
+// Tailwind colors, matching every other win/loss-adjacent state in the
+// redesign; draw stays a literal Tailwind yellow deliberately — see
+// globals.css's token comment: this is one-off score grading, not a
+// themed UI surface, so it doesn't need its own token.
 export const SCORE_OUTCOME_CLASSES: Record<ScoreOutcome, string> = {
   loss: "text-danger-400",
-  closeLoss: "text-orange-400",
-  draw: "text-amber-400",
-  closeWin: "text-lime-400",
+  draw: "text-yellow-400",
   win: "text-success-400",
 };
 
