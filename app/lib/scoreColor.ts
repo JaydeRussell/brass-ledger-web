@@ -41,11 +41,11 @@ export function classifyScore(reference: number, other: number): ScoreOutcome {
 // globals.css's token comment: this is one-off five-way score grading, not
 // a themed UI surface, so it doesn't need its own token family.
 export const SCORE_OUTCOME_CLASSES: Record<ScoreOutcome, string> = {
-  loss: "text-danger-600 dark:text-danger-400",
-  closeLoss: "text-orange-600 dark:text-orange-400",
-  draw: "text-amber-600 dark:text-amber-400",
-  closeWin: "text-lime-600 dark:text-lime-400",
-  win: "text-success-600 dark:text-success-400",
+  loss: "text-danger-400",
+  closeLoss: "text-orange-400",
+  draw: "text-amber-400",
+  closeWin: "text-lime-400",
+  win: "text-success-400",
 };
 
 // --- ITC ranking gradient ---------------------------------------------------
@@ -120,28 +120,17 @@ type OklchStop = { l: number; c: number; h: number };
 // favored), and picked over the earlier version specifically for more
 // perceptual contrast between adjacent ranks. Reuses this app's own
 // success/warning/brass/danger tokens for the green/yellow/orange/red
-// legs (straight from globals.css's :root/.dark blocks, not RGB
-// approximations of them) and adds one new blue anchor at the weak end
-// for the one hue this app's palette didn't already have. Interpolated in
-// OKLCH space itself (see interpolateGradient below) rather than plain
-// RGB: a straight RGB blend between hues this different crosses a
-// desaturated, muddy zone in between, since RGB interpolation isn't
-// perceptually uniform the way OKLCH's own L/C/H axes are. Doing the
-// blend in OKLCH sidesteps that entirely — every intermediate step stays
-// as saturated as its neighbors.
-const LIGHT_GRADIENT_STOPS: OklchStop[] = [
-  { l: 0.6, c: 0.18, h: 250 }, // blue — weakest
-  { l: 0.65, c: 0.17, h: 150 }, // success-500
-  { l: 0.75, c: 0.16, h: 85 }, // warning-500
-  { l: 0.58, c: 0.13, h: 72 }, // brass-600
-  { l: 0.55, c: 0.2, h: 15 }, // danger-600 — strongest
-];
-
-// The same ramp, shifted to the lighter *-400/*-500 token steps dark mode
-// already reaches for elsewhere (see ui/badge.tsx's tone classes: light
-// mode text is `*-600`, dark mode text is `*-400`) so each stop stays
-// vivid against a charcoal card instead of reading dark-and-muted.
-const DARK_GRADIENT_STOPS: OklchStop[] = [
+// legs (straight from globals.css's :root, not RGB approximations of
+// them) and adds one new blue anchor at the weak end for the one hue this
+// app's palette didn't already have — the lighter *-400/*-500 token
+// steps, so each stop stays vivid against this app's dark charcoal cards
+// instead of reading dark-and-muted. Interpolated in OKLCH space itself
+// (see interpolateGradient below) rather than plain RGB: a straight RGB
+// blend between hues this different crosses a desaturated, muddy zone in
+// between, since RGB interpolation isn't perceptually uniform the way
+// OKLCH's own L/C/H axes are. Doing the blend in OKLCH sidesteps that
+// entirely — every intermediate step stays as saturated as its neighbors.
+const GRADIENT_STOPS: OklchStop[] = [
   { l: 0.7, c: 0.15, h: 250 }, // blue — weakest
   { l: 0.75, c: 0.15, h: 150 }, // success-400
   { l: 0.75, c: 0.16, h: 85 }, // warning-500
@@ -200,9 +189,7 @@ function interpolateGradient(stops: OklchStop[], t: number): { r: number; g: num
 
 /**
  * A blue-through-green-and-yellow-and-orange-to-red background/text pair
- * for one ITC ranking (see LIGHT_GRADIENT_STOPS and rankingStrength
- * above). Pass `isDark` (the viewer's actual color scheme, not just a
- * vibe) to use the dark-mode-appropriate version of the same gradient.
+ * for one ITC ranking (see GRADIENT_STOPS and rankingStrength above).
  *
  * Pass `viewerRanking` — the signed-in visitor's own ranking in this same
  * league, when one's known — to color `ranking` *relative to them*
@@ -216,13 +203,11 @@ function interpolateGradient(stops: OklchStop[], t: number): { r: number; g: num
  */
 export function itcGradientStyle(
   ranking: { points: number; placing?: number },
-  isDark = false,
   viewerRanking?: { points: number; placing?: number } | null
 ): { backgroundColor: string; color: string } {
-  const stops = isDark ? DARK_GRADIENT_STOPS : LIGHT_GRADIENT_STOPS;
   const strength = rankingStrength(ranking);
   const t = viewerRanking ? relativeToViewer(strength, rankingStrength(viewerRanking)) : strength;
-  const { r, g, b } = interpolateGradient(stops, t);
+  const { r, g, b } = interpolateGradient(GRADIENT_STOPS, t);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return {
     backgroundColor: `rgb(${r}, ${g}, ${b})`,

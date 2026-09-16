@@ -52,7 +52,7 @@ export default function PlayerCard({ player, onTrack, tracked, itcLeagueId, itcR
           title={tracked ? "Following this player's pairings" : "Follow this player's pairings"}
           className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
             tracked
-              ? "border-brass-500/40 bg-brass-500/15 text-brass-600 dark:text-brass-400"
+              ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
               : "border-surface-border text-text-secondary hover:bg-surface-2"
           }`}
         >

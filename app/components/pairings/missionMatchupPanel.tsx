@@ -19,7 +19,7 @@ type MissionMatchupPanelProps = {
 function MissionRules({ label, missionId }: { label: string; missionId: MissionId }) {
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer font-medium text-brass-600 dark:text-brass-400">
+      <summary className="cursor-pointer font-medium text-brass-400">
         {label}: {missionId} — full rules
       </summary>
       <MissionScoringDetails missionId={missionId} />

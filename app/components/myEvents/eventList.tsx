@@ -60,7 +60,7 @@ function EventCard({ event }: { event: MyEvent }) {
         <div className="truncate text-sm font-medium text-text-primary">{event.eventName}</div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
           {countdown && (
-            <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-600 dark:text-brass-400">
+            <span className="rounded-sm bg-brass-500/15 px-1.5 py-0.5 font-medium text-brass-400">
               {countdown}
             </span>
           )}
@@ -71,7 +71,7 @@ function EventCard({ event }: { event: MyEvent }) {
         </div>
         <Link
           href={`/?event=${encodeURIComponent(event.eventId)}`}
-          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brass-600 hover:underline dark:text-brass-400"
+          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brass-400 hover:underline"
         >
           View event page →
         </Link>

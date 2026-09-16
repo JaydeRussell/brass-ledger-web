@@ -335,7 +335,7 @@ function AdminRow({ row, isSelf, rowState, onApprove, onReject, onSetRole, layou
         {row.role === "admin" ? "Make user" : "Make admin"}
       </Button>
       {rowState?.error && (
-        <p role="alert" className="w-full text-xs text-danger-600 dark:text-danger-400">
+        <p role="alert" className="w-full text-xs text-danger-400">
           {rowState.error}
         </p>
       )}

@@ -36,13 +36,9 @@ export type CurrentUser = {
   // the shared "you're signed in but not approved yet" UI every gated
   // page shows for anything other than "approved".
   status: "pending" | "approved" | "rejected";
-  // "light", "dark", or "system" (internal/user.Theme*, migration 0008)
-  // — the account-level counterpart to app/lib/theme.ts's localStorage
-  // fallback for a signed-out guest. See useTheme()'s `account` param.
-  themePreference: "light" | "dark" | "system";
   // One of AccentTheme's 12 values (internal/user.ValidAccentThemes,
   // migration 0009) — the account-level counterpart to useAccentTheme()'s
-  // localStorage fallback, same pattern as themePreference above.
+  // localStorage fallback for a signed-out guest.
   accentTheme: AccentTheme;
 };
 

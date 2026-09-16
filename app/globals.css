@@ -1,13 +1,5 @@
 @import "tailwindcss";
 
-/* Class-based dark mode (replaces the old `@media (prefers-color-scheme:
-   dark)`-only strategy) so the in-app light/dark/system toggle (see
-   lib/theme.ts + components/ui/themeToggle.tsx) can override the OS
-   preference. `.dark` is applied to <html> by a blocking inline script in
-   layout.tsx's <head> before first paint, and live-updated by the toggle
-   itself — nothing here reads `prefers-color-scheme` directly any more. */
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ---------------------------------------------------------------------
  * "Brass Ledger" design tokens
  *
@@ -37,14 +29,21 @@
  * all — update both places together if one changes.
  * --------------------------------------------------------------------- */
 :root {
-  /* Surfaces + text (light mode) */
-  --surface-0: oklch(0.985 0.003 260);
-  --surface-1: oklch(0.96 0.004 260);
-  --surface-2: oklch(0.92 0.006 260);
-  --surface-border: oklch(0.85 0.008 260);
-  --text-primary: oklch(0.22 0.006 260);
-  --text-secondary: oklch(0.42 0.008 260);
-  --text-tertiary: oklch(0.6 0.01 260);
+  /* Tells the browser itself (native scrollbars, form controls, date
+     pickers) to render dark-themed rather than defaulting to the OS's
+     own light/dark preference — this app no longer has a light mode for
+     those to match. */
+  color-scheme: dark;
+
+  /* Surfaces + text — this app is dark-mode-only, so these are the only
+     values that exist (no light-mode counterpart to override them). */
+  --surface-0: oklch(0.16 0.006 260);
+  --surface-1: oklch(0.21 0.007 260);
+  --surface-2: oklch(0.27 0.008 260);
+  --surface-border: oklch(0.33 0.01 260);
+  --text-primary: oklch(0.94 0.004 260);
+  --text-secondary: oklch(0.72 0.01 260);
+  --text-tertiary: oklch(0.52 0.012 260);
 
   /* Brass/bronze accent ramp */
   --brass-200: oklch(0.88 0.05 85);
@@ -85,28 +84,17 @@
   --radius-lg: 12px;
 }
 
-.dark {
-  --surface-0: oklch(0.16 0.006 260);
-  --surface-1: oklch(0.21 0.007 260);
-  --surface-2: oklch(0.27 0.008 260);
-  --surface-border: oklch(0.33 0.01 260);
-  --text-primary: oklch(0.94 0.004 260);
-  --text-secondary: oklch(0.72 0.01 260);
-  --text-tertiary: oklch(0.52 0.012 260);
-}
-
 /* ---------------------------------------------------------------------
  * Accent themes — alternate `--brass-*` ramps, applied via a
  * `data-accent="…"` attribute on <html> (see lib/theme.ts's AccentTheme/
- * useAccentTheme and components/ui/accentThemePicker.tsx), independent of
- * light/dark mode above: every theme works in either. "brass" itself is
- * the default and has no override block — it's just :root's values.
+ * useAccentTheme and components/ui/accentThemePicker.tsx). "brass" itself
+ * is the default and has no override block — it's just :root's values.
  *
  * Every ramp keeps the exact same lightness at each of the five stops as
  * brass (0.88/0.75/0.68/0.58/0.3) and only varies hue/chroma, so anything
- * that depends on a stop's contrast today (e.g. themeToggle.tsx's fixed
- * dark text sitting on `bg-brass-500`) keeps working unchanged for every
- * theme, not just brass.
+ * that depends on a stop's contrast today (e.g. button.tsx's primary
+ * variant, whose fixed dark text sits on `bg-brass-500`) keeps working
+ * unchanged for every theme, not just brass.
  * --------------------------------------------------------------------- */
 [data-accent="ultramarine"] {
   --brass-200: oklch(0.88 0.03 258);
@@ -259,16 +247,14 @@ body {
 /* ---------------------------------------------------------------------
  * Print
  *
- * Forces plain black-on-white surfaces/text regardless of the visitor's
- * light/dark mode (see lib/theme.ts) — a printed page shouldn't carry a
- * dark-mode visitor's dark background to the printer. `.dark` is
- * included in the override selector since it can still be the active
- * class at print time (this doesn't un-toggle it, just out-ranks its
- * surface/text values here). The accent ramp itself (`--brass-*`) is
- * deliberately left alone — it only ever colors interactive/accent
- * surfaces, never body text (see this file's own `brass` doc comment
- * above), so whichever accent theme is active still prints fine as
- * ordinary colored ink/toner, same as any other colored text.
+ * Forces plain black-on-white surfaces/text — this app is dark-mode-only
+ * on screen, but a printed page shouldn't carry that dark background to
+ * the printer, so this out-ranks :root's own surface/text values here.
+ * The accent ramp itself (`--brass-*`) is deliberately left alone — it
+ * only ever colors interactive/accent surfaces, never body text (see
+ * this file's own `brass` doc comment above), so whichever accent theme
+ * is active still prints fine as ordinary colored ink/toner, same as any
+ * other colored text.
  *
  * `.overflow-x-auto` (roster/pairings/placings tables, all built with
  * that exact utility class for their on-screen horizontal scroll) is
@@ -278,8 +264,7 @@ body {
  * screen-width edge.
  * --------------------------------------------------------------------- */
 @media print {
-  :root,
-  .dark {
+  :root {
     --surface-0: white;
     --surface-1: white;
     --surface-2: oklch(0.96 0.003 260);

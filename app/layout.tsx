@@ -36,16 +36,17 @@ export const metadata: Metadata = {
   description: "Tournament companion for Warhammer 40k: rosters, pairings, and placings pulled straight from Best Coast Pairings, in one place.",
 };
 
-// Resolves and applies the visitor's light/dark/system theme choice, plus
-// their accent-color theme, before first paint — see lib/theme.ts for the
-// same logic as real, testable TypeScript (this string is necessarily a
-// standalone duplicate: it has to run synchronously in <head>, before any
-// app code loads, to avoid a flash of the wrong theme on every page load,
-// not just first visit). The accent half doesn't validate the stored
-// value against ACCENT_THEMES — an unrecognized `data-accent` simply
-// matches no globals.css override block, so :root's brass values apply,
-// same end result as validating.
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||((t===null||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);var a=localStorage.getItem("accentTheme");if(a)document.documentElement.setAttribute("data-accent",a);}catch(e){}})();`;
+// Applies the visitor's accent-color theme before first paint — see
+// lib/theme.ts for the same logic as real, testable TypeScript (this
+// string is necessarily a standalone duplicate: it has to run
+// synchronously in <head>, before any app code loads, to avoid a flash of
+// the wrong accent on every page load, not just first visit). Doesn't
+// validate the stored value against ACCENT_THEMES — an unrecognized
+// `data-accent` simply matches no globals.css override block, so :root's
+// brass values apply, same end result as validating. The app itself is
+// dark-mode-only (no light/system option), so there's no theme class to
+// resolve here — `dark` styling is just globals.css's `:root` values.
+const ACCENT_INIT_SCRIPT = `(function(){try{var a=localStorage.getItem("accentTheme");if(a)document.documentElement.setAttribute("data-accent",a);}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -55,8 +56,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Must run synchronously, before first paint, to avoid a flash of the wrong theme. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Must run synchronously, before first paint, to avoid a flash of the wrong accent. */}
+        <script dangerouslySetInnerHTML={{ __html: ACCENT_INIT_SCRIPT }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}

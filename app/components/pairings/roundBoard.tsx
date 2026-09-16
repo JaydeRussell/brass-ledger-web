@@ -327,12 +327,12 @@ export default function RoundBoard({
                           {entry.side1Score}–{entry.side2Score}
                         </span>
                       ) : (
-                        <span className="shrink-0 text-xs text-success-600 dark:text-success-400">
+                        <span className="shrink-0 text-xs text-success-400">
                           done
                         </span>
                       )
                     ) : (
-                      <span className="shrink-0 text-xs text-warning-600 dark:text-warning-400">
+                      <span className="shrink-0 text-xs text-warning-400">
                         in progress
                       </span>
                     )}
@@ -355,7 +355,7 @@ export default function RoundBoard({
                         </div>
                       )}
                       {boardState?.error && (
-                        <p className="px-1 py-1 text-xs text-danger-600 dark:text-danger-400">
+                        <p className="px-1 py-1 text-xs text-danger-400">
                           Couldn&apos;t load boards: {boardState.error}
                         </p>
                       )}

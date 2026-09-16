@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { googleSignInUrl, signOut, useCurrentUser } from "../../lib/auth";
 import { logClientEvent } from "../../lib/clientLog";
-import ThemeToggle from "../ui/themeToggle";
 import AccentThemePicker from "../ui/accentThemePicker";
 
 /**
@@ -35,7 +34,6 @@ export default function AccountSection() {
         >
           Sign in with Google
         </a>
-        <ThemeToggle account={null} />
         <AccentThemePicker />
       </div>
     );
@@ -110,7 +108,6 @@ export default function AccountSection() {
           {signingOut ? "…" : "Sign out"}
         </button>
       </div>
-      <ThemeToggle account={{ themePreference: user.themePreference }} />
       <AccentThemePicker account={{ accentTheme: user.accentTheme }} />
     </div>
   );

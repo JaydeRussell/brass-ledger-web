@@ -25,7 +25,7 @@ export default function PlayerFactionDetails({ bcpUserId, players }: PlayerFacti
           target="_blank"
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="shrink-0 font-medium text-brass-600 hover:underline dark:text-brass-400"
+          className="shrink-0 font-medium text-brass-400 hover:underline"
         >
           list
         </a>

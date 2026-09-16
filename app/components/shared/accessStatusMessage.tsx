@@ -24,7 +24,7 @@ export default function AccessStatusMessage({ status }: AccessStatusMessageProps
     return (
       <div
         role="status"
-        className="rounded-lg border border-dashed border-danger-500/40 p-6 text-center text-sm text-danger-600 dark:text-danger-400"
+        className="rounded-lg border border-dashed border-danger-500/40 p-6 text-center text-sm text-danger-400"
       >
         <p>Your access request wasn&apos;t approved.</p>
       </div>

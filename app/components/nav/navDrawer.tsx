@@ -98,7 +98,7 @@ export default function NavDrawer() {
                 onClick={close}
                 className={`rounded-md px-3 py-2 text-sm font-medium ${
                   active
-                    ? "bg-brass-500/15 text-brass-600 dark:text-brass-400"
+                    ? "bg-brass-500/15 text-brass-400"
                     : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
                 }`}
               >
