@@ -23,6 +23,15 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.16.1",
+    date: "2026-09-16",
+    title: "Clearer win/loss/draw colors on Placings",
+    highlights: [
+      "Round-by-round scores wherever they're color-coded (Placings, My Pairings, Round Board, Head-to-Head, \"Your round\") now use a flat red/yellow/green scheme instead of the old 5-shade gradient, which made a draw and a close loss hard to tell apart at a glance.",
+      "Fixed: on a longer event (5-6+ rounds), the Placings tab's round-by-round record could get pushed off the edge of the screen on mobile, forcing the whole table into horizontal scroll just to see it. It now wraps onto a second line instead.",
+    ],
+  },
+  {
     version: "0.16.0",
     date: "2026-09-16",
     title: "Round-by-round scores on Placings",
