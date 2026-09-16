@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.14.0",
+    date: "2026-09-15",
+    title: "Faction accent themes and dark mode",
+    highlights: [
+      "12 Warhammer-40k-faction-inspired accent themes to choose from (up from just Brass) — your pick now syncs across devices when signed in, and the picker collapses to a compact row so it doesn't crowd the nav drawer.",
+      "The app is now dark-mode-only — the separate light/dark/system toggle is gone.",
+      "The placings table now shows \"Best in Faction\" and \"Best in Super Faction\" badges, and \"Your round\" gains private per-round notes (signed-in only) plus an opt-in head-to-head history lookup against an opponent you've played before.",
+      "A ⌘K/Ctrl+K quick switcher jumps straight to any page or a recent event, and /wiki's mission-matchup reference now has an interactive lookup instead of just static tables.",
+      "Fixed: an event's Roster tab could wrongly show \"no players published\" for every registrant right up until the list-submission deadline; and an event that's actually over but never flagged \"Ended\" by its organizer now drops out of My Events' Ongoing tab within a day instead of three.",
+    ],
+  },
+  {
     version: "0.13.0",
     date: "2026-09-14",
     title: "Warhammer 40k wiki",
