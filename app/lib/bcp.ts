@@ -342,6 +342,49 @@ export async function fetchMyTeamPairings(
   return results.sort((a, b) => a.round - b.round);
 }
 
+/**
+ * Every entry's round-by-round pairing result for an event's placings,
+ * keyed by the same id PlacingEntry.id uses (player id for individual
+ * events, teamPlayerId for team events) — lets the Placings tab show a
+ * round score strip (e.g. "62 / 91 / 74", color-coded per round) next to
+ * BCP's own aggregate metrics, without recomputing anything BCP hasn't
+ * already published.
+ *
+ * One pass per round rather than one fetch per entry: fetchRoundPairings
+ * already returns every pairing in a round, so this reuses
+ * individualPairingToMine/teamPairingToMine once per side per round
+ * instead of calling fetchMyIndividualPairings/fetchMyTeamPairings (which
+ * would each redundantly re-fetch every round) once per placing row.
+ */
+export async function fetchPlacingRoundScores(
+  eventId: string,
+  teamEvent: boolean,
+  upToRound: number
+): Promise<Map<string, MyPairing[]>> {
+  const scoresById = new Map<string, MyPairing[]>();
+  const addScore = (id: string | undefined, pairing: MyPairing | null) => {
+    if (!id || !pairing) return;
+    const existing = scoresById.get(id);
+    if (existing) existing.push(pairing);
+    else scoresById.set(id, [pairing]);
+  };
+
+  for (let round = 1; round <= upToRound; round++) {
+    const records = await fetchRoundPairings(eventId, round, teamEvent ? "TeamPairing" : "Pairing");
+    for (const record of records) {
+      if (teamEvent) {
+        addScore(record.teamPlayer1?.id, teamPairingToMine(record, record.teamPlayer1?.id ?? ""));
+        addScore(record.teamPlayer2?.id, teamPairingToMine(record, record.teamPlayer2?.id ?? ""));
+      } else {
+        addScore(record.player1Id, individualPairingToMine(record, record.player1Id ?? ""));
+        addScore(record.player2Id, individualPairingToMine(record, record.player2Id ?? ""));
+      }
+    }
+  }
+  for (const pairings of scoresById.values()) pairings.sort((a, b) => a.round - b.round);
+  return scoresById;
+}
+
 // --- Round board (every pairing in a round, not just "mine") --------------
 
 /**

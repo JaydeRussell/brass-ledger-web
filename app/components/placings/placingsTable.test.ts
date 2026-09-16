@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import PlacingsTable from "./placingsTable.tsx";
-import type { PlacingEntry } from "../../lib/bcp.ts";
+import type { MyPairing, PlacingEntry } from "../../lib/bcp.ts";
 
 const entries: PlacingEntry[] = [
   { id: "t1", name: "Team One", placing: 1, metrics: [{ name: "Wins", value: 3 }] },
@@ -45,12 +45,12 @@ test("shows the default empty message, or a custom one for a filtered-out search
   assert.match(customHtml, /No matches for zzz\./);
 });
 
-test("renders a metrics table with one column per named metric, in placing order", () => {
+test("renders a metrics table with a record column, in placing order", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries, loading: false, error: null, onRefresh: noop })
   );
   assert.match(html, /<table/);
-  assert.match(html, />Wins</);
+  assert.match(html, />Record</);
   assert.match(html, /Team One/);
   assert.match(html, /Team Two/);
 });
@@ -72,7 +72,7 @@ test("a row's name links to its player-stats page only when it carries a bcpUser
   assert.ok(!teamHtml.includes("/players/"));
 });
 
-test("leads with a win/loss-style metric regardless of BCP's own column order (roadmap #7)", () => {
+test("leads with a win/loss-style metric regardless of BCP's own column order, and labels it Record (roadmap #7)", () => {
   const reordered: PlacingEntry[] = [
     {
       id: "t1",
@@ -89,12 +89,19 @@ test("leads with a win/loss-style metric regardless of BCP's own column order (r
     React.createElement(PlacingsTable, { entries: reordered, loading: false, error: null, onRefresh: noop })
   );
   const headerRow = html.split("</thead>")[0];
-  const matchPointsIdx = headerRow.indexOf("Match Points");
-  const battlePointsIdx = headerRow.indexOf("Battle Points");
-  assert.ok(matchPointsIdx > 0 && matchPointsIdx < battlePointsIdx, "Match Points should come before Battle Points");
+  assert.match(headerRow, />Record</);
+  assert.ok(!headerRow.includes("Battle Points"));
+  assert.ok(!headerRow.includes("Match Points"));
+
+  // The identified record metric's own value (Match Points: 4), not
+  // Battle Points' 287, is what shows in the collapsed row.
+  const rows = html.split("<tr").slice(1);
+  const row = rows.find((r) => r.includes("Team One"));
+  assert.match(row ?? "", />4</);
+  assert.ok(!row?.includes(">287<"));
 });
 
-test("leaves column order alone when no metric looks like a win/loss record", () => {
+test("leaves column order and label alone when no metric looks like a win/loss record", () => {
   const noRecord: PlacingEntry[] = [
     {
       id: "t1",
@@ -110,7 +117,114 @@ test("leaves column order alone when no metric looks like a win/loss record", ()
     React.createElement(PlacingsTable, { entries: noRecord, loading: false, error: null, onRefresh: noop })
   );
   const headerRow = html.split("</thead>")[0];
-  assert.ok(headerRow.indexOf("Battle Points") < headerRow.indexOf("Strength of Schedule"));
+  assert.match(headerRow, />Battle Points</);
+  assert.ok(!headerRow.includes("Strength of Schedule"));
+  assert.ok(!headerRow.includes("Record"));
+});
+
+test("only the record column shows on a collapsed row, labeled Record; opponent win rate and everything else move behind the expand toggle", () => {
+  const manyMetrics: PlacingEntry[] = [
+    {
+      id: "p1",
+      name: "Alexandria Whitmore",
+      placing: 1,
+      metrics: [
+        { name: "Wins", value: 3 },
+        { name: "Oppt. Game Win %", value: 55.5556 },
+        { name: "Path to Victory", value: 7 },
+        { name: "Battle Points", value: 227 },
+      ],
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: manyMetrics, loading: false, error: null, onRefresh: noop })
+  );
+  const headerRow = html.split("</thead>")[0];
+  assert.match(headerRow, />Record</);
+  assert.ok(!headerRow.includes("Wins"));
+  assert.ok(!headerRow.includes("Oppt. Game Win %"));
+  assert.ok(!headerRow.includes("Path to Victory"));
+  assert.ok(!headerRow.includes("Battle Points"));
+
+  // Hidden metrics (including opponent win rate) aren't in the initial
+  // (collapsed) markup at all, and the row itself carries the expand
+  // affordance.
+  assert.ok(!html.includes("Oppt. Game Win %"));
+  assert.ok(!html.includes("Path to Victory"));
+  assert.ok(!html.includes("227"));
+  const rows = html.split("<tr").slice(1);
+  const row = rows.find((r) => r.includes("Alexandria Whitmore"));
+  assert.match(row ?? "", /aria-expanded="false"/);
+});
+
+test("shows a round-by-round score strip in the record column when round scores are available", () => {
+  const withRecord: PlacingEntry[] = [
+    { id: "p1", name: "Bryan Gorny", placing: 1, metrics: [{ name: "Wins", value: 3 }] },
+  ];
+  const roundScoresById = new Map<string, MyPairing[]>([
+    [
+      "p1",
+      [
+        { round: 1, published: true, isDone: true, opponentName: "Jayde Russell", myScore: 62, opponentScore: 54 },
+        { round: 2, published: true, isDone: true, opponentName: "Ross Miller", myScore: 91, opponentScore: 32 },
+        { round: 3, published: true, isDone: true, opponentName: "Daniel Bradley", myScore: 74, opponentScore: 65 },
+      ],
+    ],
+  ]);
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, {
+      entries: withRecord,
+      loading: false,
+      error: null,
+      onRefresh: noop,
+      roundScoresById,
+    })
+  );
+  // The plain "Wins" count is replaced by the per-round strip...
+  assert.ok(!html.includes(">3<"));
+  assert.match(html, />62</);
+  assert.match(html, />91</);
+  assert.match(html, />74</);
+  // ...each round colored as a win or close win (all three were wins
+  // here; classifyScore grades round 2's 91-32 blowout a plain "win" and
+  // the two closer rounds a "closeWin" — see lib/scoreColor.ts) and none
+  // as a loss.
+  assert.ok((html.match(/text-success-400|text-lime-400/g) ?? []).length >= 3);
+  assert.ok(!html.includes("text-danger-400"));
+});
+
+test("a \"best in faction\" badge renders in its own column between Name and Record, not inline with the name", () => {
+  const withFactions: PlacingEntry[] = [
+    { id: "p1", name: "Anna Adams", placing: 1, metrics: [{ name: "Wins", value: 3 }], faction: "Necrons" },
+    { id: "p2", name: "Ben Baker", placing: 2, metrics: [{ name: "Wins", value: 2 }], faction: "Space Marines" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: withFactions, loading: false, error: null, onRefresh: noop })
+  );
+  const rows = html.split("<tr").slice(1);
+  const row = rows.find((r) => r.includes("Anna Adams"));
+  const cells = (row ?? "").split("<td");
+  // cells[0] precedes the first <td (the <tr ...> opening tag itself);
+  // cells[1..] are the row's actual <td>s in column order: #, Name,
+  // badge, Record.
+  const nameCell = cells[2] ?? "";
+  const badgeCell = cells[3] ?? "";
+  assert.ok(!nameCell.includes("Best"), "the name cell itself shouldn't contain the badge text");
+  assert.match(badgeCell, /Best Necrons/);
+});
+
+test("falls back to the plain metric value when no round scores are available for an entry", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, {
+      entries,
+      loading: false,
+      error: null,
+      onRefresh: noop,
+      roundScoresById: new Map(),
+    })
+  );
+  assert.match(html, />3</);
+  assert.match(html, />2</);
 });
 
 test("a team row with a roster available shows an expand affordance; a singles row doesn't (roadmap #7)", () => {
