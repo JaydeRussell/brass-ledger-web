@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.16.0",
+    date: "2026-09-16",
+    title: "Round-by-round scores on Placings",
+    highlights: [
+      "The Placings tab's record column now shows your round-by-round scores (e.g. \"62 / 91 / 74\"), color-coded win/loss, instead of just a bare win count — pulled from the same pairing data the Pairings tab already shows, just gathered across every round in one place.",
+      "Only one lead \"Record\" column shows on a collapsed row now; the opponent win-rate tiebreaker and everything else BCP publishes for the event moved behind the row's expand toggle, redesigned as compact stat tiles instead of a second row of pill chips.",
+      "\"Best in Faction\"/\"Best in Super Faction\" badges moved into their own column between Name and Record, instead of crowding inline next to the name.",
+      "Fixed (backend): the durable BCP cache had no schema version, so an event durably cached before a new field was added to what gets stored (like the faction data those badges need) could stay stuck missing it forever. It's versioned now, so a future change like that busts stale rows automatically instead of needing manual cleanup.",
+    ],
+  },
+  {
     version: "0.15.0",
     date: "2026-09-16",
     title: "Skill-at-a-glance player stats",
