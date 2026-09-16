@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.15.0",
+    date: "2026-09-16",
+    title: "Skill-at-a-glance player stats",
+    highlights: [
+      "Player stats now leads with a \"skill at a glance\" row: average percentile, recent form (your last 5 events), a top-quarter finish rate, and your ITC rank as a real stat tile — all percentile-based, so they're comparable across a mixed GT/RTT/Team history unlike raw placing.",
+      "The event-history table is always visible now (no more click-to-expand), shows which faction you played each event, links out to the event itself, and lists newest-first. A new All/GT/RTT/Team filter narrows it (and the trend chart) down to one format.",
+      "Checking another player's stats — the opponent quick-look on \"Your round,\" or their own page — now shows just the event-history table, without the trend chart (kept on your own stats page).",
+      "The \"check head-to-head\" button on \"Your round\" is now a real button instead of easy-to-miss text.",
+      "Removed the mission-matchup panel's hand-authored summary/tactics write-ups from \"Your round\" — mission names, full VP-scoring rules, and deployment maps stay.",
+    ],
+  },
+  {
     version: "0.14.0",
     date: "2026-09-15",
     title: "Faction accent themes and dark mode",
