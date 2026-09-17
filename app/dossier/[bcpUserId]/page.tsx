@@ -4,11 +4,13 @@ import { useParams } from "next/navigation";
 
 import { fetchDossier, type Dossier } from "../../lib/dossier";
 import { fieldDetail, ordinal } from "../../components/myEvents/playerStatsPanel";
+import HeadToHead from "../../components/pairings/headToHead";
 import Card from "../../components/ui/card";
 import Skeleton from "../../components/shared/skeleton";
 import ErrorAlert from "../../components/ui/errorAlert";
 import PageHeader from "../../components/layout/pageHeader";
 import PageMain from "../../components/layout/pageMain";
+import { useCurrentUser } from "../../lib/auth";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 import { logClientEvent } from "../../lib/clientLog";
 
@@ -49,6 +51,14 @@ function formatMonthYear(iso?: string): string | undefined {
  * more "personal analytics" than "shareable identity card" (the trend
  * chart — that stays on the account owner's own /stats page).
  *
+ * For a signed-in viewer looking at someone else's dossier, also shows
+ * HeadToHead's existing "check history" shortcut — the same manual
+ * lookup pairings/myRoundCard.tsx already offers during a live pairing,
+ * just pre-filled with (viewer, this dossier) instead of needing that
+ * context. Hidden entirely for a signed-out visitor or when viewing your
+ * own dossier — HeadToHead itself already renders nothing without both
+ * ids, this page's own guard just adds "and they're not the same id."
+ *
  * No colocated page.test.ts — confirmed this project's Node
  * test-runner setup never discovers a *.test.ts file inside a `[param]`
  * dynamic-route directory (its file-discovery glob treats the brackets
@@ -62,6 +72,11 @@ function formatMonthYear(iso?: string): string | undefined {
 function DossierContent() {
   const params = useParams<{ bcpUserId: string }>();
   const bcpUserId = params.bcpUserId;
+
+  // Only used for the "Check head-to-head" shortcut below — this page
+  // renders fully for a signed-out visitor either way (see HeadToHead's
+  // own null-when-missing-either-id guard).
+  const { user } = useCurrentUser();
 
   const [dossier, setDossier] = React.useState<Dossier | null | undefined>(undefined);
   const [error, setError] = React.useState<string | null>(null);
@@ -174,6 +189,10 @@ function DossierContent() {
                   </span>
                 ))}
               </div>
+            )}
+
+            {user?.bcpUserId && user.bcpUserId !== bcpUserId && (
+              <HeadToHead myBcpUserId={user.bcpUserId} opponentBcpUserId={bcpUserId} opponentName={dossier.name} />
             )}
 
             <p className="mt-3 border-t border-surface-border pt-3 text-[11px] text-text-tertiary">
