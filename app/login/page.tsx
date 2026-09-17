@@ -23,9 +23,10 @@ function safeReturnPath(path: string | null): string | undefined {
 
 /**
  * The default landing page for a signed-out visitor — every gated page
- * (/, /calendar, /my-events, /stats, /welcome) redirects here via
- * useRedirectToLoginIfSignedOut instead of each rendering its own
- * inline "sign in to..." prompt (see the now-removed SignInPrompt).
+ * (/, /event, /calendar, /my-events, /friends, /stats, /welcome)
+ * redirects here via useRedirectToLoginIfSignedOut instead of each
+ * rendering its own inline "sign in to..." prompt (see the now-removed
+ * SignInPrompt).
  *
  * Deliberately one button, not separate "sign in"/"sign up" ones:
  * Google sign-in doesn't distinguish the two (UpsertUserFromGoogle
@@ -44,7 +45,10 @@ function LoginContent() {
 
   // Already signed in — a stale bookmark, or the back button after
   // signing in from somewhere else. Nothing to do here; send them on to
-  // wherever they were headed (or the homepage).
+  // wherever they were headed (or Home, the cross-event dashboard at
+  // "/" — a better default landing spot than dropping them into
+  // whichever event happened to be last selected, which is what this
+  // fell back to before the home-dashboard rewrite).
   React.useEffect(() => {
     if (checked && user) {
       router.replace(returnTo ?? "/");

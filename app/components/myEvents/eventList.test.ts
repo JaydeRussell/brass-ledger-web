@@ -91,6 +91,6 @@ test("shows the event-page link directly on the card, with no expand step", () =
   ];
   const html = renderToStaticMarkup(React.createElement(EventList, { events, emptyMessage: "n/a" }));
   assert.match(html, /View event page/);
-  assert.match(html, /\/\?event=e1/);
+  assert.match(html, /\/event\?event=e1/);
   assert.ok(!html.includes("aria-expanded"));
 });

@@ -115,7 +115,7 @@ export default function CommandPalette() {
       key: `event:${event.id}`,
       label: event.name,
       detail: event.teamEvent ? "Team event" : "Singles event",
-      href: `/?event=${encodeURIComponent(event.id)}`,
+      href: `/event?event=${encodeURIComponent(event.id)}`,
     }));
   const results = [...pageResults, ...eventResults];
   const clampedIndex = Math.min(highlightedIndex, Math.max(0, results.length - 1));

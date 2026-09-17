@@ -44,8 +44,8 @@ test("shows the most recent placing as a direct label", () => {
 test("the event-history table is always visible, with a link out to each event", () => {
   const html = renderToStaticMarkup(React.createElement(PlacingTrendChart, { points, showChart: true }));
   assert.match(html, /<table/);
-  assert.match(html, /<a class="hover:underline" href="\/\?event=evt-a">Earlier Event<\/a>/);
-  assert.match(html, /<a class="hover:underline" href="\/\?event=evt-b">Later Event<\/a>/);
+  assert.match(html, /<a class="hover:underline" href="\/event\?event=evt-a">Earlier Event<\/a>/);
+  assert.match(html, /<a class="hover:underline" href="\/event\?event=evt-b">Later Event<\/a>/);
 });
 
 test("the table lists events newest first, opposite of the chart's chronological order", () => {
@@ -53,11 +53,11 @@ test("the table lists events newest first, opposite of the chart's chronological
   // points is oldest-first (evt-a, then evt-b) — the table should read
   // the other way, matching every other browsable list in this app (My
   // Events, Pairings, Placings). Matched by the table's own row links
-  // (href="/?event=...") specifically, since the chart's SVG aria-label
-  // also mentions both event names in chronological order and would
-  // otherwise confuse an indexOf on the bare name.
-  const laterIndex = html.indexOf('href="/?event=evt-b"');
-  const earlierIndex = html.indexOf('href="/?event=evt-a"');
+  // (href="/event?event=...") specifically, since the chart's SVG
+  // aria-label also mentions both event names in chronological order
+  // and would otherwise confuse an indexOf on the bare name.
+  const laterIndex = html.indexOf('href="/event?event=evt-b"');
+  const earlierIndex = html.indexOf('href="/event?event=evt-a"');
   assert.ok(laterIndex !== -1 && earlierIndex !== -1, "expected both event links to appear");
   assert.ok(laterIndex < earlierIndex, "the more recent event (evt-b) should come first in the table");
 });

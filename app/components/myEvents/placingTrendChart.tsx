@@ -86,7 +86,7 @@ function formatTick(v: number, metric: Metric): string {
 /**
  * An event-history section: every already-concluded event with a known
  * date and placing, as a browsable table (newest first, event name
- * linking out to that event's own page, same `/?event=` pattern
+ * linking out to that event's own page, same `/event?event=` pattern
  * EventList uses), plus — when `showChart` is true and there are at
  * least two events in the current format filter — a "My round"-style
  * trend line above it, oldest to newest (placing, or toggled,
@@ -409,7 +409,7 @@ export default function PlacingTrendChart({ points, showChart }: PlacingTrendCha
             {[...filteredPoints].reverse().map((p, i) => (
               <tr key={p.eventId + i} className="border-t border-surface-border">
                 <td className="px-2 py-1 text-text-primary">
-                  <Link href={`/?event=${encodeURIComponent(p.eventId)}`} className="hover:underline">
+                  <Link href={`/event?event=${encodeURIComponent(p.eventId)}`} className="hover:underline">
                     {p.eventName}
                   </Link>
                 </td>

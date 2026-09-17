@@ -14,8 +14,12 @@ import Card from "../ui/card";
  * Ongoing/Future tabs, the Calendar page's combined upcoming list) —
  * and naturally returns undefined for an already-concluded event
  * without needing to know it came from the Past bucket at all.
+ *
+ * Exported for app/page.tsx (Home)'s "Next up" hero, the third place
+ * that needs the same countdown besides My Events' Ongoing/Future tabs
+ * and Calendar's combined list.
  */
-function formatCountdown(startDate?: string, endDate?: string): string | undefined {
+export function formatCountdown(startDate?: string, endDate?: string): string | undefined {
   if (!startDate) return undefined;
   const start = new Date(startDate);
   if (Number.isNaN(start.getTime())) return undefined;
@@ -37,9 +41,9 @@ function formatCountdown(startDate?: string, endDate?: string): string | undefin
 /**
  * One event card: the summary line (name, countdown/status, dates,
  * placing, faction, team) plus a direct link to the event's own page
- * (app/page.tsx, opened to this event via its `?event=` query param —
- * see that file's dedicated hydration effect for how it's consumed and
- * then stripped back out of the URL).
+ * (app/event/page.tsx, opened to this event via its `?event=` query
+ * param — see that file's dedicated hydration effect for how it's
+ * consumed and then stripped back out of the URL).
  *
  * This used to hide the link behind a click-to-expand step that only
  * ever revealed "Status" and "Dates" — both already visible right here
@@ -70,7 +74,7 @@ function EventCard({ event }: { event: MyEvent }) {
           {event.team && <span className="truncate">{event.team}</span>}
         </div>
         <Link
-          href={`/?event=${encodeURIComponent(event.eventId)}`}
+          href={`/event?event=${encodeURIComponent(event.eventId)}`}
           className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brass-400 hover:underline"
         >
           View event page →
