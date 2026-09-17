@@ -10,6 +10,8 @@ import MyPairings from "./components/pairings/myPairings";
 import RoundBoard from "./components/pairings/roundBoard";
 import PlacingsTable from "./components/placings/placingsTable";
 import OverviewPanel from "./components/overview/overviewPanel";
+import MinePanel from "./components/overview/minePanel";
+import MyTeamPanel from "./components/overview/myTeamPanel";
 import TabBar, { type TabKey } from "./components/tabs/tabBar";
 import FollowingPill from "./components/tabs/followingPill";
 import SearchBar from "./components/search/searchBar";
@@ -110,7 +112,7 @@ function followingKey(eventId: string) {
   return `bcp-following:${eventId}`;
 }
 
-const TAB_KEYS: TabKey[] = ["overview", "roster", "pairings", "placings"];
+const TAB_KEYS: TabKey[] = ["overview", "mine", "team", "roster", "pairings", "placings"];
 function isTabKey(value: string | null): value is TabKey {
   return value !== null && (TAB_KEYS as string[]).includes(value);
 }
@@ -302,6 +304,14 @@ function HomeContent() {
   // Keyed by followedKey(...) so each followed team/player's pairings load
   // and track independently of the others.
   const [followedPairings, setFollowedPairings] = React.useState<
+    Record<string, FollowedPairings>
+  >({});
+
+  // Same shape as followedPairings, but for myTeammates (auto-detected
+  // via shared home club, not a manual follow) — keyed by String(id)
+  // rather than followedKey(...), since these were never Followed
+  // entries in the first place.
+  const [teammatePairings, setTeammatePairings] = React.useState<
     Record<string, FollowedPairings>
   >({});
 
@@ -578,6 +588,71 @@ function HomeContent() {
     () => (user?.bcpUserId ? players.find((p) => p.bcpUserId === user.bcpUserId) : undefined),
     [players, user?.bcpUserId]
   );
+
+  // "My team" — myself plus every other player sharing my own BCP-
+  // registered club (types/player.d.ts's homeClub, always populated
+  // per-registrant regardless of event format — see internal/bcp/
+  // players.go's HomeClub mapping), singles events only. Some singles
+  // GTs let a group self-declare a shared club specifically so BCP's
+  // own pairing algorithm avoids pairing them in early rounds; this
+  // surfaces that same already-published grouping. Gated on myPlayer
+  // alone (not eventInfo.started, unlike myRoundInfo below) since the
+  // roster — and so who your teammates are — is known before the event
+  // starts. Empty (not just yourself) when nobody else shares your
+  // club — a "team" of one isn't a team.
+  const myTeammates = React.useMemo(() => {
+    if (eventInfo?.teamEvent || !myPlayer?.homeClub) return [];
+    const clubmates = players.filter((p) => p.homeClub === myPlayer.homeClub && p.id !== myPlayer.id);
+    return clubmates.length > 0 ? [myPlayer, ...clubmates] : [];
+  }, [players, myPlayer, eventInfo?.teamEvent]);
+
+  // Same lookup as the "following" effect above, for myTeammates
+  // instead — auto-detected via shared home club (see myTeammates'
+  // own doc comment), not something the user opted into by following.
+  useEffect(() => {
+    if (!eventInfo || myTeammates.length === 0) return;
+    const upToRound = eventInfo.ended ? eventInfo.numberOfRounds : eventInfo.currentRound;
+    if (upToRound <= 0) return;
+
+    let cancelled = false;
+
+    myTeammates.forEach((teammate) => {
+      const key = String(teammate.id);
+      // Seeds a loading entry immediately (mirrors startFollowing's own
+      // seed) — nothing else marks these as "loading" before the fetch
+      // below resolves, since there's no manual follow action to do it.
+      setTeammatePairings((prev) => ({
+        ...prev,
+        [key]: prev[key] ?? { label: teammate.name, pairings: [], loading: true, error: null },
+      }));
+
+      fetchMyIndividualPairings(eventId, key, upToRound)
+        .then((result) => {
+          if (cancelled) return;
+          setTeammatePairings((prev) => ({
+            ...prev,
+            [key]: { label: teammate.name, pairings: result, loading: false, error: null },
+          }));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setTeammatePairings((prev) => ({
+            ...prev,
+            [key]: {
+              label: teammate.name,
+              pairings: prev[key]?.pairings ?? [],
+              loading: false,
+              error: err instanceof Error ? err.message : "Failed to load pairings",
+            },
+          }));
+        });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myTeammates, eventInfo, eventId]);
+
   // Non-null exactly when OverviewPanel's "Your round" card is actually
   // shown — same condition its own ternary below checks, extracted so
   // the following list's self-follow filter (roadmap #6) can reuse it
@@ -689,8 +764,11 @@ function HomeContent() {
   // avg-ITC comparison — roadmap #4 — the opposing team's roster in its
   // latest pairing), each followed individual player's round-by-round
   // opponents, and (for the same roadmap #4 comparison on "Your round")
-  // my own team's roster and my own opponent team's roster. Never a whole
-  // roster beyond what's actually shown, to avoid a burst of requests
+  // my own team's roster and my own opponent team's roster. Never
+  // includes myTeammates (see myTeamPanel.tsx — that view deliberately
+  // dropped ITC display to stay skimmable across a dozen-plus teammates)
+  // or a whole roster beyond what's actually shown, to avoid a burst of
+  // requests
   // against BCP's API. Purely a read of an already-published BCP number.
   useEffect(() => {
     if (!itcLeagueId) return;
@@ -802,13 +880,14 @@ function HomeContent() {
     };
   }, [eventId, boardRound, eventInfo, boardRefreshKey]);
 
-  // Placings are only fetched once the Placings tab is actually opened —
-  // per CLAUDE.md's "fetch only what's needed" rule, there's no reason to
-  // pull standings for events nobody's looking at. The underlying request
-  // is still cached/rate-limited, so flipping tabs back and forth doesn't
-  // cost extra network calls.
+  // Placings are only fetched once the Placings or Team tab is actually
+  // opened (Team needs each teammate's placing to sort by — see
+  // myTeamPanel.tsx) — per CLAUDE.md's "fetch only what's needed" rule,
+  // there's no reason to pull standings for events nobody's looking at.
+  // The underlying request is still cached/rate-limited, so flipping
+  // tabs back and forth doesn't cost extra network calls.
   useEffect(() => {
-    if (activeTab !== "placings" || !eventInfo) return;
+    if ((activeTab !== "placings" && activeTab !== "team") || !eventInfo) return;
 
     let cancelled = false;
     const refresh = placingsRefreshRequestedRef.current;
@@ -981,6 +1060,7 @@ function HomeContent() {
       setFollowing(readLocalStorage<Followed[]>(followingKey(id), []));
     }
     setFollowedPairings({});
+    setTeammatePairings({});
     setBoardRound(null);
     setBoardEntries([]);
     setBoardError(null);
@@ -1159,7 +1239,7 @@ function HomeContent() {
           )}
 
           <div className="sticky top-0 z-10 border-b border-surface-border bg-surface-0/90 pt-2 backdrop-blur">
-            <TabBar active={activeTab} onChange={changeTab} />
+            <TabBar active={activeTab} onChange={changeTab} showTeamTab={myTeammates.length > 0} />
           </div>
 
           <PageMain>
@@ -1177,9 +1257,10 @@ function HomeContent() {
           />
         )}
 
-        {activeTab === "overview" && (
-          <OverviewPanel
-            eventInfo={eventInfo}
+        {activeTab === "overview" && <OverviewPanel eventInfo={eventInfo} />}
+
+        {activeTab === "mine" && (
+          <MinePanel
             myRound={
               myRoundInfo
                 ? {
@@ -1224,6 +1305,26 @@ function HomeContent() {
               }))}
             onGoToRoster={() => changeTab("roster")}
             onGoToPairings={() => changeTab("pairings")}
+          />
+        )}
+
+        {activeTab === "team" && myTeammates.length > 0 && (
+          <MyTeamPanel
+            teammates={myTeammates.map((teammate) => {
+              const entry = teammatePairings[String(teammate.id)];
+              const placingEntry = placings.find(
+                (p) => String(p.id) === String(teammate.id) || (teammate.bcpUserId && p.bcpUserId === teammate.bcpUserId)
+              );
+              return {
+                player: teammate,
+                pairings: entry?.pairings ?? [],
+                loading: entry?.loading ?? true,
+                error: entry?.error ?? null,
+                placing: placingEntry?.placing,
+              };
+            })}
+            players={players}
+            myPlayerId={myPlayer?.id}
           />
         )}
 
