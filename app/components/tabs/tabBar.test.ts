@@ -16,9 +16,26 @@ import { renderStatic } from "../../lib/testUtils.ts";
 // instead; see CLAUDE.md on jsdom/@testing-library/react not yet being
 // wired up for automated coverage of that.
 
-test("TabBar renders one tab per section in a fixed order", () => {
-  const html = renderStatic(React.createElement(TabBar, { active: "overview", onChange: () => {} }));
-  const order = ["Overview", "Roster", "Pairings", "Placings"];
+test("TabBar renders one tab per section in a fixed order, Team omitted by default", () => {
+  const html = renderStatic(
+    React.createElement(TabBar, { active: "overview", onChange: () => {}, showTeamTab: false })
+  );
+  const order = ["Overview", "Mine", "Roster", "Pairings", "Placings"];
+  let lastIndex = -1;
+  for (const label of order) {
+    assert.match(html, new RegExp(`>${label}<`));
+    const index = html.indexOf(`>${label}<`);
+    assert.ok(index > lastIndex, `expected ${label} to appear after the previous tab`);
+    lastIndex = index;
+  }
+  assert.ok(!html.includes(">Team<"));
+});
+
+test("TabBar inserts Team (after Mine, before Roster) when showTeamTab is true", () => {
+  const html = renderStatic(
+    React.createElement(TabBar, { active: "overview", onChange: () => {}, showTeamTab: true })
+  );
+  const order = ["Overview", "Mine", "Team", "Roster", "Pairings", "Placings"];
   let lastIndex = -1;
   for (const label of order) {
     assert.match(html, new RegExp(`>${label}<`));
@@ -29,17 +46,21 @@ test("TabBar renders one tab per section in a fixed order", () => {
 });
 
 test("TabBar marks only the active tab as selected", () => {
-  const html = renderStatic(React.createElement(TabBar, { active: "pairings", onChange: () => {} }));
+  const html = renderStatic(
+    React.createElement(TabBar, { active: "pairings", onChange: () => {}, showTeamTab: false })
+  );
   const buttons = html.split("<button").slice(1);
-  assert.equal(buttons.length, 4);
+  assert.equal(buttons.length, 5);
   const pairingsButton = buttons.find((b) => b.includes(">Pairings<"));
   const otherButtons = buttons.filter((b) => !b.includes(">Pairings<"));
-  assert.equal(otherButtons.length, 3);
+  assert.equal(otherButtons.length, 4);
   assert.ok(pairingsButton?.includes('aria-selected="true"'));
   otherButtons.forEach((b) => assert.ok(b.includes('aria-selected="false"')));
 });
 
 test("the tab list has an accessible name", () => {
-  const html = renderStatic(React.createElement(TabBar, { active: "overview", onChange: () => {} }));
+  const html = renderStatic(
+    React.createElement(TabBar, { active: "overview", onChange: () => {}, showTeamTab: false })
+  );
   assert.match(html, /aria-label="Event sections"/);
 });

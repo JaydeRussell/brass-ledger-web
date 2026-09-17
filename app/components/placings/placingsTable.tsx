@@ -2,9 +2,9 @@
 import React from "react";
 import type { MyPairing, PlacingEntry } from "../../lib/bcp";
 import { computePlacingBadges, type PlacingBadge } from "../../lib/placingBadges";
-import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
+import RoundScoreStrip from "../shared/roundScoreStrip";
 import Skeleton from "../shared/skeleton";
 import Badge from "../ui/badge";
 import Card from "../ui/card";
@@ -82,48 +82,9 @@ function findRecordMetricName(names: string[]): string | undefined {
   return names.find(isRecordMetric);
 }
 
-/**
- * A compact "62 / 91 / 74" round-by-round score strip, each round
- * colored by its own win/loss/draw margin (see lib/scoreColor.ts) —
- * BCP's own already-published per-round score for this entry, not a
- * recomputed record. Stands in for the plain record column value on a
- * row where round data is available (see findRecordMetricName above).
- * A flex-wrap container rather than one nowrap line: a 3-round event
- * fits on one line same as before, but a longer event (5-6+ rounds) on
- * a narrow phone screen wraps onto a second line instead of forcing the
- * whole placings table into horizontal scroll — that scroll was the
- * actual problem, since it pushed this very column (the one thing a
- * player most wants to check) out past the edge of the screen. Each
- * round's own "/ 91" stays grouped in one nowrap span so a wrap can
- * only land between rounds, never orphan a bare "/" on its own line;
- * justify-end keeps every wrapped line right-aligned like the rest of
- * this column.
- */
-function RoundScoreStrip({ pairings }: { pairings: MyPairing[] }) {
-  return (
-    <span className="flex flex-wrap justify-end gap-x-1.5 gap-y-0.5">
-      {pairings.map((p, i) => (
-        <span key={p.round} className="whitespace-nowrap">
-          {i > 0 && <span className="text-text-tertiary">/ </span>}
-          <span
-            className={
-              p.myScore !== undefined && p.opponentScore !== undefined
-                ? SCORE_OUTCOME_CLASSES[classifyScore(p.myScore, p.opponentScore)]
-                : "text-text-tertiary"
-            }
-            title={`Round ${p.round}${
-              p.myScore !== undefined && p.opponentScore !== undefined
-                ? `: ${p.myScore}–${p.opponentScore} vs ${p.opponentName}`
-                : ""
-            }`}
-          >
-            {p.myScore ?? "—"}
-          </span>
-        </span>
-      ))}
-    </span>
-  );
-}
+// RoundScoreStrip now lives in ../shared/roundScoreStrip.tsx — reused
+// as-is on the Team tab (myTeamPanel.tsx) once that needed the same
+// glanceable record too.
 
 /**
  * One placings row. Only the lead record column (see orderMetricColumns)
