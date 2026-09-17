@@ -67,3 +67,25 @@ test("the Follow button only appears when onTrack is given, and calls it on clic
   followBtn!.props.onClick();
   assert.deepEqual(calls, [1]);
 });
+
+test("shows a tracked-count only when it's a truthy number, and only alongside the Follow button", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(TeamRoster, { teamName: "Team A", players, onTrack: () => {}, trackedCount: 6 })
+  );
+  assert.match(html, /6 tracking/);
+
+  const zeroHtml = renderToStaticMarkup(
+    React.createElement(TeamRoster, { teamName: "Team A", players, onTrack: () => {}, trackedCount: 0 })
+  );
+  assert.ok(!zeroHtml.includes("tracking"));
+
+  const undefinedHtml = renderToStaticMarkup(
+    React.createElement(TeamRoster, { teamName: "Team A", players, onTrack: () => {} })
+  );
+  assert.ok(!undefinedHtml.includes("tracking"));
+
+  const noTrackHtml = renderToStaticMarkup(
+    React.createElement(TeamRoster, { teamName: "Team A", players, trackedCount: 6 })
+  );
+  assert.ok(!noTrackHtml.includes("tracking"));
+});

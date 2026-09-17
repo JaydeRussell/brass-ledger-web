@@ -94,3 +94,20 @@ test("the Follow button only appears when onTrack is given, and reflects tracked
   const followingBtn = find(tracked, (el) => el.type === "button");
   assert.equal(followingBtn?.props.children, "Following ✓");
 });
+
+test("shows a tracked-count only when it's a truthy number, and only alongside the Follow button", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(PlayerCard, { player: basePlayer, onTrack: () => {}, trackedCount: 3 })
+  );
+  assert.match(html, /3 tracking/);
+
+  const zeroHtml = renderToStaticMarkup(
+    React.createElement(PlayerCard, { player: basePlayer, onTrack: () => {}, trackedCount: 0 })
+  );
+  assert.ok(!zeroHtml.includes("tracking"));
+
+  const noTrackHtml = renderToStaticMarkup(
+    React.createElement(PlayerCard, { player: basePlayer, trackedCount: 3 })
+  );
+  assert.ok(!noTrackHtml.includes("tracking"));
+});
