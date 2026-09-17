@@ -5,6 +5,7 @@
 export const NAV_LINKS: readonly { href: string; label: string }[] = [
   { href: "/", label: "Event" },
   { href: "/my-events", label: "My Events" },
+  { href: "/friends", label: "Friends" },
   { href: "/calendar", label: "Calendar" },
   { href: "/stats", label: "Player Stats" },
   { href: "/wiki", label: "Wiki" },

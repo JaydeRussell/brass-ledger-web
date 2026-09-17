@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { fetchDossier, type Dossier } from "../../lib/dossier";
 import { fieldDetail, ordinal } from "../../components/myEvents/playerStatsPanel";
 import ShareDossierButton from "../../components/myEvents/shareDossierButton";
+import AddFriendButton from "../../components/myEvents/addFriendButton";
 import HeadToHead from "../../components/pairings/headToHead";
 import Card from "../../components/ui/card";
 import Skeleton from "../../components/shared/skeleton";
@@ -64,6 +65,11 @@ function formatMonthYear(iso?: string): string | undefined {
  * plus this page's own URL to the clipboard — see that component's doc
  * comment for why this is a clipboard copy rather than a generated
  * share-card image.
+ *
+ * An "Add Friend" button (AddFriendButton), same signed-in-and-not-your-
+ * own-dossier guard as HeadToHead above, is this app's one entry point
+ * into sending a friend request — see internal/api/friends.go's own doc
+ * comment for why there's no separate search/browse route.
  *
  * No colocated page.test.ts — confirmed this project's Node
  * test-runner setup never discovers a *.test.ts file inside a `[param]`
@@ -159,7 +165,10 @@ function DossierContent() {
                   </p>
                 )}
               </div>
-              <ShareDossierButton dossier={dossier} bcpUserId={bcpUserId} />
+              <div className="flex shrink-0 items-center gap-2">
+                {user?.bcpUserId && user.bcpUserId !== bcpUserId && <AddFriendButton bcpUserId={bcpUserId} />}
+                <ShareDossierButton dossier={dossier} bcpUserId={bcpUserId} />
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
