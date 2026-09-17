@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.17.0",
+    date: "2026-09-17",
+    title: "A Team tab for singles events, and a home for feedback",
+    highlights: [
+      "New \"Team\" tab (singles events only, and only when it has something to show) lists yourself plus every other player sharing your BCP-registered club at this event, sorted by this event's published standing — each row shows a \"#N\" placing badge, the full round-by-round record, and the current round's opponent/table/disposition, expandable to every earlier round.",
+      "The event page's Overview tab, which had grown crowded fitting \"Your round,\" the new Team content, and who you're following all in one place, split into three: Overview (event facts only), Mine (your round plus following, always shown), and Team.",
+      "Bug reports and suggestions submitted through the feedback widget are now saved and browsable instead of email-alert-only — a new Feedback page (in the nav drawer's Admin group) lists them Open/Resolved/All and lets an admin resolve/reopen each one, with an open-count badge in the nav.",
+      "Account approvals moved from Admin to their own Accounts page, and now filter/search/paginate server-side with an adjustable page size, instead of pulling every account into the browser at once.",
+    ],
+  },
+  {
     version: "0.16.1",
     date: "2026-09-16",
     title: "Clearer win/loss/draw colors on Placings",
