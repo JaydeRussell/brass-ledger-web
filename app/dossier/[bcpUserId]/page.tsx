@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 
 import { fetchDossier, type Dossier } from "../../lib/dossier";
 import { fieldDetail, ordinal } from "../../components/myEvents/playerStatsPanel";
+import ShareDossierButton from "../../components/myEvents/shareDossierButton";
 import HeadToHead from "../../components/pairings/headToHead";
 import Card from "../../components/ui/card";
 import Skeleton from "../../components/shared/skeleton";
@@ -58,6 +59,11 @@ function formatMonthYear(iso?: string): string | undefined {
  * context. Hidden entirely for a signed-out visitor or when viewing your
  * own dossier — HeadToHead itself already renders nothing without both
  * ids, this page's own guard just adds "and they're not the same id."
+ *
+ * A "Share" button (ShareDossierButton) copies a plain-text summary
+ * plus this page's own URL to the clipboard — see that component's doc
+ * comment for why this is a clipboard copy rather than a generated
+ * share-card image.
  *
  * No colocated page.test.ts — confirmed this project's Node
  * test-runner setup never discovers a *.test.ts file inside a `[param]`
@@ -144,13 +150,16 @@ function DossierContent() {
           </Card>
         ) : (
           <Card className="p-4 shadow-sm">
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold text-text-primary">{dossier.name}</h2>
-              {formatMonthYear(dossier.competingSince) && (
-                <p className="text-xs text-text-tertiary">
-                  Competing since {formatMonthYear(dossier.competingSince)}
-                </p>
-              )}
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">{dossier.name}</h2>
+                {formatMonthYear(dossier.competingSince) && (
+                  <p className="text-xs text-text-tertiary">
+                    Competing since {formatMonthYear(dossier.competingSince)}
+                  </p>
+                )}
+              </div>
+              <ShareDossierButton dossier={dossier} bcpUserId={bcpUserId} />
             </div>
 
             <div className="flex flex-wrap gap-2">
