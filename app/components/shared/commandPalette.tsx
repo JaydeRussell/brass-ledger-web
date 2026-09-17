@@ -40,7 +40,9 @@ export default function CommandPalette() {
   // comment: this hook is deliberately not shared state, so every
   // consumer fetches /api/me on its own (same reasoning navDrawer.tsx's
   // own second instance already documents). Only used here to decide
-  // which recent-events source to read from, and to show the Admin page.
+  // which recent-events source to read from, and to show the two Admin
+  // pages (see navDrawer.tsx's expandable Admin group for the same
+  // pair).
   const { user } = useCurrentUser();
   const [query, setQuery] = React.useState("");
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
@@ -96,7 +98,13 @@ export default function CommandPalette() {
 
   if (!isOpen) return null;
 
-  const adminLink = user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : [];
+  const adminLink =
+    user?.role === "admin"
+      ? [
+          { href: "/admin/accounts", label: "Admin: Accounts" },
+          { href: "/admin/feedback", label: "Admin: Feedback" },
+        ]
+      : [];
   const pageResults: Result[] = [...NAV_LINKS, ...adminLink]
     .filter((link) => matches(link.label, query))
     .map((link) => ({ kind: "page", key: `page:${link.href}`, label: link.label, href: link.href }));
