@@ -2,8 +2,9 @@
 // internal/api/admin.go in the brass-ledger-api repo): listing every
 // account and approving/rejecting/re-roling them. Every route here
 // requires the signed-in account to be an approved admin — a non-admin
-// or unapproved caller gets a 401/403 the admin page's own client-side
-// gating should make unreachable in normal use (see app/admin/page.tsx).
+// or unapproved caller gets a 401/403 the accounts page's own client-side
+// gating should make unreachable in normal use (see
+// app/admin/accounts/page.tsx).
 //
 // Same credentials/error-decoding shape as myEvents.ts and auth.ts —
 // duplicated here rather than shared, matching how each app/lib/*.ts
@@ -21,6 +22,23 @@ export type AdminUser = {
   bcpUserId: string;
   role: "user" | "admin";
   status: "pending" | "approved" | "rejected";
+};
+
+export type AdminUserStatusFilter = "all" | AdminUser["status"];
+
+// Every account status's total, independent of whatever status/search
+// filter a given fetchAdminUsers call used — what the accounts page's
+// tab labels ("Pending (56)") need regardless of what's currently paged
+// or searched (see internal/user.UserStatusCounts).
+export type AdminUserCounts = Record<AdminUserStatusFilter, number>;
+
+export type AdminUsersPage = {
+  items: AdminUser[];
+  // Total accounts matching this call's status/search filter (for
+  // computing page count) — not the same as counts.all, which ignores
+  // both filters.
+  total: number;
+  counts: AdminUserCounts;
 };
 
 /**
@@ -63,9 +81,28 @@ async function postJSON<T>(path: string, body?: unknown): Promise<T> {
   return handleJSONResponse<T>(res);
 }
 
-/** Every account, pending-first then newest — see GET /api/admin/users. */
-export async function fetchAdminUsers(): Promise<AdminUser[]> {
-  return getJSON<AdminUser[]>("/api/admin/users");
+/**
+ * One page of accounts, filtered/paginated server-side — see GET
+ * /api/admin/users?status=&q=&page=&pageSize=. `status` omitted or
+ * "all" means no status filter; `page` is 1-based; `pageSize` is
+ * clamped server-side (see internal/user.Store.ListUsers). Every
+ * argument is optional so a bare `fetchAdminUsers()` still works (the
+ * server's own defaults apply), but the accounts page always passes all
+ * four explicitly since it needs to control paging itself.
+ */
+export async function fetchAdminUsers(opts: {
+  status?: AdminUserStatusFilter;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<AdminUsersPage> {
+  const params = new URLSearchParams();
+  if (opts.status && opts.status !== "all") params.set("status", opts.status);
+  if (opts.search) params.set("q", opts.search);
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.pageSize) params.set("pageSize", String(opts.pageSize));
+  const query = params.toString();
+  return getJSON<AdminUsersPage>(`/api/admin/users${query ? `?${query}` : ""}`);
 }
 
 export async function approveUser(id: number): Promise<void> {

@@ -26,10 +26,14 @@ function installFetch(handler: (url: string, init?: RequestInit) => FakeResponse
 const { fetchAdminUsers, approveUser, rejectUser, setUserRole } = await import("./adminUsers.ts");
 
 test("fetchAdminUsers: sends credentials and returns the parsed body", async () => {
-  const wantBody = [
-    { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "", role: "user", status: "pending" },
-    { id: 2, email: "c@d.com", name: "C D", avatarUrl: "", bcpUserId: "u2", role: "admin", status: "approved" },
-  ];
+  const wantBody = {
+    items: [
+      { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "", role: "user", status: "pending" },
+      { id: 2, email: "c@d.com", name: "C D", avatarUrl: "", bcpUserId: "u2", role: "admin", status: "approved" },
+    ],
+    total: 2,
+    counts: { all: 2, pending: 1, approved: 1, rejected: 0 },
+  };
   const { calls } = installFetch(() => ({ status: 200, body: wantBody }));
 
   const got = await fetchAdminUsers();
@@ -43,6 +47,26 @@ test("fetchAdminUsers: sends credentials and returns the parsed body", async () 
 test("fetchAdminUsers: a non-ok response throws using the backend's error message", async () => {
   installFetch(() => ({ status: 403, body: { error: "admin only" } }));
   await assert.rejects(() => fetchAdminUsers(), /admin only/);
+});
+
+test("fetchAdminUsers: builds the query string from status/search/page/pageSize", async () => {
+  const { calls } = installFetch(() => ({ status: 200, body: { items: [], total: 0, counts: {} } }));
+
+  await fetchAdminUsers({ status: "pending", search: "bob", page: 2, pageSize: 5 });
+
+  const url = new URL(calls[0].url);
+  assert.equal(url.searchParams.get("status"), "pending");
+  assert.equal(url.searchParams.get("q"), "bob");
+  assert.equal(url.searchParams.get("page"), "2");
+  assert.equal(url.searchParams.get("pageSize"), "5");
+});
+
+test("fetchAdminUsers: omits status from the query string for \"all\"", async () => {
+  const { calls } = installFetch(() => ({ status: 200, body: { items: [], total: 0, counts: {} } }));
+
+  await fetchAdminUsers({ status: "all" });
+
+  assert.equal(new URL(calls[0].url).searchParams.has("status"), false);
 });
 
 test("approveUser: posts to the right path with credentials, no body expected back", async () => {
