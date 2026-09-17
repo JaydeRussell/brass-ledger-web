@@ -34,7 +34,12 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
   );
 }
 
-function ordinal(n: number): string {
+// Exported for app/dossier/[bcpUserId]/page.tsx, the public counterpart
+// to this panel's "player" mode — same formatting, different fetch/auth
+// model (see that page's doc comment), so it renders its own markup
+// rather than sharing this component outright, but there's no reason to
+// duplicate these two pure formatting helpers.
+export function ordinal(n: number): string {
   const mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
   switch (n % 10) {
@@ -50,7 +55,7 @@ function ordinal(n: number): string {
 }
 
 /** "of 53 · top 4%" — undefined if the event never published a field size. */
-function fieldDetail(p?: PlacingWithField): string | undefined {
+export function fieldDetail(p?: PlacingWithField): string | undefined {
   if (!p?.fieldSize) return undefined;
   const percentile = Math.max(1, Math.round((p.placing / p.fieldSize) * 100));
   return `of ${p.fieldSize} · top ${percentile}%`;

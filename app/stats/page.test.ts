@@ -34,6 +34,13 @@ mock.module("../lib/myStats.ts", {
     fetchPlayerStats: async () => ({ linked: false, totalEvents: 0, factions: [] }),
   },
 });
+mock.module("../lib/dossier.ts", {
+  namedExports: {
+    setDossierVisibility: async () => {
+      throw new Error("should not be reached — no click simulation in a static render");
+    },
+  },
+});
 mock.module("../lib/bcp.ts", {
   namedExports: {
     fetchBcpPlayers: async () => [],
@@ -113,8 +120,37 @@ test("shows a Change profile link for a fully linked account", () => {
   authState = {
     checked: true,
     setUser: () => {},
-    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
+    user: {
+      id: 1,
+      email: "a@b.com",
+      name: "A B",
+      avatarUrl: "",
+      bcpUserId: "u1",
+      role: "user",
+      status: "approved",
+      dossierPublic: true,
+    },
   };
   const html = renderPage();
   assert.match(html, /Change profile/);
+});
+
+test("shows the dossier-visibility toggle, reflecting the account's current setting", () => {
+  authState = {
+    checked: true,
+    setUser: () => {},
+    user: {
+      id: 1,
+      email: "a@b.com",
+      name: "A B",
+      avatarUrl: "",
+      bcpUserId: "u1",
+      role: "user",
+      status: "approved",
+      dossierPublic: false,
+    },
+  };
+  const html = renderPage();
+  assert.match(html, /Public dossier/);
+  assert.match(html, /Hidden — only you can see this/);
 });
