@@ -41,7 +41,7 @@ const ADMIN_LINKS: readonly { href: string; label: string }[] = [
  * which page you're on, so it reads more like an app-level identity
  * strip than a nav destination of its own — closer to how a mobile app's
  * drawer usually puts the account card above its menu items than to a
- * peer link listed alongside "Event"/"My Events".
+ * peer link listed alongside "Home"/"My Events".
  */
 export default function NavDrawer() {
   const { isOpen, close } = useNav();

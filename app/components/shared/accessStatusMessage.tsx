@@ -10,8 +10,8 @@ type AccessStatusMessageProps = {
 };
 
 /**
- * What a signed-in account sees on every gated page (the root event
- * viewer, /calendar, /my-events, /stats) while it isn't "approved" yet
+ * What a signed-in account sees on every gated page (Home, /event,
+ * /calendar, /my-events, /friends, /stats) while it isn't "approved" yet
  * — see internal/user's migration 0007 and api.RequireApproved on the
  * backend, which is the actual enforcement this is just explaining.
  * Deliberately not shown on /welcome: a pending account can (and
