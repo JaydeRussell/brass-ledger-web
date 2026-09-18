@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import TeamRoster from "../components/roster/roster";
 import TeamCompare from "../components/roster/teamCompare";
+import PlayerCompare from "../components/roster/playerCompare";
 import PlayerCard from "../components/roster/playerCard";
 import EventSettings from "../components/settings/eventSettings";
 import MyPairings from "../components/pairings/myPairings";
@@ -199,6 +200,8 @@ function HomeContent() {
   const compareMode = searchParams.get("compare") === "1";
   const compareTeamAParam = searchParams.get("teamA");
   const compareTeamBParam = searchParams.get("teamB");
+  const comparePlayerAParam = searchParams.get("playerA");
+  const comparePlayerBParam = searchParams.get("playerB");
 
   // Applies one or more query-param changes at once (never omit a field
   // that's changing in the same call — see the two call sites below that
@@ -208,7 +211,15 @@ function HomeContent() {
   // Uses router.replace (not push) so switching tabs/typing a search never
   // piles up back-button history entries.
   const updateQuery = React.useCallback(
-    (patch: { tab?: TabKey; q?: string; compare?: boolean; teamA?: string | null; teamB?: string | null }) => {
+    (patch: {
+      tab?: TabKey;
+      q?: string;
+      compare?: boolean;
+      teamA?: string | null;
+      teamB?: string | null;
+      playerA?: string | null;
+      playerB?: string | null;
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
@@ -226,6 +237,8 @@ function HomeContent() {
           params.delete("compare");
           params.delete("teamA");
           params.delete("teamB");
+          params.delete("playerA");
+          params.delete("playerB");
         } else {
           params.set("compare", "1");
         }
@@ -237,6 +250,14 @@ function HomeContent() {
       if ("teamB" in patch) {
         if (!patch.teamB) params.delete("teamB");
         else params.set("teamB", patch.teamB);
+      }
+      if ("playerA" in patch) {
+        if (!patch.playerA) params.delete("playerA");
+        else params.set("playerA", patch.playerA);
+      }
+      if ("playerB" in patch) {
+        if (!patch.playerB) params.delete("playerB");
+        else params.set("playerB", patch.playerB);
       }
       // `event` (see the hydration effect below, which is what actually
       // reads and consumes it — search for "?event=") is a one-shot
@@ -1210,6 +1231,16 @@ function HomeContent() {
     if (aRank !== undefined && bRank !== undefined) return aRank - bRank;
     return a.name.localeCompare(b.name);
   });
+  // Same "fall back to unpicked rather than a stale reference" reasoning
+  // as compareTeamA/B above, for a singles event's player-compare mode.
+  const comparePlayerA =
+    comparePlayerAParam && sortedPlayers.some((p) => String(p.id) === comparePlayerAParam)
+      ? comparePlayerAParam
+      : null;
+  const comparePlayerB =
+    comparePlayerBParam && sortedPlayers.some((p) => String(p.id) === comparePlayerBParam)
+      ? comparePlayerBParam
+      : null;
 
   const upToRound = eventInfo
     ? eventInfo.ended
@@ -1418,6 +1449,13 @@ function HomeContent() {
                 </Button>
               </div>
             )}
+            {!loading && !isTeamEvent && sortedPlayers.length >= 2 && (
+              <div className="flex justify-end">
+                <Button variant="secondary" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
+                  {compareMode ? "← Back to roster" : "⇄ Compare two players"}
+                </Button>
+              </div>
+            )}
             {!loading && compareMode && isTeamEvent ? (
               <TeamCompare
                 teamNames={sortedTeamNames}
@@ -1428,6 +1466,16 @@ function HomeContent() {
                 selectedB={compareTeamB}
                 onSelectA={(team) => updateQuery({ teamA: team })}
                 onSelectB={(team) => updateQuery({ teamB: team })}
+              />
+            ) : !loading && compareMode && !isTeamEvent ? (
+              <PlayerCompare
+                players={sortedPlayers}
+                itcLeagueId={itcLeagueId}
+                itcRankings={itcRankings}
+                selectedA={comparePlayerA}
+                selectedB={comparePlayerB}
+                onSelectA={(id) => updateQuery({ playerA: id })}
+                onSelectB={(id) => updateQuery({ playerB: id })}
               />
             ) : loading ? (
               <div>
