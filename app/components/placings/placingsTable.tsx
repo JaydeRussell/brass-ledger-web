@@ -40,6 +40,9 @@ type PlacingsTableProps = {
   // empty for a given id) just falls back to BCP's own aggregate value,
   // same as before this existed.
   roundScoresById?: Map<string, MyPairing[]>;
+  // When `entries` was last fetched — passed straight through to
+  // RefreshButton's own label. See its doc comment.
+  lastSyncedAt?: number | null;
 };
 
 // A metric whose name looks like a win/loss-derived record (BCP's own
@@ -209,6 +212,7 @@ export default function PlacingsTable({
   onRefresh,
   rosterByTeamId,
   roundScoresById,
+  lastSyncedAt,
 }: PlacingsTableProps) {
   const orderedMetricNames = orderMetricColumns(entries[0]?.metrics.map((m) => m.name) ?? []);
   const visibleMetricNames = orderedMetricNames.slice(0, 1);
@@ -223,7 +227,12 @@ export default function PlacingsTable({
     <Card className="overflow-hidden shadow-sm">
       <div className="flex items-center justify-between gap-2 border-b border-surface-border bg-surface-2 px-4 py-3">
         <p className="font-semibold text-text-primary">Placings</p>
-        <RefreshButton onRefresh={onRefresh} loading={loading} label="placings" />
+        <RefreshButton
+          onRefresh={onRefresh}
+          loading={loading}
+          label="placings"
+          lastSyncedAt={lastSyncedAt}
+        />
       </div>
 
       <div className="p-3">

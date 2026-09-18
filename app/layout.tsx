@@ -8,6 +8,8 @@ import Footer from "./components/layout/footer";
 import FeedbackWidget from "./components/feedback/feedbackWidget";
 import { CommandPaletteProvider } from "./components/shared/commandPaletteContext";
 import CommandPalette from "./components/shared/commandPalette";
+import { ToastProvider } from "./components/shared/toastContext";
+import ToastViewport from "./components/shared/toastViewport";
 import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
@@ -63,17 +65,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
       >
         <ClientErrorLogger />
-        <ViewerItcProvider>
-          <CommandPaletteProvider>
-            <NavProvider>
-              <NavDrawer />
-              {children}
-              <Footer />
-              <FeedbackWidget />
-            </NavProvider>
-            <CommandPalette />
-          </CommandPaletteProvider>
-        </ViewerItcProvider>
+        <ToastProvider>
+          <ViewerItcProvider>
+            <CommandPaletteProvider>
+              <NavProvider>
+                <NavDrawer />
+                {children}
+                <Footer />
+                <FeedbackWidget />
+              </NavProvider>
+              <CommandPalette />
+            </CommandPaletteProvider>
+          </ViewerItcProvider>
+          <ToastViewport />
+        </ToastProvider>
       </body>
     </html>
   );

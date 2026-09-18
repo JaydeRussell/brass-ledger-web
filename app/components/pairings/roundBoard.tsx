@@ -76,6 +76,9 @@ type RoundBoardProps = {
   // large board (Challengers Cup has 68 teams) instead of leaving a
   // scrollbar as the only hint it even scrolls.
   myId?: string;
+  // When `entries` was last fetched — passed straight through to
+  // RefreshButton's own label. See its doc comment.
+  lastSyncedAt?: number | null;
 };
 
 /**
@@ -109,6 +112,7 @@ export default function RoundBoard({
   rosterByTeamId,
   players,
   myId,
+  lastSyncedAt,
 }: RoundBoardProps) {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [boardsById, setBoardsById] = React.useState<Record<string, BoardsState>>({});
@@ -200,7 +204,12 @@ export default function RoundBoard({
               Jump to mine
             </Button>
           )}
-          <RefreshButton onRefresh={onRefresh} loading={loading} label="pairings" />
+          <RefreshButton
+            onRefresh={onRefresh}
+            loading={loading}
+            label="pairings"
+            lastSyncedAt={lastSyncedAt}
+          />
           <Button
             variant="secondary"
             size="sm"

@@ -2,6 +2,7 @@
 import React from "react";
 import Button from "../ui/button";
 import { canRefreshNow, REFRESH_COOLDOWN_MS } from "../../lib/refreshCooldown";
+import { formatRelativeTime } from "../../lib/eventCache";
 
 type RefreshButtonProps = {
   onRefresh: () => void;
@@ -12,6 +13,13 @@ type RefreshButtonProps = {
   // "placings" — used only in the aria-label/title text.
   label: string;
   cooldownMs?: number;
+  // When this section's data was last known good — same "as of"
+  // timestamp eventCache.ts already tracks for the whole-page fallback
+  // notice, threaded down here so every RefreshButton can show its own
+  // freshness instead of leaving the cooldown bar as the only signal
+  // that this data isn't necessarily live. Omit to render the button
+  // with no adjoining label (a section that doesn't track one yet).
+  lastSyncedAt?: number | null;
 };
 
 /**
@@ -30,6 +38,7 @@ export default function RefreshButton({
   loading,
   label,
   cooldownMs = REFRESH_COOLDOWN_MS,
+  lastSyncedAt,
 }: RefreshButtonProps) {
   const [cooling, setCooling] = React.useState(false);
   // "full" (just clicked, bar at 100% with no transition yet) vs.
@@ -70,31 +79,38 @@ export default function RefreshButton({
   };
 
   return (
-    <div className="relative">
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={handleClick}
-        disabled={loading || cooling}
-        aria-label={`Check for updated ${label}`}
-        title={`Check for updated ${label}`}
-      >
-        ↻
-      </Button>
-      {cooling && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-1 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-white/10"
-        >
-          <div
-            className="h-full bg-brass-500"
-            style={{
-              width: barPhase === "full" ? "100%" : "0%",
-              transition: barPhase === "draining" ? `width ${cooldownMs}ms linear` : "none",
-            }}
-          />
-        </div>
+    <div className="flex items-center gap-2">
+      {lastSyncedAt != null && (
+        <span className="hidden text-xs text-text-tertiary sm:inline">
+          Synced {formatRelativeTime(lastSyncedAt)}
+        </span>
       )}
+      <div className="relative">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleClick}
+          disabled={loading || cooling}
+          aria-label={`Check for updated ${label}`}
+          title={`Check for updated ${label}`}
+        >
+          ↻
+        </Button>
+        {cooling && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-1 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-white/10"
+          >
+            <div
+              className="h-full bg-brass-500"
+              style={{
+                width: barPhase === "full" ? "100%" : "0%",
+                transition: barPhase === "draining" ? `width ${cooldownMs}ms linear` : "none",
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

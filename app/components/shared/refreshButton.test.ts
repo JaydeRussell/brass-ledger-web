@@ -28,3 +28,22 @@ test("disables the button while loading, even before any click", () => {
   assert.match(html, /aria-label="Check for updated placings"/);
   assert.match(html, /\sdisabled=""/);
 });
+
+test("shows no freshness label when lastSyncedAt is omitted", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(RefreshButton, { onRefresh: () => {}, loading: false, label: "pairings" })
+  );
+  assert.ok(!html.includes("Synced"));
+});
+
+test("shows a relative-time freshness label when lastSyncedAt is given", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(RefreshButton, {
+      onRefresh: () => {},
+      loading: false,
+      label: "pairings",
+      lastSyncedAt: Date.now() - 5 * 60 * 1000,
+    })
+  );
+  assert.match(html, /Synced 5 minutes ago/);
+});
