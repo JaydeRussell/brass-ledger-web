@@ -88,3 +88,18 @@ export async function removeFollow(eventId: string, follow: Followed): Promise<v
   );
   await handleJSONResponse(res);
 }
+
+/**
+ * How many distinct accounts follow each team/player within an event
+ * (see internal/api/sync.go's FollowCounts) — social proof ("6 people
+ * tracking"), not the signed-in account's own follows. Keyed exactly
+ * like followedKey above (`"team:<id>"`/`"player:<id>"`), so a caller
+ * already holding a Followed can look its count up directly:
+ * `counts[followedKey(entry)] ?? 0`.
+ */
+export async function fetchFollowCounts(eventId: string): Promise<Record<string, number>> {
+  const res = await fetch(`${BACKEND_API_BASE}/api/events/${encodeURIComponent(eventId)}/follow-counts`, {
+    credentials: "include",
+  });
+  return handleJSONResponse<Record<string, number>>(res);
+}

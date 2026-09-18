@@ -7,6 +7,10 @@ type TeamRosterProps = {
   players: Player[];
   onTrack?: () => void;
   tracked?: boolean;
+  // How many distinct accounts follow this team (see lib/follows.ts's
+  // fetchFollowCounts) — undefined (shown as nothing) until page.tsx's
+  // lazy Roster-tab fetch resolves, same as itcRankings below.
+  trackedCount?: number;
   // BCP's current flagship ITC ranking league id (see fetchCurrentItcLeagueId
   // in lib/bcp.ts) — used to build each player's profile link below.
   itcLeagueId?: string | null;
@@ -27,6 +31,7 @@ export default function TeamRoster({
   players,
   onTrack,
   tracked,
+  trackedCount,
   itcLeagueId,
   itcRankings,
 }: TeamRosterProps) {
@@ -44,18 +49,25 @@ export default function TeamRoster({
           </p>
         </div>
         {onTrack && (
-          <button
-            type="button"
-            onClick={onTrack}
-            title={tracked ? "Following this team's pairings" : "Follow this team's pairings"}
-            className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              tracked
-                ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
-                : "border-surface-border text-text-secondary hover:bg-surface-1"
-            }`}
-          >
-            {tracked ? "Following ✓" : "Follow"}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={onTrack}
+              title={tracked ? "Following this team's pairings" : "Follow this team's pairings"}
+              className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                tracked
+                  ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
+                  : "border-surface-border text-text-secondary hover:bg-surface-1"
+              }`}
+            >
+              {tracked ? "Following ✓" : "Follow"}
+            </button>
+            {Boolean(trackedCount) && (
+              <span className="text-[10px] text-text-tertiary">
+                {trackedCount} tracking
+              </span>
+            )}
+          </div>
         )}
       </div>
 
