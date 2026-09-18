@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.18.0",
+    date: "2026-09-17",
+    title: "A cross-event home page, public dossiers, and friending",
+    highlights: [
+      "The home page is now a dashboard instead of always opening straight into one event: your next (or currently in-progress) event, a friends summary, a quick look at your own record, and the events you've recently viewed. The old event view — Overview/Mine/Team/Roster/Pairings/Placings — didn't go anywhere, it just moved to its own page, reached from Home or My Events instead of being the first thing you see.",
+      "New: public player dossiers. Every linked account gets a shareable dossier page (name, best placings, faction breakdown) at its own link, visible to anyone by default, with a toggle on the Player Stats page to turn it off. A dossier also has a one-click \"check head-to-head\" shortcut and a \"Share\" button that copies a plain-text summary plus the link.",
+      "New: friending. Send a friend request from someone's dossier page; once accepted, see their upcoming events on the new Friends page (requests, your friends list, and each friend's own events on demand).",
+      "Roster cards now show how many people are tracking a team or player, next to the Follow button.",
+    ],
+  },
+  {
     version: "0.17.0",
     date: "2026-09-17",
     title: "A Team tab for singles events, and a home for feedback",
