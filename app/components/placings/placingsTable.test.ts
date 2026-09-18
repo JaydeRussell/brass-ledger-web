@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import PlacingsTable from "./placingsTable.tsx";
+import PlacingsTable, { sortEntries } from "./placingsTable.tsx";
 import type { MyPairing, PlacingEntry } from "../../lib/bcp.ts";
 
 const entries: PlacingEntry[] = [
@@ -265,10 +265,10 @@ test("highlights a followed row", () => {
   assert.ok(team2Row?.includes("bg-brass-500/10"));
 });
 
-// Just the enabled/disabled state, via SSR — PlacingsTable takes no
-// hooks itself, but useDelayedFlag(loading) inside it still means a real
-// click can't be simulated this way; see roundBoard.test.ts for the same
-// documented limitation.
+// Just the enabled/disabled state, via SSR — a real click (which would
+// exercise useDelayedFlag(loading) or the sort/expand state below) can't
+// be simulated this way; see roundBoard.test.ts for the same documented
+// limitation.
 test("the refresh button is enabled while idle and disabled while loading", () => {
   // See roundBoard.test.ts's equivalent test for why this matches the
   // literal `disabled=""` attribute, not just the substring "disabled"
@@ -285,4 +285,73 @@ test("the refresh button is enabled while idle and disabled while loading", () =
   const loadingButton =
     loading.match(/<button[^>]*aria-label="Check for updated placings"[^>]*>/)?.[0] ?? "";
   assert.match(loadingButton, /\sdisabled=""/);
+});
+
+// sortEntries is the pure logic behind the Name/Record column-sort
+// buttons — tested directly since the click that actually toggles
+// PlacingsTable's own sortKey/sortDir state can't be simulated without a
+// real DOM (see this file's other tests' own notes on that limitation).
+// The header buttons themselves — that they render, are keyboard-focusable
+// real <button>s, and are wired to onSort — are covered by the structural
+// test below; the resulting reorder-on-click is verified live.
+const unsorted: PlacingEntry[] = [
+  { id: "a", name: "Zeta", placing: 3, metrics: [{ name: "Wins", value: 1 }] },
+  { id: "b", name: "Alpha", placing: 1, metrics: [{ name: "Wins", value: 3 }] },
+  { id: "c", name: "Mid", placing: 2, metrics: [{ name: "Wins", value: 2 }] },
+];
+
+test("sortEntries: 'placing' returns the array as given (BCP's own published order)", () => {
+  const result = sortEntries(unsorted, "placing", 1);
+  assert.deepEqual(result.map((e) => e.id), ["a", "b", "c"]);
+});
+
+test("sortEntries: sorts by name, ascending or descending", () => {
+  assert.deepEqual(sortEntries(unsorted, "name", 1).map((e) => e.name), ["Alpha", "Mid", "Zeta"]);
+  assert.deepEqual(sortEntries(unsorted, "name", -1).map((e) => e.name), ["Zeta", "Mid", "Alpha"]);
+});
+
+test("sortEntries: sorts by a metric's numeric value", () => {
+  assert.deepEqual(sortEntries(unsorted, "Wins", 1).map((e) => e.id), ["a", "c", "b"]);
+  assert.deepEqual(sortEntries(unsorted, "Wins", -1).map((e) => e.id), ["b", "c", "a"]);
+});
+
+test("sortEntries: doesn't mutate the array it was given", () => {
+  const original = [...unsorted];
+  sortEntries(unsorted, "name", 1);
+  assert.deepEqual(unsorted, original);
+});
+
+test("Name and Record headers render as real, focusable buttons (keyboard-operable), and Name is sticky", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries, loading: false, error: null, onRefresh: noop })
+  );
+  assert.match(html, /<button[^>]*>Name<span/);
+  assert.match(html, /<button[^>]*>Record<span/);
+  // The Name header cell carries the sticky-left classes; its column
+  // doesn't scroll out of view along with the metric columns.
+  const headerRow = html.slice(html.indexOf("<thead"), html.indexOf("</thead>"));
+  const nameCell = headerRow.split("<th").find((c) => c.includes(">Name"));
+  assert.ok(nameCell?.includes("sticky"));
+  assert.ok(nameCell?.includes("left-0"));
+});
+
+test("an expandable row is keyboard-operable (role=button, tabIndex, aria-expanded)", () => {
+  const expandableEntries: PlacingEntry[] = [
+    {
+      id: "t1",
+      name: "Team One",
+      placing: 1,
+      metrics: [
+        { name: "Wins", value: 3 },
+        { name: "Battle Points", value: 91 },
+      ],
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: expandableEntries, loading: false, error: null, onRefresh: noop })
+  );
+  const row = html.slice(html.indexOf("<tbody"));
+  assert.match(row, /role="button"/);
+  assert.match(row, /tabIndex="?0"?|tabindex="0"/);
+  assert.match(row, /aria-expanded="false"/);
 });

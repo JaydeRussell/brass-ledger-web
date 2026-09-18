@@ -64,6 +64,24 @@ test("lists one row per round up to upToRound, published or not", () => {
   assert.match(html, /Not published yet/);
 });
 
+test("a round row with a team-pairing board to expand into carries aria-expanded", () => {
+  const pairings: MyPairing[] = [
+    {
+      round: 1,
+      published: true,
+      isDone: false,
+      opponentName: "Team Blue",
+      table: 4,
+      teamPairingId: "tp1",
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyPairings, { ...baseProps, pairings, upToRound: 1 })
+  );
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /role="button"/);
+});
+
 test("surfaces the opponent's faction, disposition, and list link on a published round row (roadmap #8)", () => {
   const pairings: MyPairing[] = [
     { round: 1, published: true, isDone: false, opponentName: "Rival", opponentUserId: "u-rival" },

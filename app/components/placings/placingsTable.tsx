@@ -128,14 +128,32 @@ function PlacingRow({
   return (
     <>
       <tr
+        role={canExpand ? "button" : undefined}
+        tabIndex={canExpand ? 0 : undefined}
         onClick={canExpand ? () => setExpanded((v) => !v) : undefined}
+        onKeyDown={
+          canExpand
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setExpanded((v) => !v);
+                }
+              }
+            : undefined
+        }
         aria-expanded={canExpand ? expanded : undefined}
         className={`border-t border-surface-border ${highlighted ? "bg-brass-500/10" : ""} ${
           canExpand ? "cursor-pointer" : ""
         }`}
       >
         <td className="px-2 py-1.5 text-text-secondary">{entry.placing ?? "—"}</td>
-        <td className="truncate px-2 py-1.5 font-medium text-text-primary">
+        {/* Sticky so the name stays on screen while scrolling a long
+            event's metric columns sideways on a phone — see roadmap
+            note on horizontal-scroll tables. A solid background (rather
+            than relying on the <tr>'s own translucent highlight tint
+            showing through) since a sticky cell paints in its own layer
+            above whatever scrolls underneath it. */}
+        <td className="sticky left-0 z-10 truncate bg-surface-1 px-2 py-1.5 font-medium text-text-primary">
           <PlayerStatsLink name={entry.name} bcpUserId={entry.bcpUserId} />
           {canExpand && (
             <span aria-hidden className="ml-1.5 text-xs text-text-tertiary">
@@ -203,6 +221,68 @@ function PlacingRow({
  * visible on a collapsed row; the rest (opponent win rate included) live
  * behind each row's own expand toggle (see orderMetricColumns/PlacingRow).
  */
+// "placing" is BCP's own published rank (the default, unsorted order);
+// "name" and a metric name are this table's own client-side sorts,
+// applied only to *display* order — each row's own "#" cell always
+// keeps showing its real BCP placing regardless of how the rows
+// underneath it are currently ordered.
+export type SortKey = "placing" | "name" | string;
+
+export function sortEntries(entries: PlacingEntry[], sortKey: SortKey, sortDir: 1 | -1): PlacingEntry[] {
+  if (sortKey === "placing") return entries;
+  const copy = [...entries];
+  copy.sort((a, b) => {
+    if (sortKey === "name") return sortDir * a.name.localeCompare(b.name);
+    const av = a.metrics.find((m) => m.name === sortKey)?.value ?? -Infinity;
+    const bv = b.metrics.find((m) => m.name === sortKey)?.value ?? -Infinity;
+    return sortDir * (av - bv);
+  });
+  return copy;
+}
+
+/** A clickable column header that toggles this table's sort — ascending
+ * on first click, descending on a second click of the same column,
+ * back to BCP's own published order on a third. A real <button>, not a
+ * <th onClick>, so it's keyboard-operable (Tab + Enter/Space) for free
+ * rather than needing its own key handler. */
+function SortableHeader({
+  label,
+  sortKey,
+  activeKey,
+  activeDir,
+  onSort,
+  align = "left",
+  className,
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeKey: SortKey;
+  activeDir: 1 | -1;
+  onSort: (key: SortKey) => void;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  const active = activeKey === sortKey;
+  return (
+    <th
+      className={`px-2 py-1.5 font-medium ${align === "right" ? "text-right" : "text-left"} ${className ?? ""}`}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-0.5 hover:text-text-primary ${
+          active ? "text-text-primary" : ""
+        }`}
+      >
+        {label}
+        <span aria-hidden className={`text-[10px] ${active ? "opacity-100" : "opacity-30"}`}>
+          {active && activeDir === -1 ? "▼" : "▲"}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 export default function PlacingsTable({
   entries,
   loading,
@@ -222,6 +302,24 @@ export default function PlacingsTable({
   // Pure over `entries` (no new prop threaded in from a caller) — see
   // computePlacingBadges' own doc comment.
   const badges = React.useMemo(() => computePlacingBadges(entries), [entries]);
+
+  const [sortKey, setSortKey] = React.useState<SortKey>("placing");
+  const [sortDir, setSortDir] = React.useState<1 | -1>(1);
+  const handleSort = (key: SortKey) => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir(1);
+    } else if (sortDir === 1) {
+      setSortDir(-1);
+    } else {
+      setSortKey("placing");
+      setSortDir(1);
+    }
+  };
+  const sortedEntries = React.useMemo(
+    () => sortEntries(entries, sortKey, sortDir),
+    [entries, sortKey, sortDir]
+  );
 
   return (
     <Card className="overflow-hidden shadow-sm">
@@ -267,17 +365,30 @@ export default function PlacingsTable({
               <thead>
                 <tr className="text-left text-xs text-text-secondary">
                   <th className="px-2 py-1.5 font-medium">#</th>
-                  <th className="px-2 py-1.5 font-medium">Name</th>
+                  <SortableHeader
+                    label="Name"
+                    sortKey="name"
+                    activeKey={sortKey}
+                    activeDir={sortDir}
+                    onSort={handleSort}
+                    className="sticky left-0 z-10 bg-surface-1"
+                  />
                   <th className="px-2 py-1.5 font-medium" aria-hidden />
                   {visibleMetricNames.map((name) => (
-                    <th key={name} className="px-2 py-1.5 text-right font-medium">
-                      {name === recordMetricName ? "Record" : name}
-                    </th>
+                    <SortableHeader
+                      key={name}
+                      label={name === recordMetricName ? "Record" : name}
+                      sortKey={name}
+                      activeKey={sortKey}
+                      activeDir={sortDir}
+                      onSort={handleSort}
+                      align="right"
+                    />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
+                {sortedEntries.map((entry) => (
                   <PlacingRow
                     key={entry.id}
                     entry={entry}
