@@ -257,6 +257,7 @@ export default function MyPairings({
                   <div
                     role={canExpand ? "button" : undefined}
                     tabIndex={canExpand ? 0 : undefined}
+                    aria-expanded={canExpand ? isExpanded : undefined}
                     onClick={canExpand && pairing ? () => toggleExpand(pairing) : undefined}
                     onKeyDown={
                       canExpand && pairing

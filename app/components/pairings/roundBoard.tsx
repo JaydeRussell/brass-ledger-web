@@ -295,6 +295,7 @@ export default function RoundBoard({
                   <div
                     role={canExpand ? "button" : undefined}
                     tabIndex={canExpand ? 0 : undefined}
+                    aria-expanded={canExpand ? isExpanded : undefined}
                     onClick={canExpand ? () => toggleExpand(entry) : undefined}
                     onKeyDown={
                       canExpand

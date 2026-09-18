@@ -122,6 +122,27 @@ test("lists every pairing, highlighting followed ones and showing scores", () =>
   assert.ok(aliceRow?.includes("border-brass-500/40"));
 });
 
+test("a team-event row (expandable into individual boards) carries aria-expanded", () => {
+  const entries: BoardPairing[] = [
+    {
+      id: "b1",
+      table: 1,
+      side1Id: "s1",
+      side1Name: "Team Alice",
+      side2Id: "s2",
+      side2Name: "Team Bob",
+      published: true,
+      isDone: false,
+      isBye: false,
+    },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(RoundBoard, { ...baseProps, entries, teamEvent: true })
+  );
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /role="button"/);
+});
+
 test("surfaces faction/disposition/list only for the followed side, not every row (roadmap #8)", () => {
   const entries: BoardPairing[] = [
     {
