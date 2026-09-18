@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { MyEvent } from "../../lib/myEvents";
 import { formatDateRange } from "../../lib/eventDates";
 import Card from "../ui/card";
+import EmptyState from "../shared/emptyState";
 
 /**
  * "Live now" for an event whose own date range covers this moment,
@@ -99,9 +100,15 @@ export default function EventList({
 }) {
   if (events.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
-        {emptyMessage}
-      </p>
+      <EmptyState
+        icon={
+          <svg aria-hidden viewBox="0 0 24 24" fill="none" className="h-7 w-7">
+            <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.4" />
+            <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+        }
+        message={emptyMessage}
+      />
     );
   }
 

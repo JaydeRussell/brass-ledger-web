@@ -6,6 +6,7 @@ import BcpProfileLinker from "./components/myEvents/bcpProfileLinker";
 import { formatCountdown } from "./components/myEvents/eventList";
 import { ordinal } from "./components/myEvents/playerStatsPanel";
 import AccessStatusMessage from "./components/shared/accessStatusMessage";
+import EmptyState from "./components/shared/emptyState";
 import Skeleton from "./components/shared/skeleton";
 import Card from "./components/ui/card";
 import PageHeader from "./components/layout/pageHeader";
@@ -65,18 +66,29 @@ function NextUpCard({ events }: { events: MyEvents | null }) {
   if (!next) {
     return (
       <Card className="p-4 shadow-sm">
-        <p className="text-sm font-semibold text-text-primary">Nothing on the horizon</p>
-        <p className="mt-1 text-sm text-text-secondary">
-          Nothing registered as upcoming yet.{" "}
-          <Link href="/calendar" className="text-brass-400 hover:underline">
-            Check the calendar
-          </Link>{" "}
-          or browse{" "}
-          <Link href="/my-events" className="text-brass-400 hover:underline">
-            My Events
-          </Link>
-          .
-        </p>
+        <EmptyState
+          icon={
+            <svg aria-hidden viewBox="0 0 24 24" fill="none" className="h-7 w-7">
+              <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          }
+          title="Nothing on the horizon"
+          message={
+            <>
+              Nothing registered as upcoming yet.{" "}
+              <Link href="/calendar" className="text-brass-400 hover:underline">
+                Check the calendar
+              </Link>{" "}
+              or browse{" "}
+              <Link href="/my-events" className="text-brass-400 hover:underline">
+                My Events
+              </Link>
+              .
+            </>
+          }
+          className="border-none p-0"
+        />
       </Card>
     );
   }

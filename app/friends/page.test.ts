@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NavProvider } from "../components/nav/navContext.tsx";
+import { ToastProvider } from "../components/shared/toastContext.tsx";
 
 // Same mocking approach as my-events/page.test.ts: this page leans on
 // lib/auth (real fetch on mount) and lib/friends, and renders FriendRow,
@@ -43,7 +44,9 @@ mock.module("next/navigation", {
 const { default: FriendsPage } = await import("./page.tsx");
 
 function renderPage(): string {
-  return renderToStaticMarkup(React.createElement(NavProvider, null, React.createElement(FriendsPage)));
+  return renderToStaticMarkup(
+    React.createElement(ToastProvider, null, React.createElement(NavProvider, null, React.createElement(FriendsPage)))
+  );
 }
 
 test("shows nothing but the header while the sign-in check is in flight", () => {

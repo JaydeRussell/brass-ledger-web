@@ -3,6 +3,7 @@ import React from "react";
 
 import FriendRow from "../components/myEvents/friendRow";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
+import EmptyState from "../components/shared/emptyState";
 import Button from "../components/ui/button";
 import Card from "../components/ui/card";
 import ErrorAlert from "../components/ui/errorAlert";
@@ -20,6 +21,7 @@ import {
   type IncomingFriendRequest,
 } from "../lib/friends";
 import { logClientEvent } from "../lib/clientLog";
+import { useToast } from "../components/shared/toastContext";
 
 /**
  * The signed-in account's own friends: incoming requests (accept/
@@ -32,6 +34,7 @@ import { logClientEvent } from "../lib/clientLog";
  */
 export default function FriendsPage() {
   const { user, checked } = useCurrentUser();
+  const { showToast } = useToast();
   useRedirectToLoginIfSignedOut(user, checked);
 
   const [requests, setRequests] = React.useState<IncomingFriendRequest[]>([]);
@@ -61,7 +64,7 @@ export default function FriendsPage() {
     load();
   }, [checked, user, load]);
 
-  const respond = async (id: number, action: "accept" | "decline") => {
+  const respond = async (id: number, name: string, action: "accept" | "decline") => {
     setRespondingTo(id);
     try {
       await (action === "accept" ? acceptFriendRequest(id) : declineFriendRequest(id));
@@ -70,26 +73,31 @@ export default function FriendsPage() {
       // appears), and this page is never opened often enough for a
       // full reload to be worth avoiding.
       load();
+      showToast(action === "accept" ? `You and ${name} are now friends.` : `Declined ${name}'s request.`, "success");
     } catch (err) {
       logClientEvent("warn", `friends: ${action} failed`, {
         error: err instanceof Error ? err.message : String(err),
       });
+      showToast(`Couldn't ${action} ${name}'s request — try again.`, "error");
     } finally {
       setRespondingTo(null);
     }
   };
 
   const handleRemoveFriend = (userId: number) => {
+    const name = friends.find((f) => f.userId === userId)?.name ?? "that friend";
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
-    removeFriend(userId).catch((err: unknown) => {
-      logClientEvent("warn", "friends: removing a friend failed", {
-        error: err instanceof Error ? err.message : String(err),
+    removeFriend(userId)
+      .then(() => showToast(`Removed ${name} from your friends.`, "info"))
+      .catch((err: unknown) => {
+        logClientEvent("warn", "friends: removing a friend failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        // Best-effort optimistic removal, same posture as follows sync
+        // (app/page.tsx's persistFollowChange) — a failure here just
+        // means the removal silently didn't take; re-opening this page
+        // later shows the real state either way.
       });
-      // Best-effort optimistic removal, same posture as follows sync
-      // (app/page.tsx's persistFollowChange) — a failure here just
-      // means the removal silently didn't take; re-opening this page
-      // later shows the real state either way.
-    });
   };
 
   return (
@@ -113,13 +121,17 @@ export default function FriendsPage() {
                     <li key={r.id} className="flex items-center justify-between gap-3">
                       <span className="truncate text-sm text-text-secondary">{r.name}</span>
                       <div className="flex shrink-0 gap-2">
-                        <Button size="sm" onClick={() => respond(r.id, "accept")} disabled={respondingTo === r.id}>
+                        <Button
+                          size="sm"
+                          onClick={() => respond(r.id, r.name, "accept")}
+                          disabled={respondingTo === r.id}
+                        >
                           Accept
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => respond(r.id, "decline")}
+                          onClick={() => respond(r.id, r.name, "decline")}
                           disabled={respondingTo === r.id}
                         >
                           Decline
@@ -134,12 +146,21 @@ export default function FriendsPage() {
             {loading ? (
               <p className="text-sm text-text-secondary">Loading…</p>
             ) : friends.length === 0 ? (
-              <Card className="p-4">
-                <p className="text-sm text-text-secondary">
-                  Not friends with anyone yet. Visit a player&apos;s public dossier page and use
-                  &ldquo;Add Friend&rdquo; there to send a request.
-                </p>
-              </Card>
+              <EmptyState
+                icon={
+                  <svg aria-hidden viewBox="0 0 24 24" fill="none" className="h-7 w-7">
+                    <circle cx="9" cy="8.5" r="3" stroke="currentColor" strokeWidth="1.4" />
+                    <path
+                      d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 8a2.5 2.5 0 1 1 0-5M20.5 19c0-2.3-1.6-4-3.7-4.7"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                }
+                title="Not friends with anyone yet"
+                message={"Visit a player's public dossier page and use “Add Friend” there to send a request."}
+              />
             ) : (
               <ul className="flex flex-col gap-2">
                 {friends.map((f) => (

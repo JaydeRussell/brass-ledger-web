@@ -16,6 +16,7 @@ import TabBar, { type TabKey } from "../components/tabs/tabBar";
 import FollowingPill from "../components/tabs/followingPill";
 import SearchBar from "../components/search/searchBar";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
+import RefreshButton from "../components/shared/refreshButton";
 import Button from "../components/ui/button";
 import Card from "../components/ui/card";
 import ErrorAlert from "../components/ui/errorAlert";
@@ -277,6 +278,17 @@ function HomeContent() {
   // a fallback shown after a failed refetch (see eventCache.ts). Null
   // only when there's truly nothing to show yet.
   const [dataAsOf, setDataAsOf] = React.useState<number | null>(null);
+  // Bumped by the page header's own RefreshButton (see refreshEventData
+  // below) to re-run the eventInfo/players fetch effect on demand — same
+  // "bump a key to force a manual re-run" shape as boardRefreshKey/
+  // placingsRefreshKey below, just for the data that underlies every tab
+  // (not one tab's own sub-fetch). refreshingEvent only disables that
+  // button/shows its cooldown bar; it deliberately doesn't touch `loading`
+  // (which gates the page's first-paint skeletons) so a manual refresh
+  // updates the already-visible content in place instead of flashing back
+  // to a loading state.
+  const [eventRefreshKey, setEventRefreshKey] = React.useState(0);
+  const [refreshingEvent, setRefreshingEvent] = React.useState(false);
   // BCP's current flagship ITC ranking league id, used to link each player
   // card to their already-published BCP ranking profile — see
   // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. Null until it
@@ -334,6 +346,10 @@ function HomeContent() {
   const [boardEntries, setBoardEntries] = React.useState<BoardPairing[]>([]);
   const [boardLoading, setBoardLoading] = React.useState(false);
   const [boardError, setBoardError] = React.useState<string | null>(null);
+  // When `boardEntries` was last successfully fetched — same "as of"
+  // purpose as the top-level dataAsOf, scoped to this one round's board.
+  // Fed to RoundBoard's RefreshButton via its lastSyncedAt prop.
+  const [boardDataAsOf, setBoardDataAsOf] = React.useState<number | null>(null);
   // Bumped by RoundBoard's "check for updates" button to re-run the fetch
   // effect below for the *same* round — changing boardRound alone wouldn't
   // retrigger it. No timer ever bumps this; see CLAUDE.md's no-polling rule.
@@ -348,6 +364,8 @@ function HomeContent() {
   const [placings, setPlacings] = React.useState<PlacingEntry[]>([]);
   const [placingsLoading, setPlacingsLoading] = React.useState(false);
   const [placingsError, setPlacingsError] = React.useState<string | null>(null);
+  // Same purpose as boardDataAsOf, for PlacingsTable's RefreshButton.
+  const [placingsDataAsOf, setPlacingsDataAsOf] = React.useState<number | null>(null);
   // Same purpose as boardRefreshKey, for PlacingsTable's refresh button.
   const [placingsRefreshKey, setPlacingsRefreshKey] = React.useState(0);
   const placingsRefreshRequestedRef = React.useRef(false);
@@ -479,6 +497,7 @@ function HomeContent() {
     // nice-to-have sync path.
     if (!user || user.status !== "approved") return;
     let cancelled = false;
+    setRefreshingEvent(true);
 
     Promise.all([fetchBcpEventInfo(eventId), fetchBcpPlayers(eventId)])
       .then(([info, playerList]) => {
@@ -532,14 +551,25 @@ function HomeContent() {
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshingEvent(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `user` intentionally excluded, see comment above
-  }, [eventId, hydrated]);
+  }, [eventId, hydrated, eventRefreshKey]);
+
+  // A direct user action (the page header's RefreshButton) — see
+  // RefreshButton's own doc comment for why this is a button rather than a
+  // timer, and refreshEventData's sibling refreshPlacings below for the
+  // same pattern scoped to one tab instead of the whole page.
+  const refreshEventData = () => {
+    setEventRefreshKey((k) => k + 1);
+  };
 
   // Looks up "my pairings" for every followed team/player whenever the
   // followed list or the event's published-round count changes. Purely a
@@ -872,6 +902,7 @@ function HomeContent() {
         if (!cancelled) {
           setBoardEntries(entries);
           setBoardError(null);
+          setBoardDataAsOf(Date.now());
         }
       })
       .catch((err) => {
@@ -906,6 +937,7 @@ function HomeContent() {
         if (!cancelled) {
           setPlacings(entries);
           setPlacingsError(null);
+          setPlacingsDataAsOf(Date.now());
         }
       })
       .catch((err) => {
@@ -1214,6 +1246,12 @@ function HomeContent() {
         hideSubtitleOnMobile
         actions={
           <>
+            <RefreshButton
+              onRefresh={refreshEventData}
+              loading={refreshingEvent}
+              label="event"
+              lastSyncedAt={dataAsOf}
+            />
             {following.map((entry) => (
               <FollowingPill
                 key={followedKey(entry)}
@@ -1494,6 +1532,7 @@ function HomeContent() {
                 rosterByTeamId={rosterByTeamId}
                 players={players}
                 myId={myPlayer ? (isTeamEvent ? myPlayer.teamPlayerId : String(myPlayer.id)) : undefined}
+                lastSyncedAt={boardDataAsOf}
                 emptyMessage={
                   searchQuery && boardEntries.length > 0
                     ? `No pairings match "${searchQuery}" in round ${boardRound}.`
@@ -1513,6 +1552,7 @@ function HomeContent() {
             followedIds={followedIds}
             rosterByTeamId={rosterByTeamId}
             roundScoresById={placingRoundScores}
+            lastSyncedAt={placingsDataAsOf}
             emptyMessage={
               searchQuery && placings.length > 0
                 ? `No placings match "${searchQuery}".`
