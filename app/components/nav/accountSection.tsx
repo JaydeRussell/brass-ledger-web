@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { googleSignInUrl, signOut, useCurrentUser } from "../../lib/auth";
 import { logClientEvent } from "../../lib/clientLog";
 import AccentThemePicker from "../ui/accentThemePicker";
+import ReduceMotionToggle from "../ui/reduceMotionToggle";
 
 /**
  * The signed-in-account bit of the nav drawer — sits at the top, above
@@ -35,6 +36,7 @@ export default function AccountSection() {
           Sign in with Google
         </a>
         <AccentThemePicker />
+        <ReduceMotionToggle />
       </div>
     );
   }
@@ -109,6 +111,7 @@ export default function AccountSection() {
         </button>
       </div>
       <AccentThemePicker account={{ accentTheme: user.accentTheme }} />
+      <ReduceMotionToggle />
     </div>
   );
 }
