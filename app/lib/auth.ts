@@ -40,6 +40,11 @@ export type CurrentUser = {
   // migration 0009) — the account-level counterpart to useAccentTheme()'s
   // localStorage fallback for a signed-out guest.
   accentTheme: AccentTheme;
+  // Whether this account's player dossier (migration 0014) is reachable
+  // by anyone at /players/[bcpUserId] — see app/lib/dossier.ts and
+  // components/myEvents/dossierVisibilityToggle.tsx, the only place this
+  // is changed. Defaults to true (visible) for every account.
+  dossierPublic: boolean;
 };
 
 /**

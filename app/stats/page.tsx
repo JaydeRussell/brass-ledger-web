@@ -2,6 +2,7 @@
 import React from "react";
 
 import BcpProfileLinker from "../components/myEvents/bcpProfileLinker";
+import DossierVisibilityToggle from "../components/myEvents/dossierVisibilityToggle";
 import PlayerStatsPanel from "../components/myEvents/playerStatsPanel";
 import AccessStatusMessage from "../components/shared/accessStatusMessage";
 import Card from "../components/ui/card";
@@ -62,6 +63,13 @@ export default function StatsPage() {
                 Change profile
               </button>
             </div>
+            <Card className="p-4">
+              <DossierVisibilityToggle
+                bcpUserId={bcpUserId}
+                dossierPublic={user.dossierPublic}
+                onChange={(dossierPublic) => setUser((prev) => (prev ? { ...prev, dossierPublic } : prev))}
+              />
+            </Card>
             <PlayerStatsPanel bcpUserId={bcpUserId} />
           </>
         )}
