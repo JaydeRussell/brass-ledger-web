@@ -547,7 +547,13 @@ function HomeContent() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load event data");
+          // A generic fallback, not "Failed to load event data" — this
+          // always renders after an existing "Couldn't load event data:"
+          // prefix, so a fallback that repeats "load event data" read as
+          // a stutter (same fix applied to every other fallback string
+          // in this file that pairs with its own "Couldn't load X:"
+          // prefix elsewhere in the JSX below).
+          setError(err instanceof Error ? err.message : "an unknown error");
         }
       })
       .finally(() => {
@@ -606,7 +612,7 @@ function HomeContent() {
               label: entry.label,
               pairings: prev[key]?.pairings ?? [],
               loading: false,
-              error: err instanceof Error ? err.message : "Failed to load pairings",
+              error: err instanceof Error ? err.message : "an unknown error",
             },
           }));
         });
@@ -680,7 +686,7 @@ function HomeContent() {
               label: teammate.name,
               pairings: prev[key]?.pairings ?? [],
               loading: false,
-              error: err instanceof Error ? err.message : "Failed to load pairings",
+              error: err instanceof Error ? err.message : "an unknown error",
             },
           }));
         });
@@ -736,7 +742,7 @@ function HomeContent() {
         setMyPairingState({
           pairing: null,
           loading: false,
-          error: err instanceof Error ? err.message : "Failed to load your round",
+          error: err instanceof Error ? err.message : "an unknown error",
         });
       });
 
@@ -907,7 +913,7 @@ function HomeContent() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setBoardError(err instanceof Error ? err.message : "Failed to load round");
+          setBoardError(err instanceof Error ? err.message : "an unknown error");
         }
       })
       .finally(() => {
@@ -942,7 +948,7 @@ function HomeContent() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setPlacingsError(err instanceof Error ? err.message : "Failed to load placings");
+          setPlacingsError(err instanceof Error ? err.message : "an unknown error");
         }
       })
       .finally(() => {
@@ -1327,6 +1333,11 @@ function HomeContent() {
           />
         )}
 
+        {/* Keyed on activeTab so switching tabs remounts this subtree and
+            replays the fade-in (see globals.css) instead of a hard cut —
+            SearchBar above stays outside it since it's shared chrome, not
+            per-tab content. */}
+        <div key={activeTab} className="animate-fade-in flex flex-col gap-6">
         {activeTab === "overview" && <OverviewPanel eventInfo={eventInfo} />}
 
         {activeTab === "mine" && (
@@ -1560,6 +1571,7 @@ function HomeContent() {
             }
           />
         )}
+        </div>
           </PageMain>
         </>
       )}

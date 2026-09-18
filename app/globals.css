@@ -244,6 +244,29 @@ body {
   display: none;
 }
 
+/* A quiet fade-in for a skeleton resolving into real content, or a tab's
+   content mounting after a switch (paired with React's `key` prop so
+   switching tabs remounts the subtree and replays this) — CSS-only, no
+   animation library, same "plain Tailwind, no extra dependency" posture
+   as Skeleton/Spinner. Disabled outright under prefers-reduced-motion
+   rather than just shortened, per that setting's own intent. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
 /* ---------------------------------------------------------------------
  * Print
  *
