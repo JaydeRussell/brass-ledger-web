@@ -22,6 +22,7 @@ import {
   type IncomingFriendRequest,
 } from "./lib/friends";
 import { loadRecentEvents, fetchRecentEventsFromServer, type RecentEvent } from "./lib/recentEvents";
+import { useHiddenDashboardCards } from "./lib/dashboardCards";
 import { formatDateRange } from "./lib/eventDates";
 import { logClientEvent } from "./lib/clientLog";
 
@@ -122,6 +123,25 @@ function NextUpCard({ events }: { events: MyEvents | null }) {
   );
 }
 
+/** The small "×" a dismissible dashboard card shows next to its own
+ * title (see useHiddenDashboardCards in lib/dashboardCards.ts) — one
+ * shared button so all three cards' dismiss controls look and behave
+ * identically, same "×" glyph SearchBar's own clear button already
+ * uses elsewhere in the app. */
+function DismissCardButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Hide this card"
+      title="Hide this card"
+      className="shrink-0 rounded-full p-1 text-sm leading-none text-text-tertiary hover:bg-surface-2 hover:text-text-primary"
+    >
+      ×
+    </button>
+  );
+}
+
 // --- Friends -----------------------------------------------------------
 //
 // Deliberately just counts here — not "which friends have an event
@@ -137,14 +157,19 @@ function NextUpCard({ events }: { events: MyEvents | null }) {
 function FriendsCard({
   requests,
   friends,
+  onHide,
 }: {
   requests: IncomingFriendRequest[] | null;
   friends: Friend[] | null;
+  onHide?: () => void;
 }) {
   const loading = requests === null || friends === null;
   return (
     <Card className="p-4 shadow-sm">
-      <p className="text-sm font-semibold text-text-primary">Friends</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-text-primary">Friends</p>
+        {onHide && <DismissCardButton onClick={onHide} />}
+      </div>
       {loading ? (
         <Skeleton className="mt-2 h-4 w-32" />
       ) : (
@@ -174,11 +199,18 @@ function FriendsCard({
 // badge, no faction breakdown, no trend chart. See /stats' own
 // PlayerStatsPanel for the full picture this links out to.
 
-function RecordCard({ stats }: { stats: MyStats | null }) {
+function RecordCard({ stats, onHide }: { stats: MyStats | null; onHide?: () => void }) {
+  const header = (
+    <div className="flex items-start justify-between gap-2">
+      <p className="text-sm font-semibold text-text-primary">Your record</p>
+      {onHide && <DismissCardButton onClick={onHide} />}
+    </div>
+  );
+
   if (stats === null) {
     return (
       <Card className="p-4 shadow-sm">
-        <p className="text-sm font-semibold text-text-primary">Your record</p>
+        {header}
         <Skeleton className="mt-2 h-10 w-full" />
       </Card>
     );
@@ -187,7 +219,7 @@ function RecordCard({ stats }: { stats: MyStats | null }) {
   if (!stats.linked || stats.totalEvents === 0) {
     return (
       <Card className="p-4 shadow-sm">
-        <p className="text-sm font-semibold text-text-primary">Your record</p>
+        {header}
         <p className="mt-1 text-sm text-text-secondary">
           No concluded events yet — this fills in once Best Coast Pairings has a final placing for
           one of yours.
@@ -200,7 +232,7 @@ function RecordCard({ stats }: { stats: MyStats | null }) {
 
   return (
     <Card className="p-4 shadow-sm">
-      <p className="text-sm font-semibold text-text-primary">Your record</p>
+      {header}
       <div className="mt-2 grid grid-cols-3 gap-1 overflow-hidden rounded-md border border-surface-border">
         <div className="bg-surface-2 px-2 py-2 text-center">
           <div className="text-base font-semibold text-text-primary tabular-nums">{stats.totalEvents}</div>
@@ -231,11 +263,14 @@ function RecordCard({ stats }: { stats: MyStats | null }) {
 // on the /event page itself, invisible until you're already looking at
 // some other event. Elevating it here costs nothing new to fetch.
 
-function JumpBackInCard({ events }: { events: RecentEvent[] }) {
+function JumpBackInCard({ events, onHide }: { events: RecentEvent[]; onHide?: () => void }) {
   if (events.length === 0) return null;
   return (
     <Card className="p-4 shadow-sm">
-      <p className="text-sm font-semibold text-text-primary">Jump back in</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-text-primary">Jump back in</p>
+        {onHide && <DismissCardButton onClick={onHide} />}
+      </div>
       <ul className="mt-2 flex flex-col divide-y divide-surface-border">
         {events.slice(0, 5).map((event) => (
           <li key={event.id}>
@@ -282,6 +317,7 @@ function HomeContent() {
   const [friendRequests, setFriendRequests] = React.useState<IncomingFriendRequest[] | null>(null);
   const [friends, setFriends] = React.useState<Friend[] | null>(null);
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
+  const { hidden: hiddenCards, hide: hideCard, showAll: showAllCards } = useHiddenDashboardCards();
 
   // Friends + recent events need no linked BCP profile at all — fetched
   // as soon as there's an approved session, same gating every other
@@ -384,12 +420,34 @@ function HomeContent() {
               <NextUpCard events={events} />
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FriendsCard requests={friendRequests} friends={friends} />
-              {bcpUserId && <RecordCard stats={stats} />}
-            </div>
+            {(!hiddenCards.has("friends") || (bcpUserId && !hiddenCards.has("record"))) && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {!hiddenCards.has("friends") && (
+                  <FriendsCard
+                    requests={friendRequests}
+                    friends={friends}
+                    onHide={() => hideCard("friends")}
+                  />
+                )}
+                {bcpUserId && !hiddenCards.has("record") && (
+                  <RecordCard stats={stats} onHide={() => hideCard("record")} />
+                )}
+              </div>
+            )}
 
-            <JumpBackInCard events={recentEvents} />
+            {!hiddenCards.has("jumpBackIn") && (
+              <JumpBackInCard events={recentEvents} onHide={() => hideCard("jumpBackIn")} />
+            )}
+
+            {hiddenCards.size > 0 && (
+              <button
+                type="button"
+                onClick={showAllCards}
+                className="self-start text-xs font-medium text-text-tertiary hover:text-text-secondary hover:underline"
+              >
+                {hiddenCards.size} card{hiddenCards.size === 1 ? "" : "s"} hidden — Show all
+              </button>
+            )}
           </div>
         )}
       </PageMain>
