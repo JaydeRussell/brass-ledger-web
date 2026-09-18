@@ -98,7 +98,7 @@ function NextUpCard({ events }: { events: MyEvents | null }) {
   const countdown = formatCountdown(event.startDate, event.endDate);
 
   return (
-    <Card className="border-brass-500/40 p-4 shadow-sm ring-1 ring-brass-500/20">
+    <Card className="animate-fade-in border-brass-500/40 p-4 shadow-sm ring-1 ring-brass-500/20">
       <p className="text-xs font-semibold uppercase tracking-wide text-brass-500">
         {live ? "Happening now" : "Next up"}
       </p>

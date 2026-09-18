@@ -187,7 +187,11 @@ export default function MyPairings({
           ...prev,
           [round]: {
             loading: false,
-            error: err instanceof Error ? err.message : "Failed to load boards",
+            // A generic fallback, not "Failed to load boards" — this
+            // always renders after an existing "Couldn't load boards:"
+            // prefix (see the render below), so a fallback that repeats
+            // "load boards" read as a stutter.
+            error: err instanceof Error ? err.message : "an unknown error",
             matchups: [],
           },
         }));

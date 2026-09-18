@@ -187,7 +187,11 @@ export default function RoundBoard({
           ...prev,
           [entry.id]: {
             loading: false,
-            error: err instanceof Error ? err.message : "Failed to load boards",
+            // A generic fallback, not "Failed to load boards" — this
+            // always renders after an existing "Couldn't load boards:"
+            // prefix (see the render below), so a fallback that repeats
+            // "load boards" read as a stutter.
+            error: err instanceof Error ? err.message : "an unknown error",
             matchups: [],
           },
         }));
@@ -260,7 +264,7 @@ export default function RoundBoard({
         )}
 
         {!error && !loading && entries.length > 0 && (
-          <ul className="flex flex-col gap-1.5">
+          <ul className="animate-fade-in flex flex-col gap-1.5">
             {entries.map((entry) => {
               const side1Followed = Boolean(entry.side1Id && followedIds?.has(entry.side1Id));
               const side2Followed = Boolean(entry.side2Id && followedIds?.has(entry.side2Id));

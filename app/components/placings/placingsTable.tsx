@@ -360,7 +360,7 @@ export default function PlacingsTable({
         )}
 
         {!error && !loading && entries.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="animate-fade-in overflow-x-auto">
             <table className="w-full min-w-[28rem] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs text-text-secondary">
