@@ -1,5 +1,6 @@
 "use client";
 import React, { Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Card from "../components/ui/card";
@@ -64,19 +65,49 @@ function LoginContent() {
 
       <PageMain>
         {!checked || user ? null : (
-          <Card className="p-6 text-center shadow-sm">
-            <p className="mb-4 text-sm text-text-secondary">
-              Sign in with Google to continue. New here? You&apos;ll be walked through
-              connecting your Best Coast Pairings profile right after — same button either
-              way.
-            </p>
-            <a
-              href={googleSignInUrl(returnTo)}
-              className="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-1"
-            >
-              Continue with Google
-            </a>
-          </Card>
+          <>
+            <Card className="p-6 text-center shadow-sm">
+              <p className="mb-4 text-sm text-text-secondary">
+                Sign in with Google to continue. New here? You&apos;ll be walked through
+                connecting your Best Coast Pairings profile right after — same button either
+                way.
+              </p>
+              <a
+                href={googleSignInUrl(returnTo)}
+                className="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-1"
+              >
+                Continue with Google
+              </a>
+            </Card>
+
+            {/* A short "what you get" list — the only pitch this page
+                makes beyond the sign-in button itself, kept to real
+                shipped features rather than screenshots/marketing copy,
+                matching the rest of this app's plain, text-first style
+                (see about.tsx's own restrained tone). */}
+            <Card className="p-4">
+              <h2 className="mb-2 text-sm font-semibold text-text-primary">What you get</h2>
+              <ul className="flex flex-col gap-1.5 text-sm text-text-secondary">
+                <li>Live rosters, published pairings, and placings for any BCP event</li>
+                <li>Your own event history, stats, and a public player dossier to share</li>
+                <li>Friending, to see who else you know is at an event</li>
+                <li>
+                  A 40k mission/rules{" "}
+                  <Link href="/wiki" className="text-brass-400 hover:underline">
+                    wiki
+                  </Link>{" "}
+                  — no sign-in needed for that part
+                </li>
+              </ul>
+              <p className="mt-3 text-xs text-text-tertiary">
+                Not ready to sign in?{" "}
+                <Link href="/about" className="text-brass-400 hover:underline">
+                  Read more about Brass Ledger
+                </Link>
+                .
+              </p>
+            </Card>
+          </>
         )}
       </PageMain>
     </div>

@@ -55,6 +55,18 @@ test("shows a single Continue-with-Google button once checked and signed out", (
   assert.equal((html.match(/Continue with Google/g) ?? []).length, 1);
 });
 
+test("shows a real (not marketing-fluff) list of shipped features, and links out for someone not ready to sign in", () => {
+  authState = { user: null, checked: true, setUser: () => {} };
+  searchParamsValue = new URLSearchParams();
+  const html = renderPage();
+  assert.match(html, /What you get/);
+  assert.match(html, /published pairings/);
+  assert.match(html, /public player dossier/);
+  assert.match(html, /Friending/);
+  assert.match(html, /href="\/wiki"/);
+  assert.match(html, /href="\/about"/);
+});
+
 test("carries a safe return_to through to the Google sign-in URL", () => {
   authState = { user: null, checked: true, setUser: () => {} };
   searchParamsValue = new URLSearchParams({ return_to: "/stats" });
