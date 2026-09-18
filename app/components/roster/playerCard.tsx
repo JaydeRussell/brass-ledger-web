@@ -12,6 +12,10 @@ type PlayerCardProps = {
   player: Player;
   onTrack?: () => void;
   tracked?: boolean;
+  // How many distinct accounts follow this player (see lib/follows.ts's
+  // fetchFollowCounts) — undefined (shown as nothing) until page.tsx's
+  // lazy Roster-tab fetch resolves, same as itcRanking below.
+  trackedCount?: number;
   // BCP's current flagship ITC ranking league id (see fetchCurrentItcLeagueId
   // in lib/bcp.ts) — used to build the profile link below.
   itcLeagueId?: string | null;
@@ -29,7 +33,7 @@ type PlayerCardProps = {
  * Same "no scoring or ranking" scope as TeamRoster — see the note in
  * types/player.d.ts.
  */
-export default function PlayerCard({ player, onTrack, tracked, itcLeagueId, itcRanking }: PlayerCardProps) {
+export default function PlayerCard({ player, onTrack, tracked, trackedCount, itcLeagueId, itcRanking }: PlayerCardProps) {
   return (
     <div
       className={`flex items-center gap-3 overflow-hidden rounded-lg border bg-surface-1 p-3 shadow-sm ${
@@ -46,18 +50,25 @@ export default function PlayerCard({ player, onTrack, tracked, itcLeagueId, itcR
         <SharedPlayerCard player={player} ranking={itcRanking} itcLeagueId={itcLeagueId} size="sm" />
       </div>
       {onTrack && (
-        <button
-          type="button"
-          onClick={onTrack}
-          title={tracked ? "Following this player's pairings" : "Follow this player's pairings"}
-          className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-            tracked
-              ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
-              : "border-surface-border text-text-secondary hover:bg-surface-2"
-          }`}
-        >
-          {tracked ? "Following ✓" : "Follow"}
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <button
+            type="button"
+            onClick={onTrack}
+            title={tracked ? "Following this player's pairings" : "Follow this player's pairings"}
+            className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              tracked
+                ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
+                : "border-surface-border text-text-secondary hover:bg-surface-2"
+            }`}
+          >
+            {tracked ? "Following ✓" : "Follow"}
+          </button>
+          {Boolean(trackedCount) && (
+            <span className="text-[10px] text-text-tertiary">
+              {trackedCount} tracking
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

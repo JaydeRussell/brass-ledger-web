@@ -47,7 +47,7 @@ import {
   recordRecentEventOnServer,
   type RecentEvent,
 } from "./lib/recentEvents";
-import { fetchFollows, addFollow, removeFollow, followedKey, type Followed } from "./lib/follows";
+import { fetchFollows, fetchFollowCounts, addFollow, removeFollow, followedKey, type Followed } from "./lib/follows";
 import { loadCachedEvent, saveCachedEvent, formatRelativeTime } from "./lib/eventCache";
 import { useCurrentUser } from "./lib/auth";
 import { logClientEvent } from "./lib/clientLog";
@@ -357,6 +357,14 @@ function HomeContent() {
   // PlacingsTable falls back to BCP's own aggregate metric instead of
   // surfacing an error of its own.
   const [placingRoundScores, setPlacingRoundScores] = React.useState<Map<string, MyPairing[]>>(new Map());
+
+  // How many distinct accounts follow each team/player in this event —
+  // social proof shown alongside the Follow button on Roster, keyed
+  // exactly like followedKey (see lib/follows.ts's fetchFollowCounts).
+  // Fetched lazily (only once the Roster tab is actually opened), same
+  // "fetch only what's needed" reasoning as placings/placingRoundScores
+  // above — see the effect below.
+  const [trackedCounts, setTrackedCounts] = React.useState<Record<string, number>>({});
 
   // Client-only hydration from localStorage, run exactly once right after
   // mount — see the comment on `eventId`'s initial state above for why
@@ -942,6 +950,29 @@ function HomeContent() {
     };
   }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
 
+  // "N people tracking this" social proof — only once the Roster tab is
+  // actually opened (same "fetch only what's needed" gating as the two
+  // effects above), and only for a signed-in approved account, since the
+  // backend route needs one regardless. Fails quietly: the Follow
+  // button itself doesn't depend on this, so a failure here just leaves
+  // every count unshown rather than surfacing a second error.
+  useEffect(() => {
+    if (activeTab !== "roster" || !user || user.status !== "approved") return;
+    let cancelled = false;
+    fetchFollowCounts(eventId)
+      .then((counts) => {
+        if (!cancelled) setTrackedCounts(counts);
+      })
+      .catch((err: unknown) => {
+        logClientEvent("warn", "fetching follow counts failed, leaving counts unshown", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, eventId, user]);
+
   const teams = useMemo(() => groupByTeam(players), [players]);
 
   const isFollowing = (key: string) => following.some((f) => followedKey(f) === key);
@@ -1067,6 +1098,7 @@ function HomeContent() {
     setPlacings([]);
     setPlacingsError(null);
     setPlacingRoundScores(new Map());
+    setTrackedCounts({});
   };
 
   const changeBoardRound = (round: number) => {
@@ -1372,17 +1404,21 @@ function HomeContent() {
                 </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {filteredTeamNames.map((team) => (
-                    <TeamRoster
-                      key={team}
-                      teamName={team}
-                      players={teams.get(team) ?? []}
-                      onTrack={() => toggleFollowTeam(team)}
-                      tracked={teamFollowedRank(team) !== undefined}
-                      itcLeagueId={itcLeagueId}
-                      itcRankings={itcRankings}
-                    />
-                  ))}
+                  {filteredTeamNames.map((team) => {
+                    const teamPlayerId = teams.get(team)?.[0]?.teamPlayerId;
+                    return (
+                      <TeamRoster
+                        key={team}
+                        teamName={team}
+                        players={teams.get(team) ?? []}
+                        onTrack={() => toggleFollowTeam(team)}
+                        tracked={teamFollowedRank(team) !== undefined}
+                        trackedCount={teamPlayerId ? trackedCounts[`team:${teamPlayerId}`] : undefined}
+                        itcLeagueId={itcLeagueId}
+                        itcRankings={itcRankings}
+                      />
+                    );
+                  })}
                 </div>
               )
             ) : sortedPlayers.length === 0 ? (
@@ -1401,6 +1437,7 @@ function HomeContent() {
                     player={player}
                     onTrack={() => toggleFollowPlayer(player)}
                     tracked={playerFollowedRank(player) !== undefined}
+                    trackedCount={trackedCounts[`player:${player.id}`]}
                     itcLeagueId={itcLeagueId}
                     itcRanking={player.bcpUserId ? itcRankings[player.bcpUserId] : undefined}
                   />
