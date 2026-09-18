@@ -23,6 +23,19 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.0",
+    date: "2026-09-18",
+    title: "Player compare, a mobile tab bar, and a UI/UX modernization pass",
+    highlights: [
+      "Keyboard and screen-reader polish across the app: every button, link, and expandable row now shows a clear focus ring when tabbing through with a keyboard (there wasn't one before), the ⌘K quick switcher properly announces its highlighted result to screen readers, and action confirmations that used to happen silently (accepting a friend request, saving a share image) now show a toast.",
+      "Placings can be sorted by clicking the Name or Record column header — click again to reverse, a third click goes back to Best Coast Pairings' own published order — and the player name now stays on screen while scrolling a long event's other columns sideways on a phone.",
+      "New: compare two players side by side on a singles event's Roster tab (⇄ Compare two players), the same way team events could already compare two teams.",
+      "New: a bottom tab bar (Home / My Events / Search) on phone-width screens — the app's actual most common use case, mid-event on a phone, without reaching up for the hamburger menu.",
+      "Home's Friends/Your record/Jump back in cards can each be hidden with a small ×, with a \"Show all\" link to bring them back — a per-browser preference for trimming Home down to what you actually use.",
+      "New: a \"Save image\" button on public dossier pages (alongside the existing text-copy Share button) generates a downloadable share-card image matching your chosen accent theme, and a new Reduce Motion toggle in the nav drawer's account section turns off this app's animations regardless of your system-wide setting.",
+    ],
+  },
+  {
     version: "0.18.0",
     date: "2026-09-17",
     title: "A cross-event home page, public dossiers, and friending",
