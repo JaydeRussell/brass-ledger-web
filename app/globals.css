@@ -232,6 +232,30 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* A deliberate, app-wide focus ring — nothing in this app styled focus
+   at all before this (every button/link/custom tabIndex row relied on
+   whatever the browser's own unstyled default happened to be), found
+   auditing focus/contrast across the 11 accent themes. One rule at
+   :root level covers every focusable element automatically (real
+   <button>/<a>/<input>, and every custom `role="button" tabIndex={0}`
+   row like RoundBoard/MyPairings/PlacingsTable's expandable rows) —
+   :focus-visible only, not plain :focus, so a mouse click never shows
+   it, only real keyboard navigation.
+
+   `--brass-400` is a safe accent for this specifically because of a
+   guarantee globals.css's own accent-theme block above already
+   establishes: every one of the 11 ramps keeps the *exact same
+   lightness* at each stop as brass, varying only hue/chroma (the same
+   fact button.tsx's primary variant already leans on for its own fixed
+   dark text). --brass-400 sits at L=0.75 against this app's darkest
+   surfaces at L=0.16–0.27, a gap wide enough to clear WCAG's 3:1
+   non-text contrast minimum for every theme by construction, not
+   something that needs checking one accent at a time. */
+:focus-visible {
+  outline: 2px solid var(--brass-400);
+  outline-offset: 2px;
+}
+
 /* Hides the scrollbar on an explicitly horizontally-scrollable strip
    (the tab bar on a narrow phone) without hiding the ability to scroll
    it — a visible scrollbar there reads as a broken layout rather than
@@ -261,10 +285,28 @@ body {
 .animate-fade-in {
   animation: fade-in 200ms ease-out;
 }
+
+/* Both the OS-level media query AND this app's own explicit "Reduce
+   motion" toggle (nav drawer → account section, see lib/motionPrefs.ts)
+   disable it — the toggle exists specifically for a visitor the OS
+   setting doesn't cover (a shared machine, or just a per-app
+   preference), so it has to be checked everywhere the media query is.
+   Covers Tailwind's own animate-pulse/animate-spin too (Skeleton/
+   Spinner) — Tailwind doesn't honor prefers-reduced-motion on those by
+   default, but a continuously-animating loading indicator is exactly
+   the kind of motion this preference is meant to quiet, not just this
+   file's own one-shot fade. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in {
+  .animate-fade-in,
+  .animate-pulse,
+  .animate-spin {
     animation: none;
   }
+}
+:root[data-reduce-motion="true"] .animate-fade-in,
+:root[data-reduce-motion="true"] .animate-pulse,
+:root[data-reduce-motion="true"] .animate-spin {
+  animation: none;
 }
 
 /* ---------------------------------------------------------------------

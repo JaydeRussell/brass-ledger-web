@@ -15,6 +15,19 @@ function matches(label: string, query: string): boolean {
   return label.toLowerCase().includes(query.trim().toLowerCase());
 }
 
+// Gives the input's aria-activedescendant something stable to point at —
+// part of the ARIA combobox pattern this palette otherwise lacked:
+// arrow-key navigation moved a purely visual highlight (the
+// bg-brass-500/15 className below) with no ARIA wiring connecting it to
+// the input, so a screen reader user got no announcement of which
+// result was selected. DOM focus deliberately stays on the input the
+// whole time (this is the standard combobox pattern, not a bug) —
+// aria-activedescendant + role="option"/aria-selected is what makes that
+// virtual selection perceivable non-visually.
+function optionId(result: Result): string {
+  return `cmdk-option-${result.key}`;
+}
+
 /**
  * A ⌘K/Ctrl+K quick switcher — jump straight to a static page or a
  * recently-viewed event without going through the nav drawer. Scoped
@@ -137,6 +150,10 @@ export default function CommandPalette() {
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="command-palette-listbox"
+          aria-activedescendant={results[clampedIndex] ? optionId(results[clampedIndex]) : undefined}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -159,14 +176,19 @@ export default function CommandPalette() {
           className="w-full rounded-t-lg border-b border-surface-border bg-transparent px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none"
         />
 
-        <ul className="max-h-80 overflow-y-auto p-1.5">
+        <ul id="command-palette-listbox" role="listbox" aria-label="Search results" className="max-h-80 overflow-y-auto p-1.5">
           {results.length === 0 && (
-            <li className="px-2 py-3 text-center text-sm text-text-tertiary">No matches.</li>
+            <li role="presentation" className="px-2 py-3 text-center text-sm text-text-tertiary">
+              No matches.
+            </li>
           )}
           {results.map((result, i) => (
-            <li key={result.key}>
+            <li key={result.key} role="presentation">
               <button
                 type="button"
+                id={optionId(result)}
+                role="option"
+                aria-selected={i === clampedIndex}
                 onClick={() => activate(result)}
                 onMouseEnter={() => setHighlightedIndex(i)}
                 className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm ${

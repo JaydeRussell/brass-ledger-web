@@ -51,6 +51,12 @@ export const metadata: Metadata = {
 // resolve here — `dark` styling is just globals.css's `:root` values.
 const ACCENT_INIT_SCRIPT = `(function(){try{var a=localStorage.getItem("accentTheme");if(a)document.documentElement.setAttribute("data-accent",a);}catch(e){}})();`;
 
+// Same reasoning as ACCENT_INIT_SCRIPT above (and the same "standalone
+// duplicate, not imported" constraint — lib/motionPrefs.ts has hooks in
+// it, and this file is a Server Component, so importing anything from
+// that module here breaks the build) for the "Reduce motion" preference.
+const REDUCE_MOTION_INIT_SCRIPT = `(function(){try{if(localStorage.getItem("reduceMotion")==="1")document.documentElement.setAttribute("data-reduce-motion","true");}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -61,6 +67,8 @@ export default function RootLayout({
       <head>
         {/* Must run synchronously, before first paint, to avoid a flash of the wrong accent. */}
         <script dangerouslySetInnerHTML={{ __html: ACCENT_INIT_SCRIPT }} />
+        {/* Same reasoning, for the "Reduce motion" preference — see lib/motionPrefs.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: REDUCE_MOTION_INIT_SCRIPT }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
