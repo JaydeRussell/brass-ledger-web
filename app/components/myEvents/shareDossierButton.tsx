@@ -3,6 +3,8 @@ import { useState } from "react";
 import { ordinal } from "./playerStatsPanel";
 import type { Dossier } from "../../lib/dossier";
 import { logClientEvent } from "../../lib/clientLog";
+import { downloadShareCardImage } from "../../lib/shareCard";
+import { useToast } from "../shared/toastContext";
 
 /**
  * Builds the plain-text summary copied to the clipboard — a pure
@@ -28,20 +30,24 @@ export function buildShareText(dossier: Dossier, url: string): string {
  * its own shareable URL to the clipboard — the "shareable result" this
  * app can offer without becoming its own OG-image-generation service.
  * next/og's ImageResponse was considered for a branded card image
- * instead (see the earlier concept mockup), but generating one means
- * this app's Next.js server calling brass-ledger-api itself for the
- * first time — every other request today goes straight from the
+ * instead (see the earlier concept mockup), but generating one server-
+ * side means this app's Next.js server calling brass-ledger-api itself
+ * for the first time — every other request today goes straight from the
  * browser (see app/api/log/route.ts's own doc comment) — which in this
  * Docker Compose stack means a different, container-network hostname
  * than the browser-facing NEXT_PUBLIC_BACKEND_URL this app's clients
  * already use (see app/lib/*.ts). That's a deploy-config decision
  * (whether/how a server-reachable backend URL is wired up in
  * production), not something to introduce silently as part of this
- * feature — left as a clearly-scoped follow-up instead.
+ * feature. The "Save image" button below sidesteps that entirely
+ * instead — lib/shareCard.ts renders the same summary as a downloadable
+ * PNG with the native Canvas API, client-side, from data already fetched
+ * to render this page.
  */
 export default function ShareDossierButton({ dossier, bcpUserId }: { dossier: Dossier; bcpUserId: string }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const handleShare = async () => {
     const url =
@@ -61,14 +67,34 @@ export default function ShareDossierButton({ dossier, bcpUserId }: { dossier: Do
     }
   };
 
+  const handleSaveImage = () => {
+    try {
+      downloadShareCardImage(dossier, `${dossier.name.replace(/\s+/g, "-").toLowerCase()}-brass-ledger.png`);
+      logClientEvent("info", "dossier: share image downloaded", { bcpUserId });
+      showToast("Share image downloaded.", "success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logClientEvent("warn", "dossier: generating share image failed", { error: message });
+      showToast("Couldn't generate the share image — try again.", "error");
+    }
+  };
+
   return (
-    <div>
+    <div className="flex items-center gap-2">
       <button
         type="button"
         onClick={handleShare}
         className="rounded-md border border-surface-border px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2"
       >
         {copied ? "Copied!" : "Share"}
+      </button>
+      <button
+        type="button"
+        onClick={handleSaveImage}
+        title="Download a shareable image of this dossier"
+        className="rounded-md border border-surface-border px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2"
+      >
+        Save image
       </button>
       {error && (
         <p role="alert" className="mt-1 text-xs text-danger-400">

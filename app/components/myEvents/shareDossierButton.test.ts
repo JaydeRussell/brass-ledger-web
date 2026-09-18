@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderStatic } from "../../lib/testUtils.ts";
 import type { Dossier } from "../../lib/dossier.ts";
+import { ToastProvider } from "../shared/toastContext.tsx";
 
 // This component calls useState (for the "Copied!" feedback), so it's
 // tested via renderStatic (SSR), not the walk/find hookless-interaction
@@ -45,7 +46,14 @@ test("buildShareText falls back to a plain event count with no best placing or f
 });
 
 test("shows the initial Share label", () => {
-  const html = renderStatic(React.createElement(ShareDossierButton, { dossier: dossier(), bcpUserId: "u1" }));
+  const html = renderStatic(
+    React.createElement(
+      ToastProvider,
+      null,
+      React.createElement(ShareDossierButton, { dossier: dossier(), bcpUserId: "u1" })
+    )
+  );
   assert.match(html, />Share</);
+  assert.match(html, />Save image</);
   assert.ok(!html.includes("Copied!"));
 });
