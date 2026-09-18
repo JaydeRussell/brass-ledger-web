@@ -4,6 +4,7 @@ import "./globals.css";
 import ClientErrorLogger from "./components/shared/clientErrorLogger";
 import { NavProvider } from "./components/nav/navContext";
 import NavDrawer from "./components/nav/navDrawer";
+import BottomTabBar from "./components/nav/bottomTabBar";
 import Footer from "./components/layout/footer";
 import FeedbackWidget from "./components/feedback/feedbackWidget";
 import { CommandPaletteProvider } from "./components/shared/commandPaletteContext";
@@ -75,6 +76,7 @@ export default function RootLayout({
                 <FeedbackWidget />
               </NavProvider>
               <CommandPalette />
+              <BottomTabBar />
             </CommandPaletteProvider>
           </ViewerItcProvider>
           <ToastViewport />
