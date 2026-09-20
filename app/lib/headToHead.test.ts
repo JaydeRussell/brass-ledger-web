@@ -17,9 +17,14 @@ let individualPairingsCalls: { eventId: string; playerId: string }[] = [];
 let eventInfoCalls: string[] = [];
 let throwForEventIds = new Set<string>();
 
+const playerStatsOptions: Array<{ summary?: boolean } | undefined> = [];
+
 mock.module("./myStats.ts", {
   namedExports: {
-    fetchPlayerStats: async (bcpUserId: string) => statsByBcpUserId[bcpUserId],
+    fetchPlayerStats: async (bcpUserId: string, opts?: { summary?: boolean }) => {
+      playerStatsOptions.push(opts);
+      return statsByBcpUserId[bcpUserId];
+    },
   },
 });
 mock.module("./bcp.ts", {
@@ -43,10 +48,19 @@ mock.module("./bcp.ts", {
 const { fetchHeadToHead } = await import("./headToHead.ts");
 
 function stats(history: MyStats["history"]): MyStats {
-  return { linked: true, totalEvents: history.length, factions: [], history };
+  // eventDetailResolved: false — fetchHeadToHead asks for summary
+  // stats, since it only reads event ids, names and dates.
+  return {
+    linked: true,
+    eventDetailResolved: false,
+    totalEvents: history.length,
+    factions: [],
+    history,
+  };
 }
 
 function resetFixtures() {
+  playerStatsOptions.length = 0;
   statsByBcpUserId = {};
   eventInfoByEventId = {};
   rostersByEventId = {};
@@ -204,4 +218,25 @@ test("one event failing to resolve doesn't fail the whole check", async () => {
   assert.deepEqual(result.encounters, [
     { eventId: "good", eventName: "Good Event", round: 1, myScore: undefined, opponentScore: undefined, outcome: "draw" },
   ]);
+});
+
+test("fetchHeadToHead asks for summary stats on both sides", async () => {
+  // It reads event ids, names and dates to find shared events — all of
+  // which come from the placing-history feed. Asking for the full
+  // response would make the backend resolve every event both players
+  // have ever attended, twice, before this check spends its own BCP
+  // requests. The whole feature is deliberately gentle and capped; that
+  // is undone if its first two calls are the most expensive in the app.
+  resetFixtures();
+  statsByBcpUserId = {
+    me: stats([{ eventId: "evt-1", eventName: "Shared", eventDate: "2026-01-01", placing: 3 }]),
+    them: stats([{ eventId: "evt-1", eventName: "Shared", eventDate: "2026-01-01", placing: 9 }]),
+  };
+
+  await fetchHeadToHead("me", "them");
+
+  assert.equal(playerStatsOptions.length, 2, "both sides should have been fetched");
+  for (const opts of playerStatsOptions) {
+    assert.equal(opts?.summary, true, "each side should be requested in summary mode");
+  }
 });

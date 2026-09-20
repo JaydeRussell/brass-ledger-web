@@ -424,7 +424,12 @@ function HomeContent() {
         if (!cancelled) setEvents(data);
       })
       .catch(() => {});
-    fetchMyStats()
+    // summary: true skips the backend's per-event pass, which is 99% of
+    // that endpoint's requests to BCP and exists entirely for the
+    // Team/GT/RTT split and the "of N" field sizes. This card renders
+    // neither — just the event count, the overall best placing and the
+    // top faction, all of which come straight from the placing history.
+    fetchMyStats({ summary: true })
       .then((data) => {
         if (!cancelled) setStats(data);
       })

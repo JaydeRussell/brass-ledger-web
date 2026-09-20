@@ -100,10 +100,37 @@ export type MyStats = {
   mostRecentEventId?: string;
   competingSince?: string;
   history: PlacingHistoryPoint[];
+  /**
+   * Whether the backend ran the per-event pass behind the three
+   * category splits and every `fieldSize`.
+   *
+   * It exists because those fields are optional: a summary response and
+   * a player who has genuinely never placed in a team event produce
+   * identical JSON. False means "nobody looked", not "there are none" —
+   * so don't render an em-dash for a stat that was never computed.
+   */
+  eventDetailResolved: boolean;
 };
 
-export async function fetchMyStats(): Promise<MyStats> {
-  return getJSON<MyStats>("/api/me/stats");
+/**
+ * `summary: true` asks the backend to skip resolving every event in the
+ * player's history — see internal/api/stats.go's withEventDetail.
+ *
+ * That pass is 99% of this endpoint's requests to BCP at any real
+ * account size, and it exists solely for the Team/GT/RTT split and the
+ * "of 42 - top 17%" suffix. A caller that renders neither should ask
+ * for neither. Everything else — totalEvents, the overall best placing,
+ * factions, competingSince, the history series — is unaffected and
+ * identical either way.
+ */
+export type StatsOptions = { summary?: boolean };
+
+function statsQuery(opts?: StatsOptions): string {
+  return opts?.summary ? "?summary=true" : "";
+}
+
+export async function fetchMyStats(opts?: StatsOptions): Promise<MyStats> {
+  return getJSON<MyStats>(`/api/me/stats${statsQuery(opts)}`);
 }
 
 /**
@@ -115,6 +142,8 @@ export async function fetchMyStats(): Promise<MyStats> {
  * other BCP-backed read in this app; it just isn't scoped to the
  * caller's own linked profile the way fetchMyStats is.
  */
-export async function fetchPlayerStats(bcpUserId: string): Promise<MyStats> {
-  return getJSON<MyStats>(`/api/players/${encodeURIComponent(bcpUserId)}/stats`);
+export async function fetchPlayerStats(bcpUserId: string, opts?: StatsOptions): Promise<MyStats> {
+  return getJSON<MyStats>(
+    `/api/players/${encodeURIComponent(bcpUserId)}/stats${statsQuery(opts)}`
+  );
 }
