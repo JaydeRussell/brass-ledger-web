@@ -23,6 +23,15 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.5",
+    date: "2026-09-20",
+    title: "Player Stats, the first time you load it",
+    highlights: [
+      "Player Stats builds its summary by looking up details for every event you've ever placed in. Those were being fetched strictly one after another, which nobody noticed because after the first visit they're all cached — but the first visit, on an account with a long history, could take tens of seconds. They're now fetched several at a time.",
+      "Nothing changes for a normal visit: that was already well under a second and still is. This is about the very first load of an account with hundreds of events, and about the load right after a cache reset.",
+    ],
+  },
+  {
     version: "0.19.4",
     date: "2026-09-20",
     title: "My Events and Home finish loading",
