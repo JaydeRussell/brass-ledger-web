@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import type { PlacingHistoryPoint } from "../../lib/myStats";
+import { ordinal } from "../../lib/formatStats";
 
 type PlacingTrendChartProps = {
   // Chronological (oldest first) — see PlacingHistoryPoint's doc comment.
@@ -40,22 +41,6 @@ const PAD_LEFT = 34;
 const PAD_RIGHT = 16;
 const PAD_TOP = 20;
 const PAD_BOTTOM = 12;
-
-function ordinal(n: number): string {
-  const rounded = Math.round(n);
-  const mod100 = rounded % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${rounded}th`;
-  switch (rounded % 10) {
-    case 1:
-      return `${rounded}st`;
-    case 2:
-      return `${rounded}nd`;
-    case 3:
-      return `${rounded}rd`;
-    default:
-      return `${rounded}th`;
-  }
-}
 
 function formatShortDate(iso: string): string {
   const d = new Date(iso);

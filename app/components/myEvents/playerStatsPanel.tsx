@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
-import { fetchMyStats, fetchPlayerStats, type MyStats, type PlacingHistoryPoint, type PlacingWithField } from "../../lib/myStats";
+import { fetchMyStats, fetchPlayerStats, type MyStats, type PlacingHistoryPoint } from "../../lib/myStats";
+import { fieldDetail, ordinal } from "../../lib/formatStats";
 import { fetchCurrentItcLeagueId, fetchItcRanking, type ItcRanking } from "../../lib/bcp";
 import PlacingTrendChart from "./placingTrendChart";
 import ItcBadge from "../shared/itcBadge";
@@ -35,32 +36,6 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
 }
 
 // Exported for app/dossier/[bcpUserId]/page.tsx, the public counterpart
-// to this panel's "player" mode — same formatting, different fetch/auth
-// model (see that page's doc comment), so it renders its own markup
-// rather than sharing this component outright, but there's no reason to
-// duplicate these two pure formatting helpers.
-export function ordinal(n: number): string {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1:
-      return `${n}st`;
-    case 2:
-      return `${n}nd`;
-    case 3:
-      return `${n}rd`;
-    default:
-      return `${n}th`;
-  }
-}
-
-/** "of 53 · top 4%" — undefined if the event never published a field size. */
-export function fieldDetail(p?: PlacingWithField): string | undefined {
-  if (!p?.fieldSize) return undefined;
-  const percentile = Math.max(1, Math.round((p.placing / p.fieldSize) * 100));
-  return `of ${p.fieldSize} · top ${percentile}%`;
-}
-
 // --- "Skill at a glance" summary tiles ------------------------------------
 //
 // Raw placing isn't comparable across a 12-player RTT and a 265-player GT

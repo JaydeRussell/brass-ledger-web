@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.1",
+    date: "2026-09-20",
+    title: "A faster first load",
+    highlights: [
+      "The app sends noticeably less over the wire on a cold load — roughly 20 fewer requests and about 12% less JavaScript before anything is interactive. Most of that is the nav drawer, the feedback form, and the ⌘K quick switcher no longer loading until you actually open them, plus a font that was being downloaded on every page and never used.",
+      "The home page no longer sits blank while it works out whether you're signed in — it shows placeholder cards in the shape of what's about to arrive, and starts loading your friends and recently-viewed events at the same time as the sign-in check rather than after it.",
+      "My Events and Player Stats come back faster on a first visit: the backend now keeps your Best Coast Pairings history between restarts instead of re-reading it from BCP page by page every time, which is both quicker for you and gentler on their API.",
+      "Fixed: an accent theme saved to your account only took effect once you opened the nav menu, so a new device would show the default until you went looking for it. It now applies as the page loads.",
+      "Fixed: signing out no longer reloads the entire page to notice you've gone, and linking a Best Coast Pairings profile now updates the nav drawer straight away instead of waiting for the next reload.",
+    ],
+  },
+  {
     version: "0.19.0",
     date: "2026-09-18",
     title: "Player compare, a mobile tab bar, and a UI/UX modernization pass",

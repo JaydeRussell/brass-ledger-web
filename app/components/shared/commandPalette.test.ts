@@ -1,34 +1,22 @@
-import { test, mock } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CommandPaletteProvider } from "./commandPaletteContext.tsx";
+import CommandPalette from "./commandPalette.tsx";
 
-// Same mocking approach as feedbackWidget.test.ts. Only the closed
-// (default) state is inspectable this way — opening the palette is a
-// stateful transition (⌘K, or a click, flipping CommandPaletteProvider's
-// own useState) a plain react-dom/server static-SSR pass can't simulate,
-// same documented gap feedbackWidget.test.ts already has for its own
-// open/closed toggle. Real CommandPaletteProvider is used (not mocked)
-// — this codebase's context modules (see navDrawer.test.ts/
-// calendar/page.test.ts's use of the real NavProvider) are always used
-// for real in tests, never mocked directly; the open-state content
-// (the input, the results list, ⌘K/Escape handling) was verified live
-// in a real browser instead.
-let authState: { user: unknown; checked: boolean; setUser: (u: unknown) => void } = {
-  user: null,
-  checked: false,
-  setUser: () => {},
-};
-mock.module("../../lib/auth.ts", {
-  namedExports: { useCurrentUser: () => authState },
-});
-mock.module("next/navigation", {
-  namedExports: { useRouter: () => ({ push: () => {} }) },
-});
-mock.module("../../lib/clientLog.ts", { namedExports: { logClientEvent: () => {} } });
-
-const { default: CommandPalette } = await import("./commandPalette.tsx");
+// commandPalette.tsx is only the shell — the palette's real contents
+// live in commandPaletteBody.tsx and are covered by
+// commandPaletteBody.test.ts. Two things matter here:
+//
+//  - it renders nothing until opened, which is what keeps the body's
+//    chunk off every route's critical path, and
+//  - it owns the global ⌘K listener rather than the body, so the
+//    shortcut works on a page where the body has never been loaded.
+//
+// The listener is registered in an effect, and effects don't run under a
+// static SSR pass (see app/lib/testUtils.ts), so the binding itself is
+// verified live in a real browser.
 
 test("renders nothing while closed", () => {
   const html = renderToStaticMarkup(
@@ -37,16 +25,13 @@ test("renders nothing while closed", () => {
   assert.equal(html, "");
 });
 
-test("mounts without throwing regardless of sign-in state", () => {
-  authState = {
-    user: { id: 1, email: "a@example.com", name: "Admin", role: "admin", status: "approved" },
-    checked: true,
-    setUser: () => {},
-  };
-  assert.doesNotThrow(() => {
-    renderToStaticMarkup(
-      React.createElement(CommandPaletteProvider, null, React.createElement(CommandPalette))
-    );
-  });
-  authState = { user: null, checked: false, setUser: () => {} }; // reset for later tests
+test("does not pull the palette body in as a static import", async () => {
+  // If the body were statically imported, importing the shell would drag
+  // its whole module graph (next/navigation, recentEvents, bcp, …) in
+  // with it — the thing this split exists to prevent.
+  const shellSource = await import("node:fs/promises").then((fs) =>
+    fs.readFile(new URL("./commandPalette.tsx", import.meta.url), "utf8")
+  );
+  assert.ok(!/^import .*commandPaletteBody/m.test(shellSource));
+  assert.match(shellSource, /import\("\.\/commandPaletteBody"\)/);
 });

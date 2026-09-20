@@ -1,189 +1,80 @@
 "use client";
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import { useNav } from "./navContext";
-import AccountSection from "./accountSection";
-import { Dialog, DialogClose } from "../ui/dialog";
-import Badge from "../ui/badge";
-import { useCurrentUser } from "../../lib/auth";
-import { useOpenFeedbackCount } from "../../lib/adminFeedback";
-import { NAV_LINKS as BASE_LINKS } from "../../lib/navLinks";
-import { useCommandPalette } from "../shared/commandPaletteContext";
+import { useLazyComponent } from "../../lib/useLazyComponent";
 
-// The two admin-only pages (app/admin/accounts/page.tsx,
-// app/admin/feedback/page.tsx) — shown as an expandable group under one
-// "Admin" toggle rather than two flat top-level links, since neither is
-// something a non-admin ever sees and grouping keeps the drawer's main
-// list from growing by two entries for the (usually one) admin account.
-const ADMIN_LINKS: readonly { href: string; label: string }[] = [
-  { href: "/admin/accounts", label: "Accounts" },
-  { href: "/admin/feedback", label: "Feedback" },
-];
+// navDrawerBody.tsx is loaded with a plain dynamic import() rather than a
+// static one: it pulls in ui/dialog.tsx's Radix Dialog, which measured
+// ~37 KB across three chunks on *every* route's critical path (including
+// /login) purely because this component is mounted in app/layout.tsx.
+//
+// Deliberately NOT next/dynamic. Under vinext — the Vite/Cloudflare build
+// this project actually deploys, see package.json's build:vinext —
+// `dynamic(() => import(…), { ssr: false })` fetches and resolves its
+// module but doesn't schedule a re-render when it does, so it goes on
+// rendering nothing until some unrelated state change re-renders the
+// parent. In a real browser that looked exactly like "the drawer never
+// mounts on its own, but clicking the hamburger works." Holding the
+// resolved component in state makes the update that loads it the same
+// update that renders it.
+// Memoized so the hover preload, the idle load and an open all share one
+// promise rather than racing on separate ones.
+let bodyModule: Promise<typeof import("./navDrawerBody")> | null = null;
+const loadNavDrawerBody = () => (bodyModule ??= import("./navDrawerBody"));
+
+/** Starts fetching the drawer chunk without mounting it. */
+export function preloadNavDrawerBody(): void {
+  void loadNavDrawerBody();
+}
 
 /**
- * The left-hand hamburger menu itself, mounted once in app/layout.tsx so
- * it's available from every page. Built on ui/dialog.tsx's Radix-backed
- * Dialog — gains real focus-trapping and Escape-to-close for free, which
- * the hand-rolled backdrop+panel pair this replaced never had (its
- * role="dialog"/aria-modal were already correct, but nothing enforced
- * keyboard focus actually staying inside the drawer while open).
+ * The always-mounted shell for the left-hand nav drawer. Mounted once in
+ * app/layout.tsx; holds no markup of its own, just the policy for *when*
+ * the real drawer (navDrawerBody.tsx) gets loaded and mounted.
  *
- * `hideTitle` is set because this drawer already shows its own visible
- * "Brass Ledger" heading in the header row below — Dialog's own
- * accessible Title still gets rendered (visually hidden) so screen
- * readers get the same aria-labelledby wiring Radix requires, without a
- * second, visually-duplicate heading.
+ * Note that "mounted" here never means "visible": ui/dialog.tsx passes
+ * `forceMount` to Radix's Overlay and Content but not to its Portal, so
+ * a closed Dialog renders nothing into the DOM at all. Mounting the body
+ * early therefore costs a React element and the Dialog's context, not
+ * markup — and it isn't what makes the open animation work (the panel
+ * enters the DOM on open either way, exactly as it did when this module
+ * was statically imported). What early loading actually buys is that
+ * clicking the hamburger never waits on a network fetch.
  *
- * Holds the account section (sign-in/out — see accountSection.tsx) near
- * the top, above the nav links, per the explicit design call made when
- * this was built: the account is the one thing that's true regardless of
- * which page you're on, so it reads more like an app-level identity
- * strip than a nav destination of its own — closer to how a mobile app's
- * drawer usually puts the account card above its menu items than to a
- * peer link listed alongside "Home"/"My Events".
+ * Two triggers:
+ *
+ * 1. **Browser idle, or a 3s backstop timer** — the common case: fetch
+ *    the chunk and mount once the page is done with the work that
+ *    matters. Both schedulers are used because requestIdleCallback is
+ *    the one we want, but Chrome doesn't fire it at all in a hidden tab
+ *    even with a `timeout`, so a page opened in a background tab would
+ *    sit unloaded until the visitor switched to it and clicked. Safari
+ *    before 17 has no requestIdleCallback at all, and there the timer is
+ *    the whole story.
+ *
+ * 2. **The drawer being opened** — the safety net, for someone who hits
+ *    the hamburger before either scheduler fires.
+ *
+ * hamburgerButton.tsx also calls preloadNavDrawerBody() on hover/focus,
+ * which usually wins the race on a pointer device.
  */
 export default function NavDrawer() {
-  const { isOpen, close } = useNav();
-  const pathname = usePathname();
-  // A second, independent useCurrentUser() instance — see auth.ts's doc
-  // comment: this hook is deliberately not shared state, so every
-  // consumer (this drawer, AccountSection below, any gated page) fetches
-  // /api/me on its own rather than one instance being threaded through
-  // props. Only used here to role-gate the Admin link.
-  const { user } = useCurrentUser();
-  const isAdmin = user?.role === "admin";
-  // Fetched once when this drawer mounts (see useOpenFeedbackCount's doc
-  // comment) — the "take note of what's pending" signal for a session,
-  // not a live/polled count.
-  const openFeedbackCount = useOpenFeedbackCount(isAdmin);
-  const { open: openCommandPalette } = useCommandPalette();
+  const { isOpen } = useNav();
+  const [idleReady, setIdleReady] = useState(false);
+  const Body = useLazyComponent(loadNavDrawerBody, idleReady || isOpen);
 
-  // Manually expanded, or already on one of the two admin pages — either
-  // way the group should show its children rather than making an admin
-  // re-expand it just to see which admin page they're currently on.
-  const [adminExpanded, setAdminExpanded] = useState(false);
-  const onAdminPage = pathname.startsWith("/admin");
-  const adminOpen = adminExpanded || onAdminPage;
+  useEffect(() => {
+    const ready = () => setIdleReady(true);
+    const idleHandle =
+      typeof requestIdleCallback === "function" ? requestIdleCallback(ready, { timeout: 4000 }) : null;
+    const timerHandle = setTimeout(ready, 3000);
+    return () => {
+      if (idleHandle !== null) cancelIdleCallback(idleHandle);
+      clearTimeout(timerHandle);
+    };
+  }, []);
 
-  return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        // Opening happens externally (HamburgerButton calling useNav()'s
-        // open() directly, outside this Dialog's own tree) — this only
-        // ever needs to handle Radix-initiated close requests: Escape,
-        // an outside/backdrop click, or DialogClose below.
-        if (!open) close();
-      }}
-      title="Brass Ledger"
-      hideTitle
-    >
-      <div className="flex items-center justify-between border-b border-surface-border px-4 py-3">
-        <span className="text-sm font-semibold text-text-primary">Brass Ledger</span>
-        <DialogClose asChild>
-          <button
-            type="button"
-            aria-label="Close menu"
-            className="rounded-md p-1.5 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          >
-            <svg aria-hidden viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-              <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-        </DialogClose>
-      </div>
-
-      {/* flex-1 + overflow-y-auto so a tall account section (now including
-          the accent-theme swatch grid) plus every nav link can't overflow
-          past the Dialog panel's fixed inset-y-0 height on a short
-          viewport — the header row above stays put while this scrolls. */}
-      <div className="flex-1 overflow-y-auto">
-        <AccountSection />
-
-        <nav className="flex flex-col gap-1 p-2">
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              openCommandPalette();
-            }}
-            className="flex items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          >
-            Quick search
-            <span className="text-xs text-text-tertiary">⌘K</span>
-          </button>
-          {BASE_LINKS.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={close}
-                className={`rounded-md px-3 py-2 text-sm font-medium ${
-                  active
-                    ? "bg-brass-500/15 text-brass-400"
-                    : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-
-          {isAdmin && (
-            <div className="flex flex-col">
-              <button
-                type="button"
-                onClick={() => setAdminExpanded((expanded) => !expanded)}
-                aria-expanded={adminOpen}
-                className={`flex items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium ${
-                  onAdminPage
-                    ? "bg-brass-500/15 text-brass-400"
-                    : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                }`}
-              >
-                Admin
-                <span className="flex items-center gap-1.5">
-                  {!adminOpen && openFeedbackCount ? <Badge tone="danger">{openFeedbackCount}</Badge> : null}
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    className={`h-4 w-4 shrink-0 transition-transform ${adminOpen ? "rotate-180" : ""}`}
-                  >
-                    <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </span>
-              </button>
-
-              {adminOpen && (
-                <div className="ml-3 flex flex-col gap-1 border-l border-surface-border pl-3">
-                  {ADMIN_LINKS.map((link) => {
-                    const active = pathname === link.href;
-                    const badgeCount = link.href === "/admin/feedback" ? openFeedbackCount : null;
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={close}
-                        className={`flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium ${
-                          active
-                            ? "bg-brass-500/15 text-brass-400"
-                            : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                        }`}
-                      >
-                        {link.label}
-                        {badgeCount ? <Badge tone="danger">{badgeCount}</Badge> : null}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </nav>
-      </div>
-    </Dialog>
-  );
+  if (!Body) return null;
+  // React.createElement rather than <Body />: see useLazyComponent.
+  return React.createElement(Body);
 }

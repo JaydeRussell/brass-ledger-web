@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ordinal } from "./playerStatsPanel";
+import { ordinal } from "../../lib/formatStats";
 import type { Dossier } from "../../lib/dossier";
 import { logClientEvent } from "../../lib/clientLog";
 import { downloadShareCardImage } from "../../lib/shareCard";

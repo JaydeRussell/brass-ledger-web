@@ -3,7 +3,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 
 import { fetchDossier, type Dossier } from "../../lib/dossier";
-import { fieldDetail, ordinal } from "../../components/myEvents/playerStatsPanel";
+import { fieldDetail, ordinal } from "../../lib/formatStats";
 import ShareDossierButton from "../../components/myEvents/shareDossierButton";
 import AddFriendButton from "../../components/myEvents/addFriendButton";
 import HeadToHead from "../../components/pairings/headToHead";

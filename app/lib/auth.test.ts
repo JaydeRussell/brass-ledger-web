@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import React from "react";
+import { renderStatic } from "./testUtils.ts";
 
 // Every exported function in auth.ts calls this app's own backend via
 // fetch() with credentials: "include" (session state lives in an
@@ -27,7 +29,7 @@ function installFetch(handler: (url: string, init?: RequestInit) => FakeResponse
   return { calls };
 }
 
-const { googleSignInUrl, fetchCurrentUser, signOut } = await import("./auth.ts");
+const { googleSignInUrl, fetchCurrentUser, signOut, useCurrentUser, CurrentUserProvider } = await import("./auth.ts");
 
 test("googleSignInUrl: points at the backend's login route", () => {
   const url = googleSignInUrl();
@@ -105,4 +107,36 @@ test("signOut: POSTs with credentials included", async () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].init?.method, "POST");
   assert.equal(calls[0].init?.credentials, "include");
+});
+
+// CurrentUserProvider does its /api/me lookup in an effect, and effects
+// never run under renderStatic (see testUtils.ts) — so these cover the
+// pre-check state every real page briefly renders, plus the deliberate
+// no-provider fallback that lets a provider like ViewerItcProvider be
+// rendered in isolation (see viewerItc.test.ts).
+function Probe() {
+  const { user, checked, authError } = useCurrentUser();
+  return React.createElement("span", null, `${user === null ? "null" : "user"}:${checked}:${authError}`);
+}
+
+test("useCurrentUser outside a CurrentUserProvider reports signed-out and unchecked", () => {
+  const html = renderStatic(React.createElement(Probe));
+  assert.match(html, />null:false:false</);
+});
+
+test("useCurrentUser inside a CurrentUserProvider starts signed-out and unchecked", () => {
+  const html = renderStatic(React.createElement(CurrentUserProvider, null, React.createElement(Probe)));
+  assert.match(html, />null:false:false</);
+});
+
+test("every consumer under one CurrentUserProvider reads the same state", () => {
+  const html = renderStatic(
+    React.createElement(
+      CurrentUserProvider,
+      null,
+      React.createElement(Probe),
+      React.createElement(Probe)
+    )
+  );
+  assert.equal(html.match(/>null:false:false</g)?.length, 2);
 });

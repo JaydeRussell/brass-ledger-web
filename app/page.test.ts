@@ -82,11 +82,19 @@ function renderPage(): string {
   return renderToStaticMarkup(React.createElement(NavProvider, null, React.createElement(HomePage)));
 }
 
-test("shows nothing but the header while the sign-in check is in flight", () => {
+test("shows skeleton cards, not a blank page, while the sign-in check is in flight", () => {
   authState = { user: null, checked: false };
   const html = renderPage();
   assert.match(html, /Brass Ledger/);
+  // The main area used to render nothing at all here, leaving the header
+  // above empty space until /api/me resolved.
+  assert.match(html, /aria-busy="true"/);
+  assert.match(html, /animate-pulse/);
+  assert.match(html, /Loading your dashboard/);
+  // Still no real content — the skeleton stands in for it, it doesn't
+  // pre-empt it.
   assert.ok(!html.includes("Loading your events"));
+  assert.ok(!html.includes("Link your Best Coast Pairings profile"));
 });
 
 test("shows nothing once checked and signed out (useRedirectToLoginIfSignedOut takes it from here)", () => {
