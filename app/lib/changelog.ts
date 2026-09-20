@@ -23,6 +23,15 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.7",
+    date: "2026-09-20",
+    title: "My Events was chasing events that no longer exist",
+    highlights: [
+      "If you are registered for an event the organizer later deleted, Best Coast Pairings has nothing left to say about it. My Events was asking anyway, every single time the page loaded, and quietly leaving the event out of your list — so the page looked right and just took longer than it should have. Two of those on one account were the difference between a page that loads in a quarter of a second and one that takes three quarters.",
+      "A deleted event is now remembered as deleted for an hour instead of being looked up again on every visit. If one comes back, so does it.",
+    ],
+  },
+  {
     version: "0.19.6",
     date: "2026-09-20",
     title: "My Events stops re-checking future events",
