@@ -23,6 +23,16 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.3",
+    date: "2026-09-20",
+    title: "My Events, Player Stats and Home stop crawling",
+    highlights: [
+      "Home, My Events, Calendar and Player Stats were taking three to four and a half seconds to fill in — long enough to look broken rather than loading. They should now come back in well under a second on a warm connection.",
+      "The cause was a caching bug on our side: the server had a shortcut for looking up all your events' details in one go, and it was quietly switching itself off about a minute after starting. Every page load after that went back to fetching them one at a time, dozens in a row.",
+      "Two other things were made to happen at once instead of one after the other — the two Best Coast Pairings feeds behind My Events, and Home's own data, which was needlessly waiting for the sign-in check to finish before it started.",
+    ],
+  },
+  {
     version: "0.19.2",
     date: "2026-09-20",
     title: "Housekeeping",

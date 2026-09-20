@@ -23,7 +23,6 @@ import {
 import { loadRecentEvents, fetchRecentEventsFromServer, type RecentEvent } from "./lib/recentEvents";
 import { useHiddenDashboardCards } from "./lib/dashboardCards";
 import { formatCountdown, formatDateRange } from "./lib/eventDates";
-import { logClientEvent } from "./lib/clientLog";
 
 // --- "Next up" -------------------------------------------------------
 //
@@ -396,36 +395,45 @@ function HomeContent() {
     };
   }, []);
 
-  // Next up / Your record both need a linked BCP profile — only fetched
-  // once one exists, same gating /my-events, /calendar, and /stats each
-  // already apply on their own.
+  // Next up / Your record. These fire on mount too, alongside the effect
+  // above, rather than waiting for the sign-in check to hand them a
+  // bcpUserId.
+  //
+  // They used to wait, which is what made this page a two-wave
+  // waterfall: nothing here could start until /api/me came back, and
+  // these are by far the slowest calls the app makes. The wait bought
+  // nothing — neither endpoint takes a bcpUserId. Both resolve it from
+  // the session server-side (see internal/api/me.go's Events and
+  // stats.go's Stats) and answer an account with no linked profile with
+  // an empty, already-correct response rather than an error. So the
+  // client was holding back a request the server was always ready to
+  // answer.
   React.useEffect(() => {
-    if (!bcpUserId) return;
     let cancelled = false;
 
+    // Neither logs on failure, for the same reason the effect above
+    // doesn't: now that these race the sign-in check rather than
+    // queueing behind it, a signed-out visitor fires them and gets a
+    // 401. That's an expected outcome of the race, not something worth
+    // a line in the console — they're redirected to /login the moment
+    // the check resolves anyway. A signed-in account with no linked BCP
+    // profile isn't an error case at all: both endpoints answer it with
+    // an empty, already-correct response.
     fetchMyEvents()
       .then((data) => {
         if (!cancelled) setEvents(data);
       })
-      .catch((err: unknown) => {
-        logClientEvent("warn", "home: fetching my events failed", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
+      .catch(() => {});
     fetchMyStats()
       .then((data) => {
         if (!cancelled) setStats(data);
       })
-      .catch((err: unknown) => {
-        logClientEvent("warn", "home: fetching my stats failed", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
+      .catch(() => {});
 
     return () => {
       cancelled = true;
     };
-  }, [bcpUserId]);
+  }, []);
 
   return (
     <div className="flex-1 bg-surface-0">
