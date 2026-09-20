@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 // Every exported function in bcp.ts calls this app's own backend via
@@ -34,7 +34,18 @@ const {
   buildBcpItcProfileUrl,
   fetchCurrentItcLeagueId,
   fetchItcRanking,
+  __clearRequestCacheForTests,
 } = await import("./bcp.ts");
+
+// getJSON de-duplicates in-flight requests and reuses a recent response
+// for the same URL (see bcp.ts's REQUEST_CACHE_TTL_MS), so that state
+// has to be reset between tests. Several tests here stub a different
+// body for a URL they have already requested — something a real backend
+// would not do inside the cache window, but exactly what a test needs
+// to do.
+beforeEach(() => {
+  __clearRequestCacheForTests();
+});
 
 // --- getJSON's error handling, exercised through fetchBcpEventInfo -----
 
@@ -263,6 +274,10 @@ test("fetchCurrentItcLeagueId: maps a found league id through, and null to undef
   // function's doc comment for why.
   assert.match(calls[0], /\/api\/itc\/leagues\/event\/evt-1$/);
 
+  // Second scenario, same URL: the cached first response would be
+  // returned otherwise. A real backend wouldn't change its answer
+  // inside the cache window, but these are two separate cases.
+  __clearRequestCacheForTests();
   installFetch(() => ({ status: 200, body: JSON.stringify({ leagueId: null }) }));
   assert.equal(await fetchCurrentItcLeagueId("evt-1"), undefined);
 });
@@ -276,6 +291,84 @@ test("fetchItcRanking: a found ranking passes through, and an empty body resolve
   // The backend returns an empty body (not the literal string "null")
   // when a player has no ranking in a league — getJSON has to treat
   // that as null rather than failing to JSON.parse an empty string.
+  __clearRequestCacheForTests();
   installFetch(() => ({ status: 200, body: "" }));
   assert.equal(await fetchItcRanking("u1", "league-1"), null);
+});
+
+// --- Request de-duplication and reuse (getJSON's cache) ---------------
+
+test("getJSON: concurrent identical requests share one fetch", async () => {
+  // The shape a real event page makes: the roster feeds Overview,
+  // Roster, Pairings and Placings, and they all ask at once.
+  const { calls } = installFetch(() => ({ status: 200, body: JSON.stringify([{ id: "p1" }]) }));
+
+  const results = await Promise.all([
+    fetchBcpPlayers("evt-dedupe"),
+    fetchBcpPlayers("evt-dedupe"),
+    fetchBcpPlayers("evt-dedupe"),
+    fetchBcpPlayers("evt-dedupe"),
+  ]);
+
+  assert.equal(calls.length, 1, "four simultaneous reads of the same roster should cost one request");
+  for (const r of results) assert.equal(r[0]?.id, "p1");
+});
+
+test("getJSON: a second read inside the TTL is served without a request", async () => {
+  const { calls } = installFetch(() => ({ status: 200, body: JSON.stringify([{ id: "p1" }]) }));
+
+  await fetchBcpPlayers("evt-reuse");
+  await fetchBcpPlayers("evt-reuse");
+
+  assert.equal(calls.length, 1, "a repeat read inside the cache window should not reach the network");
+});
+
+test("getJSON: the same round's pairings are fetched once across every view derived from it", async () => {
+  // fetchRoundBoard and fetchTeamPairingBoards both derive from the
+  // same per-round pairings resource — the property FetchRoundPairings'
+  // doc comment on the backend promises.
+  const { calls } = installFetch(() => ({
+    status: 200,
+    body: JSON.stringify([{ id: "pair-1", round: 1, teamPairingId: "tp-1" }]),
+  }));
+
+  await fetchRoundBoard("evt-shared", 1, false);
+  await fetchTeamPairingBoards("evt-shared", 1, "tp-1");
+
+  assert.equal(calls.length, 1, "two views of one round should cost one request");
+});
+
+test("getJSON: a refresh bypasses the cache and supersedes the plain copy", async () => {
+  let body = JSON.stringify([{ id: "stale" }]);
+  const { calls } = installFetch(() => ({ status: 200, body }));
+
+  const first = await fetchBcpPlacings("evt-refresh", false);
+  assert.equal(first[0]?.id, "stale");
+
+  // What the "check for updated placings" button does.
+  body = JSON.stringify([{ id: "fresh" }]);
+  const refreshed = await fetchBcpPlacings("evt-refresh", false, true);
+  assert.equal(refreshed[0]?.id, "fresh", "a refresh must reach the backend");
+
+  // And the plain URL must not serve the pre-refresh copy afterwards,
+  // or the next ordinary read puts the stale value straight back.
+  const after = await fetchBcpPlacings("evt-refresh", false);
+  assert.equal(after[0]?.id, "fresh", "a refresh has to supersede the cached plain response");
+  assert.equal(calls.length, 3);
+});
+
+test("getJSON: a failed request is not cached", async () => {
+  let status = 502;
+  const { calls } = installFetch(() => ({
+    status,
+    body: JSON.stringify(status === 502 ? { error: "BCP is having a moment" } : { id: "evt-recover" }),
+  }));
+
+  await assert.rejects(fetchBcpEventInfo("evt-flaky"), /BCP is having a moment/);
+
+  // Venue wifi drops one request; the retry has to actually retry.
+  status = 200;
+  const recovered = await fetchBcpEventInfo("evt-flaky");
+  assert.equal(recovered.id, "evt-recover");
+  assert.equal(calls.length, 2, "caching a failure would turn one dropped request into a blank minute");
 });

@@ -45,8 +45,8 @@ const BCP_SITE_BASE = "https://www.bestcoastpairings.com";
  * own domain vs. api.brass-ledger.app in production), and every call
  * here would 401 even for a genuinely signed-in visitor.
  */
-async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include" });
+async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include", ...init });
   const text = await res.text();
 
   if (!res.ok) {
@@ -62,6 +62,116 @@ async function getJSON<T>(path: string): Promise<T> {
 
   if (text.length === 0) return null as T;
   return JSON.parse(text) as T;
+}
+
+/**
+ * How long a completed response is reused without asking again.
+ *
+ * Deliberately the same 60 seconds as the backend's own refetch
+ * interval (bcp.MinRefetchInterval), because that is what makes it
+ * safe rather than merely fast: inside that window the backend would
+ * answer a second request from its in-memory cache without touching
+ * BCP, so skipping the request entirely produces the same bytes. This
+ * never serves anything staler than the server would have.
+ */
+const REQUEST_CACHE_TTL_MS = 60_000;
+
+/**
+ * Cap on distinct cached URLs, so a long session browsing many events
+ * doesn't grow this forever. Oldest-inserted is evicted first; the
+ * numbers involved are small (an event page touches a handful of URLs)
+ * and this only exists so the map has a ceiling at all.
+ */
+const REQUEST_CACHE_MAX_ENTRIES = 64;
+
+type CacheEntry = { value: unknown; storedAt: number };
+
+const responseCache = new Map<string, CacheEntry>();
+const inFlight = new Map<string, Promise<unknown>>();
+
+/** Drops a cached entry and anything derived from the same path. */
+function invalidateCached(path: string) {
+  responseCache.delete(path);
+}
+
+/**
+ * The same path with any `refresh=true` removed — the URL whose cached
+ * copy a refresh is meant to supersede.
+ */
+function withoutRefresh(path: string): string {
+  const [base, query = ""] = path.split("?");
+  const params = new URLSearchParams(query);
+  params.delete("refresh");
+  const rest = params.toString();
+  return rest ? `${base}?${rest}` : base;
+}
+
+function rememberResponse(path: string, value: unknown) {
+  if (responseCache.size >= REQUEST_CACHE_MAX_ENTRIES) {
+    const oldest = responseCache.keys().next();
+    if (!oldest.done) responseCache.delete(oldest.value);
+  }
+  responseCache.set(path, { value, storedAt: Date.now() });
+}
+
+/**
+ * Fetches `path` and decodes it as JSON, reusing an identical request
+ * that is already in flight and a recent identical response.
+ *
+ * The de-duplication is the part that matters. One event page derives
+ * many views from the same few resources — the roster feeds Overview,
+ * Roster, Pairings and Placings; a single round's pairings feed the
+ * board, "my pairings" and every expanded team pairing — and each of
+ * those used to be its own HTTP request. The backend deduplicates them
+ * against BCP, so this was never a BCP problem, but every one of them
+ * still cost a round trip and, on the server, a session lookup.
+ *
+ * `refresh=true` bypasses both layers and additionally asks the browser
+ * not to use its own HTTP cache: the backend now sets Cache-Control on
+ * these responses, so without `cache: "reload"` an explicit refresh
+ * could be answered from a copy the browser already had, which is a
+ * refresh button that does nothing. It also drops the non-refresh URL's
+ * cached copy, or the next ordinary read would put the stale value
+ * straight back.
+ */
+async function getJSON<T>(path: string): Promise<T> {
+  if (new URLSearchParams(path.split("?")[1] ?? "").get("refresh") === "true") {
+    invalidateCached(withoutRefresh(path));
+    invalidateCached(path);
+    return fetchJSON<T>(path, { cache: "reload" });
+  }
+
+  const cached = responseCache.get(path);
+  if (cached && Date.now() - cached.storedAt < REQUEST_CACHE_TTL_MS) {
+    return cached.value as T;
+  }
+
+  const existing = inFlight.get(path);
+  if (existing) return existing as Promise<T>;
+
+  const request = fetchJSON<T>(path)
+    .then((value) => {
+      // Only successful responses are remembered. A failure is
+      // usually transient (venue wifi), and caching it would turn one
+      // dropped request into a minute of a blank panel.
+      rememberResponse(path, value);
+      return value;
+    })
+    .finally(() => {
+      inFlight.delete(path);
+    });
+
+  inFlight.set(path, request);
+  return request;
+}
+
+/**
+ * Empties the request cache. Exported for tests; nothing in the app
+ * needs it, since a refresh invalidates exactly what it supersedes.
+ */
+export function __clearRequestCacheForTests() {
+  responseCache.clear();
+  inFlight.clear();
 }
 
 // --- Event metadata -------------------------------------------------------
