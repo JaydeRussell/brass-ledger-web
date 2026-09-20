@@ -117,9 +117,33 @@ const CurrentUserContext = createContext<CurrentUserState | null>(null);
  * after sign-out, and the reason linking a BCP profile left the drawer's
  * copy of `bcpUserId` stale.
  */
-export function CurrentUserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [checked, setChecked] = useState(false);
+export function CurrentUserProvider({
+  children,
+  initialUser,
+}: {
+  children: React.ReactNode;
+  /**
+   * What the server already worked out about this visitor, if anything.
+   *
+   * Three states, and the distinction between two of them is the whole
+   * point:
+   *
+   *   - a user   — signed in, confirmed server-side. Render with it.
+   *   - `null`   — confirmed signed out (no session cookie, or the
+   *                backend said 401). Also final; don't ask again.
+   *   - `undefined` — the server couldn't tell, because the lookup
+   *                failed or this render had no request to read. Fall
+   *                back to asking from the client, exactly as before.
+   *
+   * Collapsing `null` and `undefined` would mean either re-fetching for
+   * every signed-out visitor (pointless) or trusting a failed lookup as
+   * a confirmed sign-out (wrong, and it would bounce people to /login).
+   */
+  initialUser?: CurrentUser | null;
+}) {
+  const [user, setUser] = useState<CurrentUser | null>(initialUser ?? null);
+  // `checked` means "we know the answer". The server knowing counts.
+  const [checked, setChecked] = useState(initialUser !== undefined);
   // True only when the /api/me lookup itself failed (network error, 5xx —
   // fetchCurrentUser throws for anything but a clean 401), as opposed to
   // a confirmed 401 (fetchCurrentUser resolves that to `null` normally).
@@ -166,8 +190,14 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
+    // Skipped when the server already answered. That request is the
+    // reason every gated page used to wait before it could show
+    // anything: nothing could decide whether to fetch its own data
+    // until this resolved, so the page sat through a full round trip
+    // before starting the one that mattered.
+    if (initialUser !== undefined) return;
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is stable (useCallback, empty deps)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is stable (useCallback, empty deps); initialUser is a per-render constant from the server
   }, []);
 
   const value = useMemo<CurrentUserState>(
