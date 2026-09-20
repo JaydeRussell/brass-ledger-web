@@ -33,6 +33,31 @@ otherwise, follows these rules:
 Before considering a feature that touches `app/lib/bcp.ts` (or any future
 third-party integration) done, check it against this list.
 
+## A page over two seconds is a bug, not a backlog item
+
+Any page whose content takes **more than 2 seconds** to arrive is a
+genuine defect, fixed with the same urgency as wrong data — not parked
+as a "performance improvement". Past about two seconds a load stops
+reading as *loading* and starts reading as *broken*, and this app gets
+used mid-event on a phone on venue wifi.
+
+Note this is a tighter bar than `SLOW_LOAD_MS` in
+`app/lib/useDelayedFlag.ts` (3s), which is the point at which the UI
+*apologises* to the visitor. Apologising is the fallback; 2s is the
+target.
+
+Almost none of that time is this repo's. The bundle is close to its
+floor — the framework (React + the vinext runtime + the browser entry)
+is ~88% of the critical path, and the app's own code is ~58 KB. What
+makes pages slow is the backend, and above it the *shape* of the
+client's fetching: how many waves a page waits through. Prefer firing a
+request on mount over gating it behind another request's result — check
+whether the endpoint actually needs what you're waiting for, because
+several resolve the account from the session and never needed it.
+
+The rule, the measurement tooling (`make latency`) and its caveats live
+in the backend repo's `CLAUDE.md`.
+
 ## Releases
 
 Brass Ledger is one product across two repos (this one and the sibling
