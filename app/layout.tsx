@@ -12,6 +12,7 @@ import CommandPalette from "./components/shared/commandPalette";
 import { ToastProvider } from "./components/shared/toastContext";
 import ToastViewport from "./components/shared/toastViewport";
 import { CurrentUserProvider } from "./lib/auth";
+import { resolveCurrentUserOnServer } from "./lib/serverAuth";
 import AccentThemeSync from "./components/shared/accentThemeSync";
 import { ViewerItcProvider } from "./lib/viewerItc";
 
@@ -54,11 +55,18 @@ const ACCENT_INIT_SCRIPT = `(function(){try{var a=localStorage.getItem("accentTh
 // that module here breaks the build) for the "Reduce motion" preference.
 const REDUCE_MOTION_INIT_SCRIPT = `(function(){try{if(localStorage.getItem("reduceMotion")==="1")document.documentElement.setAttribute("data-reduce-motion","true");}catch(e){}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Resolved here, once, for every route. Reading the session cookie
+  // makes this render dynamic — which costs nothing, because these
+  // routes already are: production answers `cf-cache-status: BYPASS`
+  // and `cache-control: no-store` on both / and /my-events, measured
+  // 2026-09-20. The earlier worry that this would forfeit edge caching
+  // was about caching that turned out not to be switched on.
+  const initialUser = await resolveCurrentUserOnServer();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -71,7 +79,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
       >
         <ClientErrorLogger />
-        <CurrentUserProvider>
+        <CurrentUserProvider initialUser={initialUser}>
           <AccentThemeSync />
           <ToastProvider>
             <ViewerItcProvider>
