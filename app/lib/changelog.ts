@@ -23,6 +23,15 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.6",
+    date: "2026-09-20",
+    title: "My Events stops re-checking future events",
+    highlights: [
+      "My Events was asking Best Coast Pairings about your upcoming events every time the server woke up — including one two months away that obviously hadn't changed. Details for events more than a day out are now remembered between restarts, so the page has nothing left to look up on a normal visit.",
+      "Events happening right now, or starting within a day, are still re-checked constantly — that's where the round and standings actually move.",
+    ],
+  },
+  {
     version: "0.19.5",
     date: "2026-09-20",
     title: "Player Stats, the first time you load it",
