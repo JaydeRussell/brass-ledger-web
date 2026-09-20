@@ -124,9 +124,15 @@ export async function fetchHeadToHead(
   myBcpUserId: string,
   opponentBcpUserId: string
 ): Promise<HeadToHeadResult> {
+  // Both sides in summary mode: this only reads event ids, names and
+  // dates off the history to find which events the two players shared,
+  // and every one of those comes from the placing-history feed. The
+  // per-event pass it skips would otherwise resolve every event both
+  // players have ever attended — twice — before this check even starts
+  // spending its own BCP requests.
   const [myStats, opponentStats] = await Promise.all([
-    fetchPlayerStats(myBcpUserId),
-    fetchPlayerStats(opponentBcpUserId),
+    fetchPlayerStats(myBcpUserId, { summary: true }),
+    fetchPlayerStats(opponentBcpUserId, { summary: true }),
   ]);
 
   const myEventIds = new Set(myStats.history.map((h) => h.eventId));

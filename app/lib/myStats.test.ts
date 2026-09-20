@@ -81,3 +81,30 @@ test("fetchPlayerStats: encodes the bcpUserId into the URL", async () => {
   await fetchPlayerStats("a/b c");
   assert.ok(calls[0].url.includes(encodeURIComponent("a/b c")), `URL was ${calls[0].url}`);
 });
+
+test("fetchMyStats/fetchPlayerStats only ask for summary when told to", async () => {
+  // The param is opt-out on the backend: a caller that forgets it gets
+  // the full, correct response rather than a quietly incomplete one.
+  // These pin both directions so neither drifts.
+  const body = JSON.stringify({
+    linked: true,
+    eventDetailResolved: true,
+    totalEvents: 0,
+    factions: [],
+    history: [],
+  });
+
+  const { calls } = installFetch(() => ({ status: 200, body }));
+
+  await fetchMyStats();
+  assert.doesNotMatch(calls[0].url, /summary/, "the default must stay the full response");
+
+  await fetchMyStats({ summary: true });
+  assert.match(calls[1].url, /\/api\/me\/stats\?summary=true$/);
+
+  await fetchPlayerStats("u1", { summary: true });
+  assert.match(calls[2].url, /\/api\/players\/u1\/stats\?summary=true$/);
+
+  await fetchPlayerStats("u1");
+  assert.doesNotMatch(calls[3].url, /summary/);
+});
