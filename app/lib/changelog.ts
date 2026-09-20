@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.2",
+    date: "2026-09-20",
+    title: "Housekeeping",
+    highlights: [
+      "Nothing to see — an internal cleanup with no change to how anything looks or works. Every page used to send a small background request recording what the app had just done, written to a log file for debugging. That file stopped being useful a while ago (and never worked at all on the live site), so the whole path is gone: one fewer request on every page load, and the same information now goes straight to the browser's own console.",
+    ],
+  },
+  {
     version: "0.19.1",
     date: "2026-09-20",
     title: "A faster first load",

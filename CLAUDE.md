@@ -127,9 +127,16 @@ Stable, not touched recently unless noted below:
   `app/lib/recentEvents.ts`) — persists to a signed-in account via the
   backend's sync routes; a signed-out visitor still uses `localStorage`
   only, unchanged.
-- **Client-side logging** (`app/lib/clientLog.ts` → `/api/log` →
-  `logs/frontend.log`) — meant to be read alongside the backend's
-  `logs/backend.log` when debugging.
+- **Client-side logging** (`app/lib/clientLog.ts`) — a consistent
+  level/message/context wrapper over `console.log/warn/error`, plus
+  `clientErrorLogger.tsx` routing uncaught errors and unhandled
+  rejections through it. Read in the browser console (the Chrome
+  devtools MCP tools can do this directly). It used to also POST every
+  line to an `/api/log` route that appended to `logs/frontend.log`; that
+  was for an older setup where reading a file beat reading a console,
+  and it never worked in production anyway — a Cloudflare Worker's
+  filesystem is read-only, so the append failed silently and the route
+  returned 204 while writing nothing. Removed 2026-09-20.
 - **Component test coverage** — every component has at least one
   `.test.ts`. This project has no network access to install
   jsdom/@testing-library/react, so it's a hand-rolled DOM-free setup
@@ -212,7 +219,8 @@ Recent (the last few sessions):
   for triage context, but it's never required — anyone, signed in or
   not, can submit. **Confirmed working live**: submitted a real report,
   got the success confirmation, and saw `POST /api/feedback` → 202 in
-  `logs/backend.log`. **Not yet confirmed**: whether the admin alert
+  the backend's own log (`docker compose logs backend`). **Not yet
+  confirmed**: whether the admin alert
   email actually lands in a real inbox — Resend wasn't configured in
   the local dev stack this was tested against; it reuses the same
   `RESEND_API_KEY`/`EMAIL_FROM_ADDRESS`/`ADMIN_EMAILS` as the existing

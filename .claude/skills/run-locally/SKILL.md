@@ -75,14 +75,21 @@ ToolSearch("select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome
 
 The containers are distroless — no shell, so `docker exec ... sh` (or
 `bash`/`cat`/`tail`) fails with "executable file not found in $PATH".
-Read the bind-mounted log files directly from the host instead:
+Read their stdout with `docker compose logs` instead:
 
 ```bash
-tail -30 ../brass-ledger-api/logs/backend.log
-tail -30 logs/frontend.log
+docker compose -f ../brass-ledger-api/docker-compose.yml logs --tail=30 backend
+docker compose -f ../brass-ledger-api/docker-compose.yml logs --tail=30 frontend
 ```
 
 Backend access-log lines are one JSON object per request (method, uri,
 status, latency, user agent) — grep by path or status to confirm a
 specific request actually happened the way you expect, rather than
 guessing from the UI alone.
+
+**Client-side** events (auth checks, caught errors, uncaught exceptions
+— everything through `app/lib/clientLog.ts`) go to the **browser
+console**, not to any server log. Read them with the Chrome devtools
+MCP tools (`read_console_messages`). There used to be a `logs/`
+directory and an `/api/log` route that copied them to disk; both are
+gone — see clientLog.ts's own comment for why.

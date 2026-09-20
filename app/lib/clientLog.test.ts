@@ -1,27 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-// logClientEvent's job is: mirror to the right console method, and POST
-// a JSON body to /api/log without ever throwing — even when fetch
-// itself rejects. Same fake-fetch-by-URL approach as bcp.test.ts and
-// auth.test.ts, plus capturing/restoring the console methods it mirrors
-// to (Node's test runner shares one global console across tests, so
-// each case must put it back the way it found it).
-type Call = { url: string; init?: RequestInit };
-
-function installFetch(behavior: "resolve" | "reject"): { calls: Call[] } {
-  const calls: Call[] = [];
-  (globalThis as unknown as { fetch: typeof fetch }).fetch = (async (
-    url: string,
-    init?: RequestInit
-  ) => {
-    calls.push({ url, init });
-    if (behavior === "reject") throw new Error("network error");
-    return { ok: true, status: 204 } as Response;
-  }) as typeof fetch;
-  return { calls };
-}
-
+// logClientEvent's whole job is to mirror to the console method matching
+// its level, with the message and context, and never to throw. (It used
+// to also POST to /api/log — see clientLog.ts's own comment for why that
+// went away.) Node's test runner shares one global console across tests,
+// so each case captures and restores the method it asserts on.
 function captureConsole(method: "log" | "warn" | "error"): { calls: unknown[][]; restore: () => void } {
   const original = console[method];
   const calls: unknown[][] = [];
@@ -41,7 +25,6 @@ test("logClientEvent: mirrors to the console method matching each level", () => 
   ];
 
   for (const tc of cases) {
-    installFetch("resolve");
     const captured = captureConsole(tc.consoleMethod);
     try {
       logClientEvent(tc.level, "something happened");
@@ -52,38 +35,43 @@ test("logClientEvent: mirrors to the console method matching each level", () => 
   }
 });
 
-test("logClientEvent: POSTs a JSON body to /api/log with the level, message, and context", async () => {
-  const { calls } = installFetch("resolve");
+test("logClientEvent: passes the message and context through to the console", () => {
   const captured = captureConsole("log");
+  let args: unknown[] = [];
   try {
     logClientEvent("info", "sign-in check started", { attempt: 1 });
+    args = captured.calls[0];
   } finally {
     captured.restore();
   }
 
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "/api/log");
-  assert.equal(calls[0].init?.method, "POST");
-  const body = JSON.parse(calls[0].init?.body as string);
-  assert.equal(body.level, "info");
-  assert.equal(body.message, "sign-in check started");
-  assert.deepEqual(body.context, { attempt: 1 });
-  assert.ok(body.timestamp, "should include a timestamp");
+  assert.equal(args[0], "[info]");
+  assert.equal(args[1], "sign-in check started");
+  assert.deepEqual(args[2], { attempt: 1 });
 });
 
-test("logClientEvent: a rejected fetch never throws or rejects", async () => {
-  installFetch("reject");
-  const captured = captureConsole("error");
+test("logClientEvent: renders a missing context as an empty string, not undefined", () => {
+  const captured = captureConsole("warn");
+  let args: unknown[] = [];
   try {
-    // logClientEvent is synchronous from the caller's point of view —
-    // it fires the POST and returns without awaiting it, so this must
-    // not throw even though the underlying fetch will go on to reject.
-    assert.doesNotThrow(() => logClientEvent("error", "boom"));
+    logClientEvent("warn", "no context here");
+    args = captured.calls[0];
   } finally {
     captured.restore();
   }
-  // Give the fire-and-forget fetch's rejection a turn to be handled (by
-  // logClientEvent's own .catch) before the test ends, so an unhandled
-  // rejection from this test doesn't leak into whichever test runs next.
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(args[2], "");
+});
+
+test("logClientEvent: never throws, whatever the console does", () => {
+  // Several call sites log from inside a catch block — a throw here
+  // would replace the real error with a worse one.
+  const original = console.error;
+  console.error = () => {
+    throw new Error("console is broken");
+  };
+  try {
+    assert.doesNotThrow(() => logClientEvent("error", "boom"));
+  } finally {
+    console.error = original;
+  }
 });

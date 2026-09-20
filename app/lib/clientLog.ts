@@ -1,42 +1,35 @@
-// Sends a structured log line to this app's own /api/log route (see
-// app/api/log/route.ts), which appends it to a file on disk — the
-// browser's own console isn't something anyone can read back later, so
-// this is how a client-side event (an auth check result, a caught
-// error, an unhandled exception — see clientErrorLogger.tsx) ends up
-// somewhere persistent and greppable, alongside the backend's own log
-// file.
+// A thin wrapper over console.log/warn/error for client-side events
+// worth narrating — an auth check resolving, a fetch failing, a caught
+// exception (see clientErrorLogger.tsx). The value is the consistent
+// shape (level, message, structured context) and the single place to
+// change how any of it is reported, not the transport.
 //
-// Always also mirrors to console[level] — so local dev in a browser
-// still sees these live in devtools exactly as before — and never
-// throws: a logging call failing (network hiccup, /api/log erroring)
-// must never be the thing that breaks whatever code was trying to log.
+// This used to also POST every line to /api/log, which appended it to
+// logs/frontend.log on disk, back when reading a file was easier than
+// reading a browser's console. That's no longer true — the console is
+// read directly now — and the round trip had stopped doing anything
+// useful in production regardless: the deployed frontend is a
+// Cloudflare Worker, whose filesystem is read-only, so the append
+// failed and was swallowed and the route returned 204 while writing
+// nothing. Every call was a network request that discarded its own
+// payload. The console mirror below was always the part that did the
+// work.
+//
+// Never throws: a logging call failing must never be the thing that
+// breaks whatever code was trying to log. Several call sites are inside
+// a catch block, so a throw here would replace the real error with a
+// worse one. (The old version only guarded the network call; the console
+// call itself was unprotected — no browser's console actually throws,
+// but the guarantee is cheap to keep and it's the one callers rely on.)
 
 export type LogLevel = "info" | "warn" | "error";
 
 export function logClientEvent(level: LogLevel, message: string, context?: unknown): void {
-  const consoleMethod = level === "error" ? console.error : level === "warn" ? console.warn : console.log;
-  consoleMethod(`[${level}]`, message, context ?? "");
-
-  if (typeof fetch !== "function") return; // e.g. during server-side rendering
-
-  const body = JSON.stringify({
-    level,
-    message,
-    context,
-    timestamp: new Date().toISOString(),
-    url: typeof window !== "undefined" ? window.location.href : undefined,
-  });
-
-  fetch("/api/log", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body,
-    // keepalive lets this survive a navigation/unload that happens right
-    // after the call (e.g. logging a sign-in redirect just before the
-    // browser follows it) — without it, a same-tick navigation can
-    // cancel the request before it's sent.
-    keepalive: true,
-  }).catch(() => {
-    // Best-effort only — see the file-level comment above.
-  });
+  try {
+    const consoleMethod = level === "error" ? console.error : level === "warn" ? console.warn : console.log;
+    consoleMethod(`[${level}]`, message, context ?? "");
+  } catch {
+    // Nothing useful left to do — reporting this failure would need the
+    // very thing that just failed.
+  }
 }
