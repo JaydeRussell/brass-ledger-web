@@ -23,6 +23,16 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.19.4",
+    date: "2026-09-20",
+    title: "My Events and Home finish loading",
+    highlights: [
+      "The last slow part of Home, My Events and Calendar. Any event you've registered for that doesn't have a published result yet had its details looked up one at a time, and re-looked-up every minute — several seconds of waiting on pages that were otherwise already quick.",
+      "Those lookups now happen a few at a time rather than in a queue, and how long each event's details are kept depends on the event: one starting more than a day from now is held for hours, while one happening right now (or about to) is still re-checked constantly, because that's the one where the round and standings actually move.",
+      "Net effect for Best Coast Pairings, whose data this all comes from: fewer requests, not more.",
+    ],
+  },
+  {
     version: "0.19.3",
     date: "2026-09-20",
     title: "My Events, Player Stats and Home stop crawling",
