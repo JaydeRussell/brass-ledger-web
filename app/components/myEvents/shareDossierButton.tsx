@@ -33,7 +33,7 @@ export function buildShareText(dossier: Dossier, url: string): string {
  * instead (see the earlier concept mockup), but generating one server-
  * side means this app's Next.js server calling brass-ledger-api itself
  * for the first time — every other request today goes straight from the
- * browser (see app/api/log/route.ts's own doc comment) — which in this
+ * browser, with no server-side fetching anywhere — which in this
  * Docker Compose stack means a different, container-network hostname
  * than the browser-facing NEXT_PUBLIC_BACKEND_URL this app's clients
  * already use (see app/lib/*.ts). That's a deploy-config decision

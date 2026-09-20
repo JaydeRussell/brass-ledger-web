@@ -365,7 +365,7 @@ function HomeContent() {
   // 401. That's deliberate and cheap — they're redirected to /login the
   // moment the check resolves anyway — and it's why none of the three
   // logs on failure: "not signed in" is an expected outcome of racing
-  // the check, not something worth a line in frontend.log. Each card
+  // the check, not something worth a line in the console. Each card
   // just stays empty, which is the same thing that happened before when
   // the fetch was skipped outright.
   React.useEffect(() => {
