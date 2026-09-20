@@ -1,3 +1,4 @@
+"use client";
 // Client for this app's own backend's Google sign-in endpoints
 // (see internal/api/auth.go in the brass-ledger-api repo).
 //
@@ -9,7 +10,7 @@
 // origin (see the backend's FRONTEND_BASE_URL), so this won't work
 // against a backend running for a different origin.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { logClientEvent } from "./clientLog.ts";
 import type { AccentTheme } from "./theme.ts";
 
@@ -92,31 +93,31 @@ export async function signOut(): Promise<void> {
   }
 }
 
+export type CurrentUserState = {
+  user: CurrentUser | null;
+  checked: boolean;
+  authError: boolean;
+  setUser: React.Dispatch<React.SetStateAction<CurrentUser | null>>;
+  refresh: () => Promise<void>;
+};
+
+const CurrentUserContext = createContext<CurrentUserState | null>(null);
+
 /**
- * The reusable "who's signed in" hook — the same shape/logic used by
- * the nav drawer's account section and every gated page (root event
- * viewer, /calendar, /my-events, /stats), instead of each duplicating
- * its own /api/me fetch-on-mount inline (this was literally duplicated
- * in AuthStatus before the nav was a separate drawer from the page
- * content).
+ * Owns the single /api/me lookup for the whole page. Mounted once in
+ * app/layout.tsx, outside every other provider that needs to know who's
+ * signed in (ViewerItcProvider), so there is exactly one lookup per page
+ * load rather than one per consumer.
  *
- * NOT shared state, despite living in one place: every call site gets
- * its own independent `user`/`checked`, each with its own /api/me
- * fetch-on-mount — the nav drawer's instance and a page's instance
- * don't know about each other. That's why signing out
- * (accountSection.tsx's handleSignOut) forces a full page reload after
- * `setUser(null)` rather than trusting that call alone to update
- * what's rendered underneath the drawer.
- *
- * `checked` is false only until the very first lookup resolves — render
- * nothing (or a skeleton) until then, same as the old AuthStatus did, to
- * avoid a flash of "signed out" for someone who's actually signed in.
- * `setUser` is exposed directly so a caller that already knows the
- * result of an action (signing out, or /api/me/bcp-profile linking a
- * profile) can update its own local state immediately rather than
- * waiting on `refresh()` to round-trip to the backend again.
+ * This used to be per-caller state — every consumer (the nav drawer, the
+ * command palette, the feedback widget, ViewerItcProvider, and the routed
+ * page) ran its own fetch-on-mount, so a single page load fired six
+ * identical /api/me requests and twelve /api/log writes. Sharing also
+ * removes the reason accountSection.tsx had to force a full page reload
+ * after sign-out, and the reason linking a BCP profile left the drawer's
+ * copy of `bcpUserId` stale.
  */
-export function useCurrentUser() {
+export function CurrentUserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [checked, setChecked] = useState(false);
   // True only when the /api/me lookup itself failed (network error, 5xx —
@@ -137,7 +138,6 @@ export function useCurrentUser() {
 
   const refresh = useCallback(() => {
     const requestId = ++requestIdRef.current;
-    logClientEvent("info", "auth status check: starting /api/me lookup");
     return fetchCurrentUser()
       .then((u) => {
         if (requestIdRef.current !== requestId) return;
@@ -170,5 +170,58 @@ export function useCurrentUser() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is stable (useCallback, empty deps)
   }, []);
 
-  return { user, checked, authError, setUser, refresh };
+  const value = useMemo<CurrentUserState>(
+    () => ({ user, checked, authError, setUser, refresh }),
+    [user, checked, authError, refresh]
+  );
+
+  return React.createElement(CurrentUserContext.Provider, { value }, children);
+}
+
+// What a consumer rendered outside any CurrentUserProvider sees: the same
+// "nobody's signed in, and we haven't checked yet" state every consumer
+// already handles as its own first render. Deliberately a fallback rather
+// than a throw (unlike useNav), because this project's DOM-free tests
+// render providers like ViewerItcProvider in isolation and assert exactly
+// this pre-check state — see app/lib/viewerItc.test.ts. A module-level
+// constant so its identity is stable across renders.
+const NO_PROVIDER_STATE: CurrentUserState = {
+  user: null,
+  checked: false,
+  authError: false,
+  setUser: () => {},
+  refresh: async () => {},
+};
+
+/**
+ * The reusable "who's signed in" hook — the same shape used by the nav
+ * drawer's account section and every gated page (root event viewer,
+ * /calendar, /my-events, /stats).
+ *
+ * Shared state: every consumer reads the one CurrentUserProvider mounted
+ * in app/layout.tsx, so `setUser` from any of them (sign-out, or
+ * /api/me/bcp-profile linking a profile) is immediately visible to all
+ * the others.
+ *
+ * `checked` is false only until the very first lookup resolves — render
+ * nothing (or a skeleton) until then, to avoid a flash of "signed out"
+ * for someone who's actually signed in. `setUser` is exposed directly so
+ * a caller that already knows the result of an action can apply it
+ * without waiting on `refresh()` to round-trip to the backend again.
+ */
+export function useCurrentUser(): CurrentUserState {
+  const ctx = useContext(CurrentUserContext);
+  if (ctx) return ctx;
+
+  // Warns on every render rather than once — a module-level "already
+  // warned" flag would be a render-time global mutation, which the React
+  // Compiler lint (react-hooks/globals) rejects, and this should be loud
+  // anyway: in the real app the provider is always mounted in
+  // app/layout.tsx, so reaching here at all is a wiring mistake.
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(
+      "useCurrentUser() was called outside a CurrentUserProvider — treating the visitor as signed-out and unchecked. Mount CurrentUserProvider in app/layout.tsx."
+    );
+  }
+  return NO_PROVIDER_STATE;
 }

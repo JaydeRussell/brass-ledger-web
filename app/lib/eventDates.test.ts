@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { eventDateParts, formatDateRange } from "./eventDates.ts";
+import { eventDateParts, formatDateRange, formatCountdown } from "./eventDates.ts";
 
 test("eventDateParts: a bare YYYY-MM-DD is taken literally, with no timezone conversion", () => {
   assert.deepEqual(eventDateParts("2026-01-01"), { year: 2026, month: 1, day: 1 });
@@ -45,4 +45,34 @@ test("formatDateRange: a real multi-day range", () => {
 
 test("formatDateRange: no start date at all returns undefined", () => {
   assert.equal(formatDateRange(undefined, "2026-01-01"), undefined);
+});
+
+// formatCountdown moved here from components/myEvents/eventList.tsx,
+// where it was only ever exercised indirectly through a rendered event
+// card's badge text. It reads the clock, so these pin the boundaries
+// relative to a controlled "now" rather than fixed dates.
+test("formatCountdown: nothing without a start date, or for an unparseable one", () => {
+  assert.equal(formatCountdown(undefined), undefined);
+  assert.equal(formatCountdown("not a date"), undefined);
+});
+
+test("formatCountdown: an event already past its end date is over", () => {
+  const start = new Date(Date.now() - 4 * 86400_000).toISOString();
+  const end = new Date(Date.now() - 2 * 86400_000).toISOString();
+  assert.equal(formatCountdown(start, end), undefined);
+});
+
+test("formatCountdown: started but not finished is Live now", () => {
+  const start = new Date(Date.now() - 3600_000).toISOString();
+  const end = new Date(Date.now() + 86400_000).toISOString();
+  assert.equal(formatCountdown(start, end), "Live now");
+  // no end date at all, already started
+  assert.equal(formatCountdown(start), "Live now");
+});
+
+test("formatCountdown: minutes, hours, then days as the start recedes", () => {
+  const inMs = (ms: number) => new Date(Date.now() + ms).toISOString();
+  assert.match(formatCountdown(inMs(25 * 60_000)) ?? "", /^Starts in \d+m$/);
+  assert.match(formatCountdown(inMs(5 * 3600_000)) ?? "", /^Starts in \d+h$/);
+  assert.match(formatCountdown(inMs(3 * 86400_000)) ?? "", /^Starts in \d+d$/);
 });

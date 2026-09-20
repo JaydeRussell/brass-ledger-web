@@ -12,6 +12,7 @@
 // fetched client-side by the time the Share button is clickable.
 
 import type { Dossier } from "./dossier";
+import { ordinal } from "./formatStats";
 
 const CARD_WIDTH = 1200;
 const CARD_HEIGHT = 630;
@@ -26,32 +27,13 @@ export function buildShareCardText(dossier: Dossier): {
 } {
   const eventCount = `${dossier.totalEvents} event${dossier.totalEvents === 1 ? "" : "s"}`;
   const headline = dossier.bestPlacing
-    ? ordinalPlacing(dossier.bestPlacing.placing) + "-place best finish"
+    ? ordinal(dossier.bestPlacing.placing) + "-place best finish"
     : "No concluded events yet";
   const subline = dossier.bestPlacing ? `across ${eventCount}` : `${eventCount} played`;
   const factionLines = dossier.factions
     .slice(0, 3)
     .map((f) => `${f.faction} — ${f.eventCount} event${f.eventCount === 1 ? "" : "s"}`);
   return { headline, subline, factionLines };
-}
-
-/** 1st/2nd/3rd/4th… — duplicated from playerStatsPanel.tsx's own
- * `ordinal` rather than imported: that one is exported for its own
- * page's tests, not meant as a shared utility, and this is a one-line
- * rule not worth threading a new shared module for. */
-function ordinalPlacing(n: number): string {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1:
-      return `${n}st`;
-    case 2:
-      return `${n}nd`;
-    case 3:
-      return `${n}rd`;
-    default:
-      return `${n}th`;
-  }
 }
 
 /**

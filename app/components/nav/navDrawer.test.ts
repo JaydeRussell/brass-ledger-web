@@ -1,57 +1,31 @@
-import { test, mock } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NavProvider } from "./navContext.tsx";
-import { CommandPaletteProvider } from "../shared/commandPaletteContext.tsx";
+import NavDrawer, { preloadNavDrawerBody } from "./navDrawer.tsx";
 
-// NavDrawer is now built on ui/dialog.tsx's Radix-backed Dialog, which
-// portals its content to document.body. Under a plain react-dom/server
-// static-SSR pass — no real DOM; see app/lib/testUtils.ts's note on why
-// this project doesn't have jsdom yet — Radix's Portal renders nothing at
-// all, so the drawer's actual content (the nav links, active-link
-// highlighting, the account section) isn't inspectable via rendered HTML
-// any more the way it was before this migration. What *is* still verified
-// here: the component mounts cleanly, in both an open and closed state,
-// given a real NavProvider/usePathname context, without throwing — a
-// real (if shallow) regression check for wiring mistakes (a bad prop
-// passed to Dialog, a missing provider, etc). The actual behavior this
-// migration was for — focus trapping, Escape-to-close, active-link
-// highlighting — was verified via a real browser during this change
-// instead; deeper *automated* structural assertions need
-// jsdom/@testing-library/react (confirmed installable, not yet wired up
-// — see CLAUDE.md) to get real coverage of Portal-rendered content back.
+// navDrawer.tsx is only the shell — the drawer's real contents live in
+// navDrawerBody.tsx (and are covered by navDrawerBody.test.ts). What
+// matters here is that the shell renders *nothing* until the body has
+// been loaded, since that emptiness is the whole point: it's what keeps
+// ui/dialog.tsx's Radix Dialog (~37 KB across three chunks) off every
+// route's critical path.
 //
-// One shared mutable variable backing the mock, set per test right before
-// rendering, rather than calling mock.module() again per test — a second
-// mock.module() call for the same specifier isn't guaranteed to affect an
-// already-linked ESM import binding the same way a plain mutation is.
-let currentPath = "/";
-mock.module("next/navigation", {
-  namedExports: { usePathname: () => currentPath },
-});
-const { default: NavDrawer } = await import("./navDrawer.tsx");
+// Both of the shell's mount triggers are effects (a requestIdleCallback
+// and an isOpen watcher), and effects never run under a static SSR pass
+// — see app/lib/testUtils.ts — so this only ever observes the
+// not-yet-mounted state. That it actually loads and animates on open is
+// verified live in a real browser, as with everything else Portal-backed
+// in this project.
 
-function renderInProviders() {
-  return renderToStaticMarkup(
-    React.createElement(
-      CommandPaletteProvider,
-      null,
-      React.createElement(NavProvider, null, React.createElement(NavDrawer))
-    )
+test("renders nothing until the drawer body has been loaded", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(NavProvider, null, React.createElement(NavDrawer))
   );
-}
-
-test("mounts without throwing while closed", () => {
-  currentPath = "/";
-  assert.doesNotThrow(() => {
-    renderInProviders();
-  });
+  assert.equal(html, "");
 });
 
-test("mounts without throwing regardless of the current path", () => {
-  currentPath = "/my-events";
-  assert.doesNotThrow(() => {
-    renderInProviders();
-  });
+test("exposes a preload entry point for hamburgerButton to call on hover", () => {
+  assert.equal(typeof preloadNavDrawerBody, "function");
 });

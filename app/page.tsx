@@ -3,8 +3,7 @@ import React from "react";
 import Link from "next/link";
 
 import BcpProfileLinker from "./components/myEvents/bcpProfileLinker";
-import { formatCountdown } from "./components/myEvents/eventList";
-import { ordinal } from "./components/myEvents/playerStatsPanel";
+import { ordinal } from "./lib/formatStats";
 import AccessStatusMessage from "./components/shared/accessStatusMessage";
 import EmptyState from "./components/shared/emptyState";
 import Skeleton from "./components/shared/skeleton";
@@ -23,7 +22,7 @@ import {
 } from "./lib/friends";
 import { loadRecentEvents, fetchRecentEventsFromServer, type RecentEvent } from "./lib/recentEvents";
 import { useHiddenDashboardCards } from "./lib/dashboardCards";
-import { formatDateRange } from "./lib/eventDates";
+import { formatCountdown, formatDateRange } from "./lib/eventDates";
 import { logClientEvent } from "./lib/clientLog";
 
 // --- "Next up" -------------------------------------------------------
@@ -288,6 +287,42 @@ function JumpBackInCard({ events, onHide }: { events: RecentEvent[]; onHide?: ()
 }
 
 /**
+ * What the dashboard looks like while the sign-in check is still in
+ * flight. Previously this area rendered nothing at all, so a visitor saw
+ * the page header floating above blank space until /api/me came back —
+ * the single most visible part of this app's load, and the one thing
+ * none of the bundle work above could fix.
+ *
+ * Mirrors the real card layout below (hero, two-up row, wide card) so
+ * the content doesn't jump when it arrives.
+ */
+function DashboardSkeleton() {
+  return (
+    <div aria-busy="true" aria-live="polite" className="flex flex-col gap-4">
+      <span className="sr-only">Loading your dashboard…</span>
+      <Card className="p-4">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="mt-3 h-6 w-2/3" />
+        <Skeleton className="mt-2 h-4 w-1/3" />
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[0, 1].map((i) => (
+          <Card key={i} className="p-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="mt-3 h-8 w-16" />
+          </Card>
+        ))}
+      </div>
+      <Card className="p-4">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-3 h-4 w-full" />
+        <Skeleton className="mt-2 h-4 w-4/5" />
+      </Card>
+    </div>
+  );
+}
+
+/**
  * Home — a cross-event dashboard, and the app's new landing route as of
  * the home-dashboard rewrite. The tabbed single-event view that used to
  * live at "/" (Overview/Mine/Team/Roster/Pairings/Placings) moved to
@@ -319,51 +354,47 @@ function HomeContent() {
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
   const { hidden: hiddenCards, hide: hideCard, showAll: showAllCards } = useHiddenDashboardCards();
 
-  // Friends + recent events need no linked BCP profile at all — fetched
-  // as soon as there's an approved session, same gating every other
-  // account-scoped fetch in this app uses.
+  // Friends + recent events need no linked BCP profile — and, since
+  // they're scoped by the session cookie rather than by anything in
+  // `user`, they don't need the /api/me result either. So they fire on
+  // mount, racing the sign-in check instead of queueing behind it: that
+  // takes the Friends and Jump-back-in cards from two round trips to
+  // one.
+  //
+  // The trade is that a signed-out visitor fires three requests that
+  // 401. That's deliberate and cheap — they're redirected to /login the
+  // moment the check resolves anyway — and it's why none of the three
+  // logs on failure: "not signed in" is an expected outcome of racing
+  // the check, not something worth a line in frontend.log. Each card
+  // just stays empty, which is the same thing that happened before when
+  // the fetch was skipped outright.
   React.useEffect(() => {
-    if (!checked || !user || user.status !== "approved") return;
     let cancelled = false;
 
     fetchIncomingFriendRequests()
       .then((r) => {
         if (!cancelled) setFriendRequests(r);
       })
-      .catch((err: unknown) => {
-        logClientEvent("warn", "home: fetching friend requests failed", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
+      .catch(() => {});
     fetchFriends()
       .then((f) => {
         if (!cancelled) setFriends(f);
       })
-      .catch((err: unknown) => {
-        logClientEvent("warn", "home: fetching friends failed", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
-    // user.status === "approved" is already guaranteed by the guard
-    // above, so this is always the synced (not localStorage) path —
-    // unlike app/event/page.tsx's own hydration effect, there's no
-    // signed-out guest mode to fall back to on a gated page like this
-    // one.
+      .catch(() => {});
     fetchRecentEventsFromServer()
       .then((events) => {
         if (!cancelled) setRecentEvents(events);
       })
-      .catch((err: unknown) => {
-        logClientEvent("warn", "home: fetching recent events failed, falling back to local", {
-          error: err instanceof Error ? err.message : String(err),
-        });
+      .catch(() => {
+        // Falls back to this device's own localStorage list, which is
+        // also what a signed-out visitor would have had.
         if (!cancelled) setRecentEvents(loadRecentEvents());
       });
 
     return () => {
       cancelled = true;
     };
-  }, [checked, user]);
+  }, []);
 
   // Next up / Your record both need a linked BCP profile — only fetched
   // once one exists, same gating /my-events, /calendar, and /stats each
@@ -404,7 +435,9 @@ function HomeContent() {
       />
 
       <PageMain>
-        {!checked || !user ? null : user.status !== "approved" ? (
+        {!checked ? (
+          <DashboardSkeleton />
+        ) : !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : (
           <div className="flex flex-col gap-4">

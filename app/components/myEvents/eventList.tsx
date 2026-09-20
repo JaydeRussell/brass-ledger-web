@@ -1,43 +1,9 @@
 "use client";
 import Link from "next/link";
 import type { MyEvent } from "../../lib/myEvents";
-import { formatDateRange } from "../../lib/eventDates";
+import { formatCountdown, formatDateRange } from "../../lib/eventDates";
 import Card from "../ui/card";
 import EmptyState from "../shared/emptyState";
-
-/**
- * "Live now" for an event whose own date range covers this moment,
- * "Starts in Xd/Xh/Xm" counting down to one that hasn't started yet, or
- * undefined for one that's already over. Deliberately computed purely
- * from the event's own StartDate/EndDate rather than which
- * past/present/future bucket a page happened to fetch it into, so it
- * works the same regardless of which list renders it (My Events'
- * Ongoing/Future tabs, the Calendar page's combined upcoming list) —
- * and naturally returns undefined for an already-concluded event
- * without needing to know it came from the Past bucket at all.
- *
- * Exported for app/page.tsx (Home)'s "Next up" hero, the third place
- * that needs the same countdown besides My Events' Ongoing/Future tabs
- * and Calendar's combined list.
- */
-export function formatCountdown(startDate?: string, endDate?: string): string | undefined {
-  if (!startDate) return undefined;
-  const start = new Date(startDate);
-  if (Number.isNaN(start.getTime())) return undefined;
-
-  const now = new Date();
-  if (endDate) {
-    const end = new Date(endDate);
-    if (!Number.isNaN(end.getTime()) && now > end) return undefined; // already over
-  }
-  if (now >= start) return "Live now";
-
-  const diffMin = Math.max(1, Math.round((start.getTime() - now.getTime()) / 60000));
-  if (diffMin < 60) return `Starts in ${diffMin}m`;
-  const diffHour = Math.round(diffMin / 60);
-  if (diffHour < 24) return `Starts in ${diffHour}h`;
-  return `Starts in ${Math.round(diffHour / 24)}d`;
-}
 
 /**
  * One event card: the summary line (name, countdown/status, dates,

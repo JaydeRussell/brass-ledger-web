@@ -1,5 +1,6 @@
 "use client";
 import { useNav } from "./navContext";
+import { preloadNavDrawerBody } from "./navDrawer";
 
 /**
  * Opens the left-hand nav drawer (navDrawer.tsx). Lives in each page's
@@ -14,6 +15,11 @@ export default function HamburgerButton() {
     <button
       type="button"
       onClick={open}
+      // Warms the lazily-loaded drawer chunk (see navDrawer.tsx) before
+      // the click lands, so the panel is ready to animate open. A no-op
+      // once it's already loaded.
+      onPointerEnter={preloadNavDrawerBody}
+      onFocus={preloadNavDrawerBody}
       aria-label="Open menu"
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-surface-border bg-surface-1 text-text-secondary shadow-sm hover:bg-surface-2 print:hidden"
     >

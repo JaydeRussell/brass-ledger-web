@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Rajdhani } from "next/font/google";
+import { Geist, Rajdhani } from "next/font/google";
 import "./globals.css";
 import ClientErrorLogger from "./components/shared/clientErrorLogger";
 import { NavProvider } from "./components/nav/navContext";
@@ -11,15 +11,12 @@ import { CommandPaletteProvider } from "./components/shared/commandPaletteContex
 import CommandPalette from "./components/shared/commandPalette";
 import { ToastProvider } from "./components/shared/toastContext";
 import ToastViewport from "./components/shared/toastViewport";
+import { CurrentUserProvider } from "./lib/auth";
+import AccentThemeSync from "./components/shared/accentThemeSync";
 import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -71,24 +68,27 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: REDUCE_MOTION_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
+        className={`${geistSans.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
       >
         <ClientErrorLogger />
-        <ToastProvider>
-          <ViewerItcProvider>
-            <CommandPaletteProvider>
-              <NavProvider>
-                <NavDrawer />
-                {children}
-                <Footer />
-                <FeedbackWidget />
-              </NavProvider>
-              <CommandPalette />
-              <BottomTabBar />
-            </CommandPaletteProvider>
-          </ViewerItcProvider>
-          <ToastViewport />
-        </ToastProvider>
+        <CurrentUserProvider>
+          <AccentThemeSync />
+          <ToastProvider>
+            <ViewerItcProvider>
+              <CommandPaletteProvider>
+                <NavProvider>
+                  <NavDrawer />
+                  {children}
+                  <Footer />
+                  <FeedbackWidget />
+                </NavProvider>
+                <CommandPalette />
+                <BottomTabBar />
+              </CommandPaletteProvider>
+            </ViewerItcProvider>
+            <ToastViewport />
+          </ToastProvider>
+        </CurrentUserProvider>
       </body>
     </html>
   );

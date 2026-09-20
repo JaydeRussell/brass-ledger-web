@@ -2,7 +2,7 @@
 // The app itself is dark-mode-only (no light/system option); this is
 // purely a choice of accent hue within that one dark palette.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { logClientEvent } from "./clientLog.ts";
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
@@ -64,7 +64,7 @@ export function parseAccentTheme(value: string | null): AccentTheme {
     : "brass";
 }
 
-function readStoredAccentTheme(): AccentTheme {
+export function readStoredAccentTheme(): AccentTheme {
   if (typeof window === "undefined") return "brass";
   try {
     return parseAccentTheme(window.localStorage.getItem(ACCENT_THEME_STORAGE_KEY));
@@ -122,43 +122,27 @@ export async function setAccountAccentTheme(accent: AccentTheme): Promise<void> 
  * always sees — there's no `localStorage` to read on the server) and
  * syncs to the real stored value in an effect right after mount instead.
  *
- * Once `account` is known (non-null), it wins over whatever this device
- * had locally — the same "server wins once signed in" rule this app
- * already uses for follows/recent-events (see page.tsx's hydration
- * effect) — with one deliberate addition: if the account has never
- * actually set a preference (still at the backend's own "brass" default)
- * but this device already has a real, different local choice, that local
- * choice is pushed up once instead of being silently discarded. Runs once
- * per sign-in (guarded by a ref), not on every render — a later manual
- * pick is never clobbered by this effect re-firing, since `account`
- * doesn't change again until the next full sign-in.
+ * Reconciling a signed-in account's saved theme against this device's
+ * local one does NOT happen here — it lives in
+ * components/shared/accentThemeSync.tsx, mounted once in app/layout.tsx.
+ * It used to run in this hook, which meant it only ever ran because the
+ * nav drawer (this hook's only caller, via AccentThemePicker) was kept
+ * mounted on every page by ui/dialog.tsx's `forceMount`. Once the drawer
+ * became lazily loaded that was no longer true, so the reconcile moved
+ * somewhere that is genuinely always mounted. By the time this hook's
+ * own effect reads localStorage, that reconcile has already written the
+ * resolved value there.
  *
- * Pass `user && checked ? { accentTheme: user.accentTheme } : null`.
+ * `account` is still taken here, but only so `setAccent` knows whether a
+ * manual pick should also be saved server-side. Pass
+ * `user && checked ? { accentTheme: user.accentTheme } : null`.
  */
 export function useAccentTheme(account?: { accentTheme: AccentTheme } | null) {
   const [accent, setAccentState] = useState<AccentTheme>("brass");
-  const syncedFromAccountRef = useRef(false);
 
   useEffect(() => {
     Promise.resolve().then(() => setAccentState(readStoredAccentTheme()));
   }, []);
-
-  useEffect(() => {
-    if (!account || syncedFromAccountRef.current) return;
-    syncedFromAccountRef.current = true;
-    Promise.resolve().then(() => {
-      const { resolved, pushLocalUp } = reconcileAccountAccentTheme(account.accentTheme, readStoredAccentTheme());
-      setAccentState(resolved);
-      applyAccentTheme(resolved);
-      if (pushLocalUp) {
-        setAccountAccentTheme(resolved).catch((err: unknown) => {
-          logClientEvent("warn", "pushing local accent theme choice to account failed", {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        });
-      }
-    });
-  }, [account]);
 
   const setAccent = useCallback(
     (next: AccentTheme) => {

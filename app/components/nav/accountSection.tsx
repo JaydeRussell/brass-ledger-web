@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useNav } from "./navContext";
 import { googleSignInUrl, signOut, useCurrentUser } from "../../lib/auth";
 import { logClientEvent } from "../../lib/clientLog";
 import AccentThemePicker from "../ui/accentThemePicker";
@@ -17,6 +18,7 @@ import ReduceMotionToggle from "../ui/reduceMotionToggle";
  */
 export default function AccountSection() {
   const { user, checked, setUser } = useCurrentUser();
+  const { close } = useNav();
   const [signingOut, setSigningOut] = useState(false);
   const pathname = usePathname();
 
@@ -54,17 +56,15 @@ export default function AccountSection() {
     logClientEvent("info", "sign-out: starting", { userId: user.id });
     try {
       await signOut();
+      // One shared CurrentUserProvider now backs every consumer (see
+      // lib/auth.ts), so this single write clears `user` for the page
+      // underneath this drawer too — which is what makes its
+      // useRedirectToLoginIfSignedOut send it to /login. This used to
+      // need a full window.location.reload() purely because each
+      // consumer held its own independent copy of `user`.
       setUser(null);
+      close();
       logClientEvent("info", "sign-out: succeeded");
-      // useCurrentUser() isn't shared state — the page underneath this
-      // drawer (page.tsx/calendar/my-events/stats) has its own
-      // independent instance, with its own `user`, that setUser(null)
-      // above never touches. Without a full reload, the page keeps
-      // rendering as if still signed in (stale event data, wrong gate)
-      // until something else happens to remount it. A reload is the
-      // simplest fix that's actually correct everywhere this drawer can
-      // be opened from, rather than wiring up real shared auth state.
-      window.location.reload();
     } catch (err) {
       // Best-effort — if this failed the session cookie is presumably
       // still there server-side, so leave the UI as signed-in rather
