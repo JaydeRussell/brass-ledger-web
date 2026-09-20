@@ -27,6 +27,7 @@ const {
   fetchBcpPlayers,
   fetchBcpRoster,
   fetchMyIndividualPairings,
+  fetchPlacingRoundScores,
   fetchMyTeamPairings,
   fetchRoundBoard,
   fetchTeamPairingBoards,
@@ -108,8 +109,12 @@ test("fetchBcpRoster: groups players by team and omits players with no team", as
 // --- "My pairings" (individual and team) --------------------------------
 
 test("fetchMyIndividualPairings", async () => {
-  installFetch((url) => {
-    const round = new URL(url).searchParams.get("round");
+  const { calls } = installFetch((url) => {
+    // The batched form: one request naming every round, answered with
+    // one flat list, exactly as the backend does it (see its
+    // BCPHandler.fetchRounds).
+    const params = new URL(url).searchParams;
+    const requested = (params.get("rounds") ?? params.get("round") ?? "").split(",").filter(Boolean);
     const byRound: Record<string, unknown[]> = {
       "1": [
         {
@@ -129,10 +134,19 @@ test("fetchMyIndividualPairings", async () => {
         },
       ],
     };
-    return { status: 200, body: JSON.stringify(byRound[round ?? ""] ?? []) };
+    return {
+      status: 200,
+      body: JSON.stringify(requested.flatMap((r) => byRound[r] ?? [])),
+    };
   });
 
   const results = await fetchMyIndividualPairings("evt-1", "me", 2);
+  assert.equal(
+    calls.length,
+    1,
+    "every round should arrive in one request — walking them in a serial await loop " +
+      "cost a round trip per round, per followed player, before anything rendered"
+  );
   assert.equal(results.length, 1, "should only include rounds I actually appear in");
   const [r1] = results;
   assert.equal(r1.round, 1);
@@ -371,4 +385,44 @@ test("getJSON: a failed request is not cached", async () => {
   const recovered = await fetchBcpEventInfo("evt-flaky");
   assert.equal(recovered.id, "evt-recover");
   assert.equal(calls.length, 2, "caching a failure would turn one dropped request into a blank minute");
+});
+
+test("every rounds-walking caller asks once, not once per round", async () => {
+  // The three functions that used to loop `await` over rounds. Each
+  // ran its own loop, and "my pairings" ran once per followed player,
+  // so a five-round team event could chain dozens of round trips before
+  // the page settled.
+  const body = JSON.stringify([
+    {
+      id: "pr-1", pairingType: "Pairing", round: 1, published: true,
+      player1Id: "p1", player2Id: "p2",
+      teamPlayer1: { id: "t1" }, teamPlayer2: { id: "t2" },
+    },
+  ]);
+
+  for (const [label, run] of [
+    ["fetchMyIndividualPairings", () => fetchMyIndividualPairings("evt-1", "p1", 5)],
+    ["fetchMyTeamPairings", () => fetchMyTeamPairings("evt-1", "t1", 5)],
+    ["fetchPlacingRoundScores", () => fetchPlacingRoundScores("evt-1", false, 5)],
+  ] as const) {
+    __clearRequestCacheForTests();
+    const { calls } = installFetch(() => ({ status: 200, body }));
+    await run();
+    assert.equal(calls.length, 1, `${label} made ${calls.length} requests for 5 rounds, want 1`);
+    assert.match(calls[0], /rounds=1%2C2%2C3%2C4%2C5|rounds=1,2,3,4,5/, `${label} should name every round`);
+  }
+});
+
+test("a zero-round event asks for nothing at all", async () => {
+  // An event that hasn't published a round yet. The old loop simply
+  // didn't execute; the batched form has to short-circuit explicitly
+  // rather than send rounds= with an empty list, which the backend
+  // rejects as malformed.
+  __clearRequestCacheForTests();
+  const { calls } = installFetch(() => ({ status: 200, body: "[]" }));
+
+  const results = await fetchMyIndividualPairings("evt-1", "me", 0);
+
+  assert.equal(results.length, 0);
+  assert.equal(calls.length, 0, "no rounds published means no request worth making");
 });

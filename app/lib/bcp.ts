@@ -352,6 +352,34 @@ async function fetchRoundPairings(
   );
 }
 
+/**
+ * Every pairing across rounds 1..upToRound, in one request.
+ *
+ * The callers below used to walk the rounds in a serial `await` loop,
+ * so a five-round event cost five sequential round trips before
+ * anything could render — and once per followed player, since each
+ * follower ran its own loop. The backend resolves them a few at a time
+ * from the same per-round cache, so this is the same number of requests
+ * to BCP, just not chained through the browser.
+ *
+ * Each record carries the round it belongs to. The backend stamps it
+ * when BCP doesn't: their own `round` field is nullable, which the old
+ * per-round loop quietly papered over with `record.round ?? 0` — a
+ * pairing with no round would have sorted to the front as round zero.
+ */
+async function fetchPairingsUpToRound(
+  eventId: string,
+  upToRound: number,
+  pairingType: "Pairing" | "TeamPairing"
+): Promise<BcpPairingRecord[]> {
+  if (upToRound < 1) return [];
+  const rounds = Array.from({ length: upToRound }, (_, i) => String(i + 1));
+  const params = new URLSearchParams({ type: pairingType, rounds: rounds.join(",") });
+  return getJSON<BcpPairingRecord[]>(
+    `/api/events/${encodeURIComponent(eventId)}/pairings?${params.toString()}`
+  );
+}
+
 function individualPairingToMine(
   record: BcpPairingRecord,
   playerId: string
@@ -422,12 +450,9 @@ export async function fetchMyIndividualPairings(
   upToRound: number
 ): Promise<MyPairing[]> {
   const results: MyPairing[] = [];
-  for (let round = 1; round <= upToRound; round++) {
-    const records = await fetchRoundPairings(eventId, round, "Pairing");
-    for (const record of records) {
-      const mine = individualPairingToMine(record, playerId);
-      if (mine) results.push(mine);
-    }
+  for (const record of await fetchPairingsUpToRound(eventId, upToRound, "Pairing")) {
+    const mine = individualPairingToMine(record, playerId);
+    if (mine) results.push(mine);
   }
   return results.sort((a, b) => a.round - b.round);
 }
@@ -442,12 +467,9 @@ export async function fetchMyTeamPairings(
   upToRound: number
 ): Promise<MyPairing[]> {
   const results: MyPairing[] = [];
-  for (let round = 1; round <= upToRound; round++) {
-    const records = await fetchRoundPairings(eventId, round, "TeamPairing");
-    for (const record of records) {
-      const mine = teamPairingToMine(record, teamPlayerId);
-      if (mine) results.push(mine);
-    }
+  for (const record of await fetchPairingsUpToRound(eventId, upToRound, "TeamPairing")) {
+    const mine = teamPairingToMine(record, teamPlayerId);
+    if (mine) results.push(mine);
   }
   return results.sort((a, b) => a.round - b.round);
 }
@@ -479,16 +501,18 @@ export async function fetchPlacingRoundScores(
     else scoresById.set(id, [pairing]);
   };
 
-  for (let round = 1; round <= upToRound; round++) {
-    const records = await fetchRoundPairings(eventId, round, teamEvent ? "TeamPairing" : "Pairing");
-    for (const record of records) {
-      if (teamEvent) {
-        addScore(record.teamPlayer1?.id, teamPairingToMine(record, record.teamPlayer1?.id ?? ""));
-        addScore(record.teamPlayer2?.id, teamPairingToMine(record, record.teamPlayer2?.id ?? ""));
-      } else {
-        addScore(record.player1Id, individualPairingToMine(record, record.player1Id ?? ""));
-        addScore(record.player2Id, individualPairingToMine(record, record.player2Id ?? ""));
-      }
+  const records = await fetchPairingsUpToRound(
+    eventId,
+    upToRound,
+    teamEvent ? "TeamPairing" : "Pairing"
+  );
+  for (const record of records) {
+    if (teamEvent) {
+      addScore(record.teamPlayer1?.id, teamPairingToMine(record, record.teamPlayer1?.id ?? ""));
+      addScore(record.teamPlayer2?.id, teamPairingToMine(record, record.teamPlayer2?.id ?? ""));
+    } else {
+      addScore(record.player1Id, individualPairingToMine(record, record.player1Id ?? ""));
+      addScore(record.player2Id, individualPairingToMine(record, record.player2Id ?? ""));
     }
   }
   for (const pairings of scoresById.values()) pairings.sort((a, b) => a.round - b.round);
