@@ -14,6 +14,7 @@ import ToastViewport from "./components/shared/toastViewport";
 import { CurrentUserProvider } from "./lib/auth";
 import { resolveCurrentUserOnServer } from "./lib/serverAuth";
 import AccentThemeSync from "./components/shared/accentThemeSync";
+import PopupSignInBridge from "./components/shared/popupSignInBridge";
 import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
@@ -99,6 +100,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${rajdhani.variable} flex min-h-screen flex-col antialiased`}
       >
         <ClientErrorLogger />
+        <PopupSignInBridge />
         <CurrentUserProvider initialUser={initialUser}>
           <AccentThemeSync />
           <ToastProvider>

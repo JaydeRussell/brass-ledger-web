@@ -7,6 +7,7 @@ import Card from "../components/ui/card";
 import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import { googleSignInUrl, useCurrentUser } from "../lib/auth";
+import { handleSignInClick } from "../lib/popupSignIn";
 
 // Mirrors the backend's isSafeReturnPath (brass-ledger-api's
 // internal/api/auth.go) — same purpose (don't redirect somewhere
@@ -43,6 +44,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeReturnPath(searchParams.get("return_to"));
+  const signInUrl = googleSignInUrl(returnTo);
 
   // Already signed in — a stale bookmark, or the back button after
   // signing in from somewhere else. Nothing to do here; send them on to
@@ -73,7 +75,8 @@ function LoginContent() {
                 way.
               </p>
               <a
-                href={googleSignInUrl(returnTo)}
+                href={signInUrl}
+                onClick={(e) => handleSignInClick(e, signInUrl)}
                 className="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-1"
               >
                 Continue with Google

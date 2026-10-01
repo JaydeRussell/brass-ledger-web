@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useNav } from "./navContext";
 import { googleSignInUrl, signOut, useCurrentUser } from "../../lib/auth";
 import { logClientEvent } from "../../lib/clientLog";
+import { handleSignInClick } from "../../lib/popupSignIn";
 import AccentThemePicker from "../ui/accentThemePicker";
 import ReduceMotionToggle from "../ui/reduceMotionToggle";
 
@@ -29,10 +30,12 @@ export default function AccountSection() {
   }
 
   if (!user) {
+    const signInUrl = googleSignInUrl(pathname);
     return (
       <div className="flex flex-col gap-2 border-b border-surface-border p-3">
         <a
-          href={googleSignInUrl(pathname)}
+          href={signInUrl}
+          onClick={(e) => handleSignInClick(e, signInUrl)}
           className="flex items-center justify-center gap-2 rounded-md border border-surface-border bg-surface-2 px-3 py-2 text-sm text-text-secondary shadow-sm hover:bg-surface-1"
         >
           Sign in with Google
