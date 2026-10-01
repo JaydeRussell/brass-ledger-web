@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Rajdhani } from "next/font/google";
 import "./globals.css";
 import ClientErrorLogger from "./components/shared/clientErrorLogger";
@@ -35,6 +35,26 @@ const rajdhani = Rajdhani({
 export const metadata: Metadata = {
   title: "Brass Ledger — Tournament Companion",
   description: "Tournament companion for Warhammer 40k: rosters, pairings, and placings pulled straight from Best Coast Pairings, in one place.",
+  // Makes the app installable ("Add to Home Screen" / "Install app").
+  // A static file in public/ rather than an app/manifest.ts route, so it
+  // doesn't depend on the vinext build supporting that metadata route.
+  // No service worker: browsers no longer need one to install, and one
+  // that cached pages would fight the freshness rules for BCP data.
+  manifest: "/manifest.webmanifest",
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Brass Ledger",
+    statusBarStyle: "black",
+  },
+};
+
+// surface-0 from globals.css, hand-converted to sRGB — tints the
+// installed app's title bar / status bar to match the page.
+export const viewport: Viewport = {
+  themeColor: "#0c0d10",
 };
 
 // Applies the visitor's accent-color theme before first paint — see
