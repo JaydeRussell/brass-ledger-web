@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.20.0",
+    date: "2026-10-01",
+    title: "Install Brass Ledger on your phone",
+    highlights: [
+      "Brass Ledger can now be installed like an app. On Android, open it in Chrome and choose \"Install app\" from the menu; on iPhone, use Share → Add to Home Screen; on a computer, look for the install icon in the address bar. It opens full-screen from its own icon, no browser tab to hunt for mid-event.",
+      "Signing in from the installed app on an iPhone now opens a small sign-in window that closes itself when you're done. iPhones keep an installed app's sign-in separate from the browser's, so the old way left you signed out. If it doesn't work for you, the Feedback button is the quickest way to tell us.",
+      "Pages start loading your data sooner: the app now knows you're signed in before the page arrives instead of checking afterwards, asks for every round's pairings in one go, and stops asking twice for the same thing.",
+      "Behind the scenes, event details and placings are reused while they're refreshed and only re-downloaded from Best Coast Pairings when they've actually changed — quicker for you, and fewer requests for them.",
+      "A security update to the framework the app is built on.",
+    ],
+  },
+  {
     version: "0.19.7",
     date: "2026-09-20",
     title: "My Events was chasing events that no longer exist",
