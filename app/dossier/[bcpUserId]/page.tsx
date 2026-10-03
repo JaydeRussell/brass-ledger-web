@@ -15,6 +15,7 @@ import PageMain from "../../components/layout/pageMain";
 import { useCurrentUser } from "../../lib/auth";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 import { logClientEvent } from "../../lib/clientLog";
+import { formatEventDate } from "../../lib/eventDates";
 
 function StatTile({ label, value, detail }: { label: string; value: React.ReactNode; detail?: string }) {
   return (
@@ -28,10 +29,7 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
 
 /** "Nov 2025" from a BCP date string, or undefined if it can't be parsed. */
 function formatMonthYear(iso?: string): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return formatEventDate(iso, { month: "short", year: "numeric" });
 }
 
 /**

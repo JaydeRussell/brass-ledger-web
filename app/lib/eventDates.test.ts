@@ -1,6 +1,6 @@
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
-import { eventDateParts, formatDateRange, formatCountdown } from "./eventDates.ts";
+import { eventDateParts, formatDateRange, formatCountdown, formatEventDate } from "./eventDates.ts";
 
 test("eventDateParts: a bare YYYY-MM-DD is taken literally, with no timezone conversion", () => {
   assert.deepEqual(eventDateParts("2026-01-01"), { year: 2026, month: 1, day: 1 });
@@ -97,4 +97,15 @@ test("formatCountdown: a bare start date starts at local midnight, not the eveni
   } finally {
     mock.timers.reset();
   }
+});
+
+test("formatEventDate: a bare date keeps its calendar day in any timezone", () => {
+  const opts = { month: "short", day: "numeric", year: "numeric" } as const;
+  assert.equal(formatEventDate("2026-03-01", opts), new Date(2026, 2, 1).toLocaleDateString(undefined, opts));
+  assert.equal(
+    formatEventDate("2026-03-01", { month: "short", year: "numeric" }),
+    new Date(2026, 2, 1).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+  );
+  assert.equal(formatEventDate(undefined, opts), undefined);
+  assert.equal(formatEventDate("not a date", opts), undefined);
 });
