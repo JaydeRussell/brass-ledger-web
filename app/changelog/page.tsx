@@ -2,6 +2,9 @@ import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import Card from "../components/ui/card";
 import { CHANGELOG } from "../lib/changelog";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Changelog" };
 
 /**
  * A public, unguarded page (same as /about — no useRedirectToLoginIfSignedOut,

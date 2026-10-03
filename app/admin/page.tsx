@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Admin" };
 
 // Bare /admin has no content of its own — it's just the two real pages'
 // shared "Admin" grouping in the nav drawer (see navDrawer.tsx's

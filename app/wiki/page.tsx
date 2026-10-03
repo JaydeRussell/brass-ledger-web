@@ -7,6 +7,9 @@ import { DISPOSITIONS, type Disposition } from "../lib/dispositions";
 import { MISSION_MATRIX } from "../lib/missionMatrix";
 import { SPECIAL_ACTION_DEFINITIONS } from "../lib/missionActionGlossary";
 import { MISSION_SOURCES } from "../lib/missionSources";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Wiki" };
 
 const DISPOSITION_BLURBS: Record<Disposition, string> = {
   "Take and Hold":
