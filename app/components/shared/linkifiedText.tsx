@@ -19,10 +19,8 @@ export default function LinkifiedText({ text, className }: LinkifiedTextProps) {
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
-  // The extra RegExp copy is redundant but harmless: matchAll already
-  // clones the regex it's given, so the shared one's lastIndex is never
-  // touched either way.
-  for (const match of text.matchAll(new RegExp(MARKDOWN_LINK))) {
+  // matchAll clones the regex, so the shared one's lastIndex is never touched.
+  for (const match of text.matchAll(MARKDOWN_LINK)) {
     if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
     nodes.push(
       <a
