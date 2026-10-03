@@ -128,6 +128,14 @@ function formatMonthYear(iso?: string): string | undefined {
  * /page.tsx), reached by clicking their name anywhere else in the app
  * (roster, pairings, placings) that already has their bcpUserId in hand.
  */
+/** A format-specific best placing, "…" while the full stats are still
+ * on their way (eventDetailResolved false means "not looked up yet", not
+ * "none"), "—" once looked up and absent. */
+function formatSplit(stats: MyStats, placing: { placing: number } | undefined): string {
+  if (placing !== undefined) return ordinal(placing.placing);
+  return stats.eventDetailResolved ? "—" : "…";
+}
+
 export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }: PlayerStatsPanelProps) {
   const [stats, setStats] = React.useState<MyStats | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -136,7 +144,19 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
 
   React.useEffect(() => {
     let cancelled = false;
-    (mode === "player" ? fetchPlayerStats(bcpUserId) : fetchMyStats())
+    const load = (summary: boolean) =>
+      mode === "player" ? fetchPlayerStats(bcpUserId, { summary }) : fetchMyStats({ summary });
+    // The summary comes back in milliseconds; the full stats need a
+    // per-event lookup that took 3s cold. Show the summary first, then
+    // fill in the format splits when the full response lands.
+    load(true)
+      .then((data) => {
+        if (!cancelled) setStats((prev) => (prev?.eventDetailResolved ? prev : data));
+      })
+      .catch(() => {
+        // The full request below reports any failure.
+      });
+    load(false)
       .then((data) => {
         if (cancelled) return;
         setStats(data);
@@ -305,17 +325,17 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
         />
         <StatTile
           label="Best GT placing"
-          value={stats.bestPlacingGt !== undefined ? ordinal(stats.bestPlacingGt.placing) : "—"}
+          value={formatSplit(stats, stats.bestPlacingGt)}
           detail={fieldDetail(stats.bestPlacingGt)}
         />
         <StatTile
           label="Best Teams placing"
-          value={stats.bestPlacingTeams !== undefined ? ordinal(stats.bestPlacingTeams.placing) : "—"}
+          value={formatSplit(stats, stats.bestPlacingTeams)}
           detail={fieldDetail(stats.bestPlacingTeams)}
         />
         <StatTile
           label="Best RTT placing"
-          value={stats.bestPlacingRtt !== undefined ? ordinal(stats.bestPlacingRtt.placing) : "—"}
+          value={formatSplit(stats, stats.bestPlacingRtt)}
           detail={fieldDetail(stats.bestPlacingRtt)}
         />
       </div>
