@@ -1,6 +1,7 @@
 import type { Disposition } from "../../lib/dispositions";
 import { getPrimaryMission } from "../../lib/missionMatrix";
 import { deploymentMapImages } from "../../lib/missionMatchups";
+import LayoutViewer, { useLayoutParam } from "./layoutViewer";
 import { MISSION_SOURCES } from "../../lib/missionSources";
 import type { MissionId } from "../../lib/missions";
 import MissionScoringDetails from "../shared/missionScoringDetails";
@@ -48,6 +49,7 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
   const myMission = getPrimaryMission(myDisposition, opponentDisposition);
   const opponentMission = getPrimaryMission(opponentDisposition, myDisposition);
   const layouts = deploymentMapImages(myDisposition, opponentDisposition);
+  const viewer = useLayoutParam();
 
   return (
     <div className="flex flex-col gap-3">
@@ -71,12 +73,12 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
         <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Deployment layouts</p>
         <div className="mt-1.5 flex gap-2">
           {layouts.map((layout) => (
-            <a
+            <button
               key={layout.layout}
-              href={layout.src}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 overflow-hidden rounded-md border border-surface-border"
+              type="button"
+              onClick={() => viewer.openLayout(layout.layout)}
+              aria-label={`View layout ${layout.layout} full screen`}
+              className="flex-1 overflow-hidden rounded-md border border-surface-border text-left hover:border-brass-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-500/60"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- a
                   pre-cropped local static asset, not a remote/optimizable
@@ -90,9 +92,15 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
               <span className="block bg-surface-2 py-0.5 text-center text-xs text-text-secondary">
                 Layout {layout.layout}
               </span>
-            </a>
+            </button>
           ))}
         </div>
+        <LayoutViewer
+          layouts={layouts}
+          open={viewer.open}
+          onSelect={viewer.selectLayout}
+          onClose={viewer.close}
+        />
       </div>
 
       <p className="text-xs text-text-tertiary">

@@ -209,10 +209,12 @@ function HomeContent() {
   // change both tab and q together — since each call replaces the whole
   // query string built from the current URL, so two separate calls in the
   // same tick would race and the second would clobber the first's change).
-  // Uses router.replace (not push) so switching tabs/typing a search never
-  // piles up back-button history entries.
+  // Replaces the current history entry by default, so typing a search or
+  // toggling compare never piles up back-button entries. `push` adds one
+  // instead — used for tab switches, so back returns to the previous tab.
   const updateQuery = React.useCallback(
-    (patch: {
+    (
+      patch: {
       tab?: TabKey;
       q?: string;
       compare?: boolean;
@@ -220,7 +222,9 @@ function HomeContent() {
       teamB?: string | null;
       playerA?: string | null;
       playerB?: string | null;
-    }) => {
+      },
+      { push = false }: { push?: boolean } = {}
+    ) => {
       const params = new URLSearchParams(searchParams.toString());
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
@@ -269,7 +273,9 @@ function HomeContent() {
       // stale searchParams snapshot.
       params.delete("event");
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      const href = query ? `${pathname}?${query}` : pathname;
+      if (push) router.push(href, { scroll: false });
+      else router.replace(href, { scroll: false });
     },
     [pathname, router, searchParams]
   );
@@ -961,7 +967,8 @@ function HomeContent() {
   };
 
   const changeTab = (tab: TabKey) => {
-    updateQuery({ tab });
+    if (tab === activeTab) return;
+    updateQuery({ tab }, { push: true });
     if (tab === "placings" && placings.length === 0) {
       // A direct user action (clicking the tab) — the placings-loading
       // effect only ever sets state from its own async callbacks, so the
