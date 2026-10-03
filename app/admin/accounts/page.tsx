@@ -200,6 +200,8 @@ export default function AdminAccountsPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               <input
+                type="search"
+                aria-label="Search accounts by name or email"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search by name or email…"

@@ -26,6 +26,9 @@ export default function SearchBar({ value, onChange, placeholder }: SearchBarPro
       </svg>
       <input
         type="text"
+        // The placeholder alone isn't a reliable accessible name, and it
+        // disappears once something is typed.
+        aria-label={placeholder ?? "Search"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "Search…"}
@@ -36,7 +39,7 @@ export default function SearchBar({ value, onChange, placeholder }: SearchBarPro
           type="button"
           onClick={() => onChange("")}
           aria-label="Clear search"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-sm leading-none text-text-tertiary hover:bg-surface-2 hover:text-text-primary"
+          className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-sm leading-none text-text-tertiary hover:bg-surface-2 hover:text-text-primary"
         >
           ×
         </button>
