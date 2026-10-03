@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.4",
+    date: "2026-10-03",
+    title: "Round notes, narrow screens and team events",
+    highlights: [
+      "Round notes: the button says \"Show notes\" when you've saved some, and closing and reopening the box no longer throws away what you were typing.",
+      "Tab rows (My Events, admin pages) scroll on the narrowest phones instead of running off the edge.",
+      "Team events: refreshing the round also refreshes any team pairing you have open, a board that failed to load is retried when you open it again, and ITC ranks fill in even if they weren't ready when you opened it.",
+      "Admin: the feedback count in the menu updates as soon as you resolve a report, and searching accounts treats _ and % as ordinary characters.",
+    ],
+  },
+  {
     version: "0.23.3",
     date: "2026-10-03",
     title: "Faster stats, keyboard fixes, and less kept about you",
