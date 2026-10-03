@@ -212,8 +212,10 @@ export type EventInfo = {
  * Event metadata, fetched from this app's own backend (which handles the
  * caching/rate-limiting against BCP that used to happen here).
  */
-export function fetchBcpEventInfo(eventId: string): Promise<EventInfo> {
-  return getJSON<EventInfo>(`/api/events/${encodeURIComponent(eventId)}`);
+// `refresh` asks the backend to re-check BCP instead of answering from
+// its 60s cache — the manual refresh button's path.
+export function fetchBcpEventInfo(eventId: string, refresh = false): Promise<EventInfo> {
+  return getJSON<EventInfo>(`/api/events/${encodeURIComponent(eventId)}${refresh ? "?refresh=true" : ""}`);
 }
 
 // --- Players / rosters ------------------------------------------------------
@@ -222,8 +224,8 @@ export function fetchBcpEventInfo(eventId: string): Promise<EventInfo> {
  * Fetches every registered player for a BCP event, with each player's
  * actual per-event tournament team name already resolved by the backend.
  */
-export function fetchBcpPlayers(eventId: string): Promise<Player[]> {
-  return getJSON<Player[]>(`/api/events/${encodeURIComponent(eventId)}/players`);
+export function fetchBcpPlayers(eventId: string, refresh = false): Promise<Player[]> {
+  return getJSON<Player[]>(`/api/events/${encodeURIComponent(eventId)}/players${refresh ? "?refresh=true" : ""}`);
 }
 
 /** Groups a flat player list by tournament team name. Players with no

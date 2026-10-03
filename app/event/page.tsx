@@ -324,6 +324,9 @@ function HomeContent() {
   // updates the already-visible content in place instead of flashing back
   // to a loading state.
   const [eventRefreshKey, setEventRefreshKey] = React.useState(0);
+  // Set by refreshEventData so the load effect knows this run is a manual
+  // refresh and should bypass the caches; read and cleared by the effect.
+  const eventRefreshRequestedRef = React.useRef(false);
   const [refreshingEvent, setRefreshingEvent] = React.useState(false);
   // BCP's current flagship ITC ranking league id, used to link each player
   // card to their already-published BCP ranking profile — see
@@ -517,7 +520,9 @@ function HomeContent() {
     let cancelled = false;
     setRefreshingEvent(true);
 
-    Promise.all([fetchBcpEventInfo(eventId), fetchBcpPlayers(eventId)])
+    const refresh = eventRefreshRequestedRef.current;
+    eventRefreshRequestedRef.current = false;
+    Promise.all([fetchBcpEventInfo(eventId, refresh), fetchBcpPlayers(eventId, refresh)])
       .then(([info, playerList]) => {
         if (cancelled) return;
         setEventInfo(info);
@@ -592,6 +597,7 @@ function HomeContent() {
   // timer, and refreshEventData's sibling refreshPlacings below for the
   // same pattern scoped to one tab instead of the whole page.
   const refreshEventData = () => {
+    eventRefreshRequestedRef.current = true;
     setEventRefreshKey((k) => k + 1);
   };
 
@@ -911,6 +917,13 @@ function HomeContent() {
   const teams = useMemo(() => groupByTeam(players), [players]);
 
   const handleChangeEvent = (id: string) => {
+    // Re-choosing the open event would reset the page and wait on a load
+    // effect that only re-runs when the id changes, so it never finished.
+    // Treat it as a refresh instead.
+    if (id === eventId) {
+      refreshEventData();
+      return;
+    }
     setEventId(id);
     writeLocalStorage(EVENT_ID_STORAGE_KEY, id);
     // These resets happen here, in a direct event handler, rather than in
@@ -947,6 +960,25 @@ function HomeContent() {
     setPlacingsError(null);
     setPlacingRoundScores(new Map());
   };
+  // A `?event=` arriving after mount (the command palette or a link opened
+  // while already on this page) switches to that event. The first one is
+  // consumed by the hydration effect above.
+  const eventParamAfterMount = searchParams.get("event");
+  useEffect(() => {
+    if (!hydrated || !eventParamAfterMount) return;
+    Promise.resolve().then(() => {
+      if (eventParamAfterMount !== eventId) {
+        writeLocalStorage(EVENT_ID_STORAGE_KEY, eventParamAfterMount);
+        handleChangeEvent(eventParamAfterMount);
+      } else {
+        updateQuery({});
+      }
+    });
+    // Runs only when the param itself changes; handleChangeEvent reads the
+    // latest state each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventParamAfterMount, hydrated]);
+
 
   const changeBoardRound = (round: number) => {
     if (!eventInfo) return;
