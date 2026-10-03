@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.22.0",
+    date: "2026-10-02",
+    title: "Following is gone; your own row stands out",
+    highlights: [
+      "Following teams and players has been removed, along with the Follow buttons, the header pills, the \"Following\" cards on Mine and the per-player history on Pairings.",
+      "Your own row is now highlighted in Round pairings and Placings automatically, from your linked Best Coast Pairings profile.",
+      "\"Your round\" now always shows your opponent's ITC rank. Before, it only appeared if you happened to follow them.",
+      "The Mine tab tells you why \"Your round\" isn't showing yet: no linked profile, not on this event's roster, or the event hasn't started.",
+    ],
+  },
+  {
     version: "0.21.0",
     date: "2026-10-02",
     title: "ITC ranks on every roster card, and faction search",
