@@ -34,7 +34,9 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  title: "Brass Ledger — Tournament Companion",
+  // Each route sets its own title through this template, so tabs,
+  // history and the installed app's switcher can tell pages apart.
+  title: { default: "Brass Ledger — Tournament Companion", template: "%s · Brass Ledger" },
   description: "Tournament companion for Warhammer 40k: rosters, pairings, and placings pulled straight from Best Coast Pairings, in one place.",
   // Makes the app installable ("Add to Home Screen" / "Install app").
   // A static file in public/ rather than an app/manifest.ts route, so it

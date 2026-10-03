@@ -39,3 +39,9 @@ test("the clear button only appears once there's a value, and clears it", () => 
   clearButton!.props.onClick();
   assert.deepEqual(calls, [""]);
 });
+
+test("the input is labelled for assistive tech, not just by its placeholder", () => {
+  const tree = SearchBar({ value: "", onChange: () => {}, placeholder: "Search standings, factions, teams…" });
+  const input = find(tree, (el) => el.type === "input");
+  assert.equal(input?.props["aria-label"], "Search standings, factions, teams…");
+});

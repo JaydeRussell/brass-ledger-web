@@ -2,6 +2,9 @@ import Link from "next/link";
 import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import Card from "../components/ui/card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "About" };
 
 /**
  * A public, unguarded page describing what Brass Ledger is — unlike

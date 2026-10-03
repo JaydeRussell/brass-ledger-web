@@ -17,7 +17,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: "bg-brass-500 text-[oklch(0.16_0.006_260)] hover:bg-brass-600",
   secondary: "border border-surface-border bg-surface-2 text-text-primary hover:bg-surface-1",
   ghost: "text-text-secondary hover:bg-surface-2 hover:text-text-primary",
-  danger: "bg-danger-500 text-white hover:bg-danger-600",
+  // danger-600 under white text is 5.4:1; danger-500 was 3.89:1.
+  danger: "bg-danger-600 text-white hover:brightness-90",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

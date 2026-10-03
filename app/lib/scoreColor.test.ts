@@ -59,7 +59,7 @@ test("itcGradientStyle", () => {
       `${tc.name}: backgroundColor ${style.backgroundColor} isn't a valid rgb() string`
     );
     assert.ok(
-      style.color === "#27272a" || style.color === "#fafafa",
+      style.color === "#000000" || style.color === "#ffffff",
       `${tc.name}: color ${style.color} isn't one of the two expected text colors`
     );
   }
@@ -161,4 +161,19 @@ test("itcGradientStyle ignores a null/undefined viewerRanking and falls back to 
   const withOmitted = itcGradientStyle(ranking);
   assert.deepEqual(withNull, withOmitted);
   assert.deepEqual(withUndefined, withOmitted);
+});
+
+test("every point of the ITC badge gradient keeps its text at 4.5:1 or better", async () => {
+  const { itcRampStyle, relativeLuminance, contrastRatio } = await import("./scoreColor.ts");
+  const rgb = (c: string) => {
+    if (c.startsWith("#")) return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as [number, number, number];
+    return c.match(/\d+/g)!.map(Number) as [number, number, number];
+  };
+  let worst = Infinity;
+  for (let i = 0; i <= 100; i++) {
+    const { backgroundColor, color } = itcRampStyle(i / 100);
+    const ratio = contrastRatio(relativeLuminance(...rgb(backgroundColor)), relativeLuminance(...rgb(color)));
+    worst = Math.min(worst, ratio);
+  }
+  assert.ok(worst >= 4.5, `worst contrast along the ramp is ${worst.toFixed(2)}:1`);
 });

@@ -50,7 +50,9 @@
   --surface-border: oklch(0.33 0.01 260);
   --text-primary: oklch(0.94 0.004 260);
   --text-secondary: oklch(0.72 0.01 260);
-  --text-tertiary: oklch(0.52 0.012 260);
+  /* 0.65 is the darkest tertiary that keeps small text at 4.5:1 on every
+     surface (4.66:1 on surface-2); 0.52 measured 2.74–3.52:1. */
+  --text-tertiary: oklch(0.65 0.012 260);
 
   /* Brass/bronze accent ramp */
   --brass-200: oklch(0.88 0.05 85);
