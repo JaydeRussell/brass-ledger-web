@@ -34,7 +34,9 @@ type TabsProps<T extends string> = {
  */
 export function Tabs<T extends string>({ value, onValueChange, tabs, label }: TabsProps<T>) {
   return (
-    <RadixTabs.Root value={value} onValueChange={(v) => onValueChange(v as T)}>
+    // min-w-0 / max-w-full let the root shrink inside a flex row, so the
+    // list scrolls instead of running off a narrow screen.
+    <RadixTabs.Root value={value} onValueChange={(v) => onValueChange(v as T)} className="min-w-0 max-w-full">
       <RadixTabs.List aria-label={label} className="scrollbar-none flex gap-1 overflow-x-auto">
         {tabs.map((tab) => (
           <RadixTabs.Trigger
