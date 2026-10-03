@@ -23,6 +23,19 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.0",
+    date: "2026-10-02",
+    title: "Display settings, roster sorting, and a back button that behaves",
+    highlights: [
+      "New Display settings in the menu: Text size, Density (Compact, Default or Roomy), and Higher contrast, alongside Theme and Reduce motion. They're saved on each device. Brass Ledger also now follows your phone's own text size setting.",
+      "Compact fits more on screen, with one-line Placings rows and shorter labels. Roomy spells things out, with full disposition names, full ITC ranks and each player's faction on Pairings.",
+      "Sort the Roster by name, faction, club or disposition.",
+      "Search now finds players by their club or team name, on Roster, Pairings and Placings.",
+      "Deployment layouts open full screen inside the app, with a Close button and A/B/C switching. Before, they opened the bare image, and in the installed app the only way out was the back button.",
+      "The back button now steps back through the event page's tabs instead of leaving the page in one jump.",
+    ],
+  },
+  {
     version: "0.22.0",
     date: "2026-10-02",
     title: "Following is gone; your own row stands out",
