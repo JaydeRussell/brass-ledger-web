@@ -10,9 +10,10 @@ otherwise, follows these rules:
 
 1. **No polling.** Never fetch on a timer/interval. Fetch on page load and
    on an explicit user action (e.g. a Refresh button) only.
-2. **Cache, and enforce a minimum refetch interval.** Even a manual
-   refresh is rate-limited client-side (default: no more than once every
-   60 seconds) so mashing a button — or having several tabs open — can't
+2. **Cache, and enforce a minimum refetch interval.** Routine reads are
+   cached for 60 seconds, and even a manual refresh is rate-limited (a 2s
+   cooldown on the Refresh button, `app/lib/refreshCooldown.ts`, matched
+   by the backend's 2s manual-invalidate floor) so mashing a button can't
    hammer the endpoint.
 3. **De-duplicate concurrent requests.** If a fetch for the same resource
    is already in flight, reuse that promise instead of firing a second

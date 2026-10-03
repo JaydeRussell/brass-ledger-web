@@ -10,7 +10,7 @@ type SearchBarProps = {
  * A plain client-side text filter over whatever's already loaded and
  * displayed (roster cards, the pairings board, standings rows). It never
  * triggers a request or changes what data is fetched — just narrows down
- * what's shown, by name.
+ * what's shown, matching name, faction, subfaction and club/team.
  */
 export default function SearchBar({ value, onChange, placeholder }: SearchBarProps) {
   return (

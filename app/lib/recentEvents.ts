@@ -93,7 +93,7 @@ export async function fetchRecentEventsFromServer(): Promise<RecentEvent[]> {
 
 /**
  * Records that the signed-in account just viewed an event. Fire-and-forget
- * from the caller's point of view (see app/page.tsx) — the server is the
+ * from the caller's point of view (see app/event/page.tsx) — the server is the
  * source of truth for a signed-in visitor, so there's no local list to
  * merge the result back into the way recordRecentEvent above does.
  */

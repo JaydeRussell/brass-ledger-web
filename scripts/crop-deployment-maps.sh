@@ -6,12 +6,11 @@
 # the version this was last run against).
 #
 # Crops the 45 deployment-map diagrams out of the official "Warhammer Event
-# Companion" PDF (pages 9-53) into public/deployment-maps/, one PNG per
+# Companion" PDF (pages 9-53) into public/deployment-maps/, one WebP per
 # disposition-pairing x layout-letter.
 #
-# Page order (confirmed via `pdftotext -layout`, not guessed — each of the
-# 15 disposition pairings occupies exactly 3 consecutive pages, layouts
-# A/B/C in that order, starting at page 9):
+# Page order (each of the 15 disposition pairings occupies exactly 3
+# consecutive pages, layouts A/B/C in that order, starting at page 9):
 #   9-11   Take and Hold      vs Take and Hold
 #   12-14  Take and Hold      vs Purge the Foe
 #   15-17  Take and Hold      vs Disruption

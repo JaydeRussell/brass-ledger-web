@@ -4,11 +4,10 @@ import { forwardRef } from "react";
 import * as RadixDropdownMenu from "@radix-ui/react-dropdown-menu";
 
 // Styled re-exports of Radix's own pieces, composed like Radix's API
-// itself rather than one over-abstracted component — this needs to serve
-// two different shapes of consumer: a plain menu-of-items (the theme
-// toggle, the admin page's role change) and a popover with arbitrary rich
-// content inside it (eventSettings.tsx's search input + filtered list +
-// buttons, none of which are DropdownMenu.Item). Content/Item are the
+// itself rather than one over-abstracted component, so it serves both a
+// plain menu-of-items and a popover with arbitrary rich content inside
+// it (eventSettings.tsx's search input + filtered list + buttons, none
+// of which are DropdownMenu.Item). Content/Item are the
 // only pieces this app's own styling needs; Root/Trigger are re-exported
 // unstyled since a trigger is always some existing button/element.
 export const DropdownMenu = RadixDropdownMenu.Root;

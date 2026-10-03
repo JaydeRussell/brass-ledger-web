@@ -25,7 +25,6 @@ function installFetch(handler: (url: string) => FakeResponse): { calls: string[]
 const {
   fetchBcpEventInfo,
   fetchBcpPlayers,
-  fetchBcpRoster,
   fetchMyIndividualPairings,
   fetchPlacingRoundScores,
   fetchMyTeamPairings,
@@ -85,28 +84,6 @@ test("fetchBcpPlayers: passes through the player list", async () => {
   assert.equal(players.length, 1);
   assert.equal(players[0].name, "Anna");
 });
-
-test("fetchBcpRoster: groups players by team and omits players with no team", async () => {
-  installFetch(() => ({
-    status: 200,
-    body: JSON.stringify([
-      { id: "p1", name: "Anna", faction: "Necrons", team: "Team A" },
-      { id: "p2", name: "Bob", faction: "Orks", team: "Team A" },
-      { id: "p3", name: "Cara", faction: "Tau", team: "Team B" },
-      { id: "p4", name: "Dan", faction: "Aeldari" }, // no team — singles-style entry
-    ]),
-  }));
-  const roster = await fetchBcpRoster("evt-1");
-  assert.deepEqual(
-    [...roster.keys()].sort(),
-    ["Team A", "Team B"],
-    "roster should only have keys for players that actually have a team"
-  );
-  assert.equal(roster.get("Team A")?.length, 2);
-  assert.equal(roster.get("Team B")?.length, 1);
-});
-
-// --- "My pairings" (individual and team) --------------------------------
 
 test("fetchMyIndividualPairings", async () => {
   const { calls } = installFetch((url) => {

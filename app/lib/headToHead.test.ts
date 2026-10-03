@@ -78,7 +78,7 @@ test("no shared events: nothing checked, no encounters", async () => {
   statsByBcpUserId["them"] = stats([{ eventId: "e2", eventName: "Theirs Only", eventDate: "2026-01-01", placing: 1 }]);
 
   const result = await fetchHeadToHead("me", "them");
-  assert.deepEqual(result, { sharedEventsChecked: 0, encounters: [] });
+  assert.deepEqual(result, { sharedEventsChecked: 0, sharedEventsFailed: 0, encounters: [] });
 });
 
 test("singles: a shared event where we were actually paired is a real encounter", async () => {
@@ -214,7 +214,9 @@ test("one event failing to resolve doesn't fail the whole check", async () => {
   throwForEventIds.add("bad");
 
   const result = await fetchHeadToHead("me", "them");
-  assert.equal(result.sharedEventsChecked, 2);
+  // "bad" threw, so only "good" counts as checked.
+  assert.equal(result.sharedEventsChecked, 1);
+  assert.equal(result.sharedEventsFailed, 1);
   assert.deepEqual(result.encounters, [
     { eventId: "good", eventName: "Good Event", round: 1, myScore: undefined, opponentScore: undefined, outcome: "draw" },
   ]);

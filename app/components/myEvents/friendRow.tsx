@@ -29,7 +29,6 @@ function EventLine({ event }: { event: MyEvent }) {
  */
 export default function FriendRow({ friend, onRemove }: { friend: Friend; onRemove: (userId: number) => void }) {
   const [events, setEvents] = useState<EventsState>(null);
-  const [removing, setRemoving] = useState(false);
 
   const toggleEvents = () => {
     if (events) {
@@ -49,14 +48,6 @@ export default function FriendRow({ friend, onRemove }: { friend: Friend; onRemo
       });
   };
 
-  const handleRemove = async () => {
-    setRemoving(true);
-    try {
-      onRemove(friend.userId);
-    } finally {
-      setRemoving(false);
-    }
-  };
 
   return (
     <li className="rounded-lg border border-surface-border bg-surface-1 p-3">
@@ -75,7 +66,7 @@ export default function FriendRow({ friend, onRemove }: { friend: Friend; onRemo
               {events ? "Hide events" : "Their events"}
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={handleRemove} disabled={removing}>
+          <Button variant="ghost" size="sm" onClick={() => onRemove(friend.userId)}>
             Remove
           </Button>
         </div>

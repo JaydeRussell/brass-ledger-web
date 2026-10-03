@@ -2,12 +2,11 @@
 import React from "react";
 
 // How long a load has to sit before it counts as slow enough to say
-// something about — matches the project's own "any load time greater
-// than 3 seconds is a problem" bar. A first-ever (uncached) load of an
-// event/account this app has never seen crosses this fairly often; once
-// this project's own durable BCP cache (brass-ledger-api's
-// internal/bcpcache) is warm for it, most loads don't.
-export const SLOW_LOAD_MS = 3000;
+// something about — the project's own bar: a page whose content takes
+// more than 2 seconds is treated as broken (CLAUDE.md). A first-ever
+// (uncached) load of an event or account crosses it fairly often; once
+// brass-ledger-api's durable BCP cache is warm for it, most loads don't.
+export const SLOW_LOAD_MS = 2000;
 
 /**
  * True once `active` has stayed true for at least `delayMs` (default

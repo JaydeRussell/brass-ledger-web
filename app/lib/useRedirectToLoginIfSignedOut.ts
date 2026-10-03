@@ -15,12 +15,12 @@ import type { CurrentUser } from "./auth";
  * source of truth for its render logic too — this hook only ever
  * triggers a redirect as a side effect, it never renders anything.
  *
- * `authError` (default false — every call site but the main event page
- * currently omits it, unchanged behavior there) skips the redirect when
+ * `authError` (default false; only the event page passes it) skips the
+ * redirect when
  * true: `user` is null because the /api/me lookup itself failed (bad
  * connection), not because of a confirmed 401. Redirecting away in that
  * case would lose whatever's already on screen for no reason — a page
- * with its own last-known-good fallback (see app/page.tsx's
+ * with its own last-known-good fallback (see app/event/page.tsx's
  * eventCache.ts) wants to keep showing it instead.
  */
 export function useRedirectToLoginIfSignedOut(

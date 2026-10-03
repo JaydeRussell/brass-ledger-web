@@ -4,9 +4,7 @@
 //
 // Session state lives in an httpOnly cookie the backend sets on
 // successful sign-in — every request here needs `credentials: "include"`
-// so the browser actually sends/receives it, unlike the plain
-// unauthenticated reads in bcp.ts (which don't need cookies at all). The
-// backend's CORS config only allows this from the configured frontend
+// so the browser actually sends/receives it cross-origin. The backend's CORS config only allows this from the configured frontend
 // origin (see the backend's FRONTEND_BASE_URL), so this won't work
 // against a backend running for a different origin.
 
@@ -144,7 +142,7 @@ export function CurrentUserProvider({
   // fetchCurrentUser throws for anything but a clean 401), as opposed to
   // a confirmed 401 (fetchCurrentUser resolves that to `null` normally).
   // Both leave `user` null, but a caller that can fall back to
-  // already-cached content on a bad connection (see app/page.tsx's
+  // already-cached content on a bad connection (see app/event/page.tsx's
   // eventCache.ts-backed fallback) needs to tell the two apart — a real
   // 401 means sign in again; a failed lookup means "unknown, don't
   // navigate away from what's already on screen."

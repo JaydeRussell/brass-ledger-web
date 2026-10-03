@@ -53,6 +53,9 @@ type PlayerCompareProps = {
   players: Player[];
   itcLeagueId?: string | null;
   itcRankings?: Record<string, ItcRanking | null>;
+  // Asks for a player's ITC ranking once their card is on screen (see
+  // page.tsx's requestItcRanking).
+  onRequestItc?: (bcpUserId: string) => void;
   selectedA: string | null;
   selectedB: string | null;
   onSelectA: (playerId: string | null) => void;
@@ -71,6 +74,7 @@ export default function PlayerCompare({
   players,
   itcLeagueId,
   itcRankings,
+  onRequestItc,
   selectedA,
   selectedB,
   onSelectA,
@@ -111,6 +115,7 @@ export default function PlayerCompare({
           player={selected}
           itcLeagueId={itcLeagueId}
           itcRanking={selected.bcpUserId ? itcRankings?.[selected.bcpUserId] : undefined}
+          onVisible={selected.bcpUserId && onRequestItc ? () => onRequestItc(selected.bcpUserId!) : undefined}
         />
       </div>
     );

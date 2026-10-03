@@ -31,7 +31,7 @@ export default function ItcBadge({ ranking, bcpUserId, leagueId, title, size = "
   // On a narrow screen, a crowded pairing row (opponent name, table,
   // faction, this badge, a score) has no room for the full "#15 ·
   // 1,465 pts" — the placing alone is the more universally-readable
-  // number at that width (roadmap #8), with the full label back once
+  // number at that width, with the full label back once
   // there's room (Tailwind's `sm:` breakpoint). Roomy density always
   // shows the full label, prefixed "ITC".
   const compactLabel = `#${ranking.placing ?? "?"}`;

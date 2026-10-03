@@ -23,6 +23,22 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.3",
+    date: "2026-10-03",
+    title: "Faster stats, keyboard fixes, and less kept about you",
+    highlights: [
+      "Player stats appear straight away and fill in the format-by-format bests a moment later, instead of waiting for everything.",
+      "Compare two players or teams now shows their ITC ranks.",
+      "\"Synced …\" next to the refresh buttons keeps counting while a page stays open, so it no longer says \"just now\" when it isn't.",
+      "Keyboard: the feedback panel and Quick search keep focus inside while open, and Escape closes them. The Quick search shortcut hint only shows on devices with a keyboard, and says Ctrl K off Apple.",
+      "If removing a friend fails, they're put back in your list and you're told.",
+      "Head-to-head no longer counts events it couldn't load as checked.",
+      "Events you've dropped from no longer show up as upcoming in My Events.",
+      "Event countdowns no longer flip to \"over\" the evening before an event's last day, or to \"Live now\" the evening before it starts, in US time zones.",
+      "Behind the scenes: server logs no longer record IP addresses, browsers or anything identifying in addresses; sign-in times are no longer recorded; and a few ways the server could be overloaded are closed off.",
+    ],
+  },
+  {
     version: "0.23.2",
     date: "2026-10-03",
     title: "Fewer false empty screens, and more privacy by default",

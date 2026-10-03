@@ -228,30 +228,6 @@ export function fetchBcpPlayers(eventId: string, refresh = false): Promise<Playe
   return getJSON<Player[]>(`/api/events/${encodeURIComponent(eventId)}/players${refresh ? "?refresh=true" : ""}`);
 }
 
-/** Groups a flat player list by tournament team name. Players with no
- * resolvable team (e.g. in a singles event) are omitted. */
-function groupByTeam(players: Player[]): Map<string, Player[]> {
-  const teams = new Map<string, Player[]>();
-  for (const player of players) {
-    if (!player.team) continue;
-    const existing = teams.get(player.team);
-    if (existing) {
-      existing.push(player);
-    } else {
-      teams.set(player.team, [player]);
-    }
-  }
-  return teams;
-}
-
-/**
- * Team roster for an event (players grouped by tournament team). For
- * singles events this will come back empty — use fetchBcpPlayers instead.
- */
-export async function fetchBcpRoster(eventId: string): Promise<Map<string, Player[]>> {
-  const players = await fetchBcpPlayers(eventId);
-  return groupByTeam(players);
-}
 
 // --- Pairings ---------------------------------------------------------------
 

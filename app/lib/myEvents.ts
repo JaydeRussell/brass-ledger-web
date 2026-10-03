@@ -3,9 +3,8 @@
 // Coast Pairings profile to the signed-in account, and fetching that
 // profile's events classified into past/present/future.
 //
-// Like app/lib/auth.ts (and unlike bcp.ts's plain unauthenticated
-// reads), session state lives in an httpOnly cookie, so every request
-// here needs credentials: "include".
+// Like app/lib/auth.ts and bcp.ts, session state lives in an httpOnly
+// cookie, so every request here needs credentials: "include".
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
@@ -29,8 +28,8 @@ export function parseBcpUserId(input: string): string {
  * Decodes a fetch Response as JSON, throwing using the backend's own
  * `{error}` message on a non-ok response (falling back to a generic
  * message if the body isn't parseable JSON) — same handling as bcp.ts's
- * getJSON, duplicated here rather than shared since that helper doesn't
- * send credentials and this one always must.
+ * fetchJSON, duplicated here rather than shared since that helper is
+ * private to bcp.ts and sits behind its request cache.
  */
 async function handleJSONResponse<T>(res: Response): Promise<T> {
   const text = await res.text();

@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { eventDateParts, formatDateRange, formatCountdown } from "./eventDates.ts";
 
@@ -75,4 +75,26 @@ test("formatCountdown: minutes, hours, then days as the start recedes", () => {
   assert.match(formatCountdown(inMs(25 * 60_000)) ?? "", /^Starts in \d+m$/);
   assert.match(formatCountdown(inMs(5 * 3600_000)) ?? "", /^Starts in \d+h$/);
   assert.match(formatCountdown(inMs(3 * 86400_000)) ?? "", /^Starts in \d+d$/);
+});
+
+test("formatCountdown: a bare end date lasts the whole local day", () => {
+  // 8pm local time on the event's last day: still on, in any timezone.
+  // Read as UTC midnight, the end had already passed (the evening before
+  // in US timezones).
+  mock.timers.enable({ apis: ["Date"], now: new Date(2026, 9, 3, 20, 0, 0) });
+  try {
+    assert.equal(formatCountdown("2026-10-02", "2026-10-03"), "Live now");
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("formatCountdown: a bare start date starts at local midnight, not the evening before", () => {
+  // 6pm local the day before: not live yet.
+  mock.timers.enable({ apis: ["Date"], now: new Date(2026, 9, 4, 18, 0, 0) });
+  try {
+    assert.equal(formatCountdown("2026-10-05", "2026-10-06"), "Starts in 6h");
+  } finally {
+    mock.timers.reset();
+  }
 });

@@ -85,7 +85,9 @@ export default function FriendsPage() {
   };
 
   const handleRemoveFriend = (userId: number) => {
-    const name = friends.find((f) => f.userId === userId)?.name ?? "that friend";
+    const index = friends.findIndex((f) => f.userId === userId);
+    const removed = friends[index];
+    const name = removed?.name ?? "that friend";
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
     removeFriend(userId)
       .then(() => showToast(`Removed ${name} from your friends.`, "info"))
@@ -93,9 +95,16 @@ export default function FriendsPage() {
         logClientEvent("warn", "friends: removing a friend failed", {
           error: err instanceof Error ? err.message : String(err),
         });
-        // Best-effort optimistic removal — a failure here just
-        // means the removal silently didn't take; re-opening this page
-        // later shows the real state either way.
+        // Put them back where they were, so the list matches the server.
+        if (removed) {
+          setFriends((prev) => {
+            if (prev.some((f) => f.userId === userId)) return prev;
+            const next = [...prev];
+            next.splice(Math.min(index, next.length), 0, removed);
+            return next;
+          });
+        }
+        showToast(`Couldn't remove ${name}. Try again.`, "error");
       });
   };
 

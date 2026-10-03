@@ -54,6 +54,8 @@ type TeamCompareProps = {
   teams: Map<string, Player[]>;
   itcLeagueId?: string | null;
   itcRankings?: Record<string, ItcRanking | null>;
+  // Asks for a player's ITC ranking once their card is on screen.
+  onRequestItc?: (bcpUserId: string) => void;
   selectedA: string | null;
   selectedB: string | null;
   onSelectA: (team: string | null) => void;
@@ -74,6 +76,7 @@ export default function TeamCompare({
   teams,
   itcLeagueId,
   itcRankings,
+  onRequestItc,
   selectedA,
   selectedB,
   onSelectA,
@@ -111,6 +114,7 @@ export default function TeamCompare({
           players={teams.get(selected) ?? []}
           itcLeagueId={itcLeagueId}
           itcRankings={itcRankings}
+          onPlayerVisible={onRequestItc}
         />
       </div>
     );

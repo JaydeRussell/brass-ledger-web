@@ -24,7 +24,7 @@ type MyRoundCardProps = {
   // notes (roundNotes.tsx) to the right event.
   eventId: string;
   // The round this card is showing — eventInfo.ended ? numberOfRounds :
-  // currentRound, computed once by the caller (app/page.tsx already
+  // currentRound, computed once by the caller (app/event/page.tsx
   // computes this same value for its own board-round state).
   round: number;
   // My pairing for `round`, from fetchMyIndividualPairings (singles) or
@@ -38,7 +38,7 @@ type MyRoundCardProps = {
   board: TeamBoardMatchup | null;
   // My own BCP global account id — used to work out which side of `board`
   // is mine (its player1/player2 order is tied to team1/team2, not to
-  // "mine" — same reasoning as myPairings.tsx's orientMatchup).
+  // "mine").
   myBcpUserId?: string;
   // This event's full roster — used only to look up my opponent's
   // faction/subfaction for this specific event, the same already-fetched
@@ -46,18 +46,18 @@ type MyRoundCardProps = {
   players: Player[];
   // My own BCP teamPlayer id, set only for a team event — paired with
   // pairing.opponentTeamPlayerId and rosterByTeamId below to show both
-  // sides' rosters (via TeamRosterFallback, same component RoundBoard and
-  // MyPairings already use) when BCP has published the team-vs-team
+  // sides' rosters (via TeamRosterFallback, same component RoundBoard
+  // uses) when BCP has published the team-vs-team
   // pairing but not yet the individual boards within it, instead of
   // showing nothing but the opposing team's name.
   myTeamPlayerId?: string;
   // teamPlayerId -> that team's roster, already built once by the caller
-  // for Roster/Pairings (see app/page.tsx's rosterByTeamId).
+  // for Roster/Pairings (see app/event/page.tsx's rosterByTeamId).
   rosterByTeamId?: Map<string, Player[]>;
   // Whether this event is a team event — set by the caller from
   // eventInfo.teamEvent. Decides whether a resolved opponent gets the
   // singles-only MissionMatchupPanel (when both sides' Force Dispositions
-  // are known) or today's PlayerStatsPanel — team events always get
+  // are known) or PlayerStatsPanel — team events always get
   // PlayerStatsPanel, since Force-Disposition primary missions are a
   // singles mission-pack mechanic, not something this app infers for
   // team formats.
@@ -67,7 +67,7 @@ type MyRoundCardProps = {
   // fetching a second copy just for this card.
   itcLeagueId?: string | null;
   // Same already-fetched ITC data, keyed by bcpUserId — used to show a
-  // neutral avg-ITC comparison between the two team sides (roadmap #4)
+  // neutral avg-ITC comparison between the two team sides
   // whenever this is a team pairing, regardless of whether individual
   // boards are resolved yet.
   itcByUserId?: Record<string, ItcRanking | null>;
@@ -110,14 +110,13 @@ function resolveFromPairing(pairing: MyPairing): ResolvedOpponent {
 }
 
 /**
- * "One screen: current round, my table, my opponent" (roadmap #2) — the
+ * "One screen: current round, my table, my opponent" — the
  * signed-in account's own current-round pairing, found automatically via
  * their linked BCP profile. Read-only display of
  * an already-published BCP pairing, same scope rule as the rest of this
  * app.
  *
- * Folds in roadmap #1 ("opponent quick-look") directly: once the
- * opponent's BCP account id is known, their faction for this event (from
+ * Includes an opponent quick-look: once the opponent's BCP account id is known, their faction for this event (from
  * the already-fetched roster) and their full stats/ITC/history
  * (PlayerStatsPanel, already built for the player-stats pages) render
  * right here — no extra plumbing, since PlayerStatsPanel fetches its own
@@ -185,8 +184,8 @@ export default function MyRoundCard({
       ? classifyScore(resolved.myScore, resolved.opponentScore)
       : undefined;
   // A team-vs-team pairing BCP has published, but not yet the individual
-  // boards within it — same situation RoundBoard/MyPairings already
-  // handle with TeamRosterFallback instead of showing nothing.
+  // boards within it — same situation RoundBoard handles with
+  // TeamRosterFallback instead of showing nothing.
   const unresolvedTeamPairing = !board && pairing.opponentTeamPlayerId;
   const myRoster = myTeamPlayerId ? rosterByTeamId?.get(myTeamPlayerId) : undefined;
   const opponentRoster = pairing.opponentTeamPlayerId

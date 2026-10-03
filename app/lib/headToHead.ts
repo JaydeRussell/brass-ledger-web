@@ -53,6 +53,8 @@ export type HeadToHeadResult = {
   // shared events" rather than implying every event you've both ever
   // attended was searched.
   sharedEventsChecked: number;
+  // Shared events whose data couldn't be loaded, so weren't checked.
+  sharedEventsFailed: number;
   // Newest first.
   encounters: HeadToHeadEncounter[];
 };
@@ -142,6 +144,7 @@ export async function fetchHeadToHead(
     .slice(0, MAX_SHARED_EVENTS_CHECKED);
 
   const encounters: HeadToHeadEncounter[] = [];
+  let failed = 0;
   // Sequential, not Promise.all — this already fans out into several BCP
   // requests per event; running every shared event at once would turn a
   // deliberately gentle, capped check into a burst. A few extra seconds
@@ -152,8 +155,9 @@ export async function fetchHeadToHead(
       if (encounter) encounters.push(encounter);
     } catch {
       // One event's data failing to resolve shouldn't fail the whole
-      // check — skip just that event, same "fail quietly" posture
-      // CLAUDE.md's third-party-API rules ask for elsewhere.
+      // check — skip just that event, and count it so the result doesn't
+      // claim it was checked.
+      failed++;
     }
   }
 
@@ -163,5 +167,5 @@ export async function fetchHeadToHead(
       new Date(dateByEventId.get(b.eventId) ?? 0).getTime() - new Date(dateByEventId.get(a.eventId) ?? 0).getTime()
   );
 
-  return { sharedEventsChecked: sharedEvents.length, encounters };
+  return { sharedEventsChecked: sharedEvents.length - failed, sharedEventsFailed: failed, encounters };
 }

@@ -88,14 +88,25 @@ export function formatDateRange(start?: string, end?: string): string | undefine
  * used to) so Home's "Next up" hero can use it without importing that
  * whole event-card component onto its critical path.
  */
+// A bare "YYYY-MM-DD" is a calendar day, not a UTC instant (see
+// eventDateParts): read it in local time, at the start of the day for a
+// start date and the end of it for an end date. A full ISO timestamp is
+// a real moment and is used as-is.
+function toMoment(dateStr: string, edge: "start" | "end"): Date {
+  const bare = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!bare) return new Date(dateStr);
+  const [, y, m, d] = bare.map(Number);
+  return edge === "start" ? new Date(y, m - 1, d) : new Date(y, m - 1, d, 23, 59, 59, 999);
+}
+
 export function formatCountdown(startDate?: string, endDate?: string): string | undefined {
   if (!startDate) return undefined;
-  const start = new Date(startDate);
+  const start = toMoment(startDate, "start");
   if (Number.isNaN(start.getTime())) return undefined;
 
   const now = new Date();
   if (endDate) {
-    const end = new Date(endDate);
+    const end = toMoment(endDate, "end");
     if (!Number.isNaN(end.getTime()) && now > end) return undefined; // already over
   }
   if (now >= start) return "Live now";
