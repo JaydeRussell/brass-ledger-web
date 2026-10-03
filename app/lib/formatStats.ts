@@ -4,15 +4,9 @@ import type { PlacingWithField } from "./myStats";
 // finish: the player-stats panel, the public dossier page, Home's
 // "Your record" card, the placing trend chart, and the share card.
 //
-// These lived in components/myEvents/playerStatsPanel.tsx until they
-// were pulled out here. Two reasons. Importing `ordinal` from that
-// module dragged the whole 14.8 KB panel component onto the critical
-// path of every page that wanted the one-line rule (app/page.tsx and
-// the dossier page both did). And the rule had quietly been copied
-// twice more — placingTrendChart.tsx had a private `ordinal`, and
-// shareCard.ts an `ordinalPlacing` whose own comment explained it was
-// duplicated because there was no shared module to put it in. There is
-// now.
+// Kept apart from components/myEvents/playerStatsPanel.tsx so that
+// pages needing only `ordinal` don't pull the whole panel component onto
+// their critical path, and so there is one copy of each rule.
 
 /** 1st/2nd/3rd/4th… Rounds first, so a computed (fractional) placing
  * from the trend chart's interpolation formats the same way. */

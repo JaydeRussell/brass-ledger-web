@@ -30,7 +30,7 @@ type MyTeamPanelProps = {
   players?: Player[];
   // The signed-in account's own player id, so their row can be marked
   // "(you)" — myTeammates always includes them alongside actual
-  // teammates (see app/page.tsx).
+  // teammates (see app/event/page.tsx).
   myPlayerId?: string | number;
 };
 
@@ -158,7 +158,7 @@ function TeammateRow({ entry, players, isSelf }: { entry: TeammateEntry; players
 
 /**
  * "Where's my team right now" — yourself plus every other player sharing
- * your own BCP-registered club in a singles event (see app/page.tsx's
+ * your own BCP-registered club in a singles event (see app/event/page.tsx's
  * `myTeammates`: BCP lets players self-declare a shared club/team
  * specifically so its pairing algorithm avoids pairing them in early
  * rounds, the same field this app already showed as a parenthetical

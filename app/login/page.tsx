@@ -118,7 +118,7 @@ function LoginContent() {
 }
 
 // useSearchParams needs a Suspense boundary above it per Next's app
-// router rules — same pattern as app/page.tsx and app/my-events/page.tsx.
+// router rules — same pattern as app/event/page.tsx and app/my-events/page.tsx.
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>

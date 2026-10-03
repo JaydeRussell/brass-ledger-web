@@ -72,7 +72,7 @@ test("a row's name links to its player-stats page only when it carries a bcpUser
   assert.ok(!teamHtml.includes("/players/"));
 });
 
-test("leads with a win/loss-style metric regardless of BCP's own column order, and labels it Record (roadmap #7)", () => {
+test("leads with a win/loss-style metric regardless of BCP's own column order, and labels it Record", () => {
   const reordered: PlacingEntry[] = [
     {
       id: "t1",
@@ -243,7 +243,7 @@ test("falls back to the plain metric value when no round scores are available fo
   assert.match(html, />2</);
 });
 
-test("a team row with a roster available shows an expand affordance; a singles row doesn't (roadmap #7)", () => {
+test("a team row with a roster available shows an expand affordance; a singles row doesn't", () => {
   const rosterByTeamId = new Map<string, Player[]>([
     ["t1", [{ id: "p1", name: "Nicholas Kudriavetz", faction: "Orks", bcpUserId: "u1" }]],
   ]);

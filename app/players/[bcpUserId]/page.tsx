@@ -48,7 +48,7 @@ function PlayerStatsContent() {
   );
 }
 
-// Same Suspense-boundary requirement as app/page.tsx and
+// Same Suspense-boundary requirement as app/event/page.tsx and
 // app/my-events/page.tsx, for the same reason: useSearchParams needs one
 // above it under Next's app router.
 export default function PlayerStatsPage() {

@@ -164,7 +164,7 @@ test("colours the score from my side on my row", () => {
   assert.match(asBob, /text-danger-400[^>]*>70–30/);
 });
 
-test("shows a 'Jump to mine' control only when myId matches a row in this round (roadmap #9)", () => {
+test("shows a 'Jump to mine' control only when myId matches a row in this round", () => {
   const entries: BoardPairing[] = [
     { id: "b1", side1Id: "s1", side1Name: "Alice", side2Id: "s2", side2Name: "Bob", published: true, isDone: false, isBye: false },
   ];

@@ -114,7 +114,7 @@ function formatMonthYear(iso?: string): string | undefined {
  * published one ("of 53 · top 4%"), a per-faction breakdown, and how long
  * they've been competing. All straight from internal/api/stats.go's
  * aggregation of BCP's own already-published placing history, or a plain
- * average/rate computed from it here — see the scope note in app/page.tsx
+ * average/rate computed from it here — see the scope note in app/event/page.tsx
  * before adding anything beyond that (a suggestion, a subjective score,
  * anything that could feed a still-open team pairing/board-assignment
  * decision).

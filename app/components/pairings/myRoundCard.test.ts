@@ -204,7 +204,7 @@ test("a team-level pairing (no resolved board) shows the opposing team, no oppon
   assert.ok(!html.includes("Loading player stats"));
 });
 
-test("a team-level pairing with no resolved board shows both sides' rosters when available (roadmap #1)", () => {
+test("a team-level pairing with no resolved board shows both sides' rosters when available", () => {
   const pairing: MyPairing = {
     round: 2,
     published: true,
@@ -237,7 +237,7 @@ test("a team-level pairing with no resolved board shows both sides' rosters when
   assert.match(html, /Rival/);
 });
 
-test("a team pairing shows a neutral avg-ITC comparison when ITC data is available (roadmap #4)", () => {
+test("a team pairing shows a neutral avg-ITC comparison when ITC data is available", () => {
   const pairing: MyPairing = {
     round: 2,
     published: true,
