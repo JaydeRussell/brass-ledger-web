@@ -65,19 +65,19 @@ type RowState = { saving: boolean; error: string | null };
 /**
  * Account approvals — one of two admin-only pages (see
  * app/admin/feedback/page.tsx for the other, bug reports/suggestions).
- * List every account and approve/reject/re-role them (see
- * internal/api/admin.go — the backend for this since the roles/access-
- * control work). Filtering (status tab, name/email search) and
+ * List every account and approve/reject/re-role them (backend:
+ * internal/api/admin.go). Filtering (status tab, name/email search) and
  * pagination both happen server-side (internal/user.Store.ListUsers) —
  * this page just holds the current status/search/page/pageSize as state
  * and re-fetches whenever any of them change, so a batch of new sign-ups
  * after an event is easy to work through without pulling every account
  * into the browser at once.
  *
- * Reject has an explicit confirm step (ConfirmDialog) since it's a
- * one-way action a new user can't self-recover from — Approve and the
- * role toggle stay a single click, matching how the rest of this app
- * only asks twice for something hard to undo. A mutation re-fetches the
+ * Reject has an explicit confirm step (ConfirmDialog) since it blocks
+ * sign-in until an admin approves the account again, which the user
+ * can't do for themselves — Approve and the role toggle stay a single
+ * click, matching how the rest of this app only asks twice for
+ * something hard to undo. A mutation re-fetches the
  * current page afterward (rather than patching state locally) since an
  * approve/reject can move a row out of the currently-selected status
  * tab entirely — simplest way to keep the list, its counts, and its

@@ -42,10 +42,9 @@ as a "performance improvement". Past about two seconds a load stops
 reading as *loading* and starts reading as *broken*, and this app gets
 used mid-event on a phone on venue wifi.
 
-Note this is a tighter bar than `SLOW_LOAD_MS` in
-`app/lib/useDelayedFlag.ts` (3s), which is the point at which the UI
-*apologises* to the visitor. Apologising is the fallback; 2s is the
-target.
+`SLOW_LOAD_MS` in `app/lib/useDelayedFlag.ts` is also 2s: it is the
+point at which the UI *apologises* to the visitor. Apologising is the
+fallback; arriving inside 2s is the target.
 
 Almost none of that time is this repo's. The bundle is close to its
 floor — the framework (React + the vinext runtime + the browser entry)
@@ -162,7 +161,7 @@ Stable, not touched recently unless noted below:
   and it never worked in production anyway — a Cloudflare Worker's
   filesystem is read-only, so the append failed silently and the route
   returned 204 while writing nothing. Removed 2026-09-20.
-- **Component test coverage** — every component has at least one
+- **Component test coverage** — most components have at least one
   `.test.ts`. This project has no network access to install
   jsdom/@testing-library/react, so it's a hand-rolled DOM-free setup
   instead: `scripts/tsx-test-loader.mjs` (a custom Node ESM loader that
@@ -271,14 +270,13 @@ quirks" section for the full explanation.
 - **The browser-testable `localhost:3000` runs as a Docker container**
   (`brass-ledger-frontend`, started via `../brass-ledger-api/run.sh` →
   `docker compose up --build`), built from a snapshot of the source —
-  only `logs/` is bind-mounted, not the app code. Editing files on disk
-  does **not** get picked up until the image is rebuilt:
+  the compose `frontend` service mounts no volumes. Editing files on
+  disk does **not** get picked up until the image is rebuilt:
   `cd ../brass-ledger-api && ./run.sh -d --build` (~30s). Before
   concluding a live-test failure is a real bug, check `docker ps`/
   `docker inspect <container> --format '{{.Created}}'` against recent
-  edit times and rebuild first — discovered 2026-09-12/13 chasing a
-  phantom "still loading" bug on the mission-matchup panel that turned
-  out to just be a stale image.
+  edit times and rebuild first — a stale image can pass for a phantom
+  "still loading" bug.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

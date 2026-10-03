@@ -11,7 +11,9 @@ import packageJson from "../../../package.json" with { type: "json" };
  */
 export default function Footer() {
   return (
-    <footer className="px-4 py-6 text-center text-xs text-text-tertiary print:hidden">
+    // Below `sm:` the bottom padding clears BottomTabBar and the Feedback
+    // pill floating above it, so the version line is never hidden.
+    <footer className="px-4 pt-6 pb-[calc(8.5rem+env(safe-area-inset-bottom))] text-center text-xs text-text-tertiary sm:pb-6 print:hidden">
       Brass Ledger{" "}
       <Link href="/changelog" className="hover:underline">
         v{packageJson.version}

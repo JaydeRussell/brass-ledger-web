@@ -17,19 +17,11 @@ type DialogProps = {
 
 /**
  * A left-edge slide-in panel (not a centered modal) — built for the nav
- * drawer, the one real consumer this app needs today. Both the backdrop
- * and the panel use `forceMount` and stay in the DOM even while closed,
- * driven purely by Radix's `data-state="open"|"closed"` attribute, so the
- * existing `transition-transform` slide can actually play on close (Radix
- * unmounts Content immediately on close otherwise, with no exit
- * animation window) — this app has no CSS-animation library installed,
- * so plain data-state-driven transition classes are the right tool here,
- * not `animate-in`/`animate-out` utilities.
- *
- * Replaces navDrawer.tsx's hand-rolled backdrop+panel pair. Gains real
- * focus-trapping and Escape-to-close for free, which the hand-rolled
- * version lacked — its `role="dialog"`/`aria-modal` were already correct,
- * but nothing enforced keyboard focus staying inside the drawer.
+ * drawer. The backdrop and panel carry `forceMount` and data-state-driven
+ * `transition-*` classes, but the Portal isn't force-mounted, so a closed
+ * Dialog renders nothing: the panel enters the DOM already open and
+ * leaves it at once on close, and neither transition plays. Radix
+ * supplies focus-trapping and Escape-to-close.
  */
 export function Dialog({ open, onOpenChange, title, hideTitle, children }: DialogProps) {
   const titleEl = <RadixDialog.Title className="text-sm font-semibold text-text-primary">{title}</RadixDialog.Title>;

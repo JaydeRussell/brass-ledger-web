@@ -35,6 +35,7 @@ const {
   fetchCurrentItcLeagueId,
   fetchItcRanking,
   __clearRequestCacheForTests,
+  __clearResponseCacheOnlyForTests,
 } = await import("./bcp.ts");
 
 // getJSON de-duplicates in-flight requests and reuses a recent response
@@ -345,7 +346,7 @@ test("getJSON: a refresh bypasses the cache and supersedes the plain copy", asyn
   // or the next ordinary read puts the stale value straight back.
   const after = await fetchBcpPlacings("evt-refresh", false);
   assert.equal(after[0]?.id, "fresh", "a refresh has to supersede the cached plain response");
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 2, "the refreshed answer is reused for the plain URL");
 });
 
 test("getJSON: a failed request is not cached", async () => {
@@ -402,4 +403,29 @@ test("a zero-round event asks for nothing at all", async () => {
 
   assert.equal(results.length, 0);
   assert.equal(calls.length, 0, "no rounds published means no request worth making");
+});
+
+test("getJSON: a refresh replaces the plain URL's cached answer and later reads skip the browser cache", async () => {
+  let version = 1;
+  const seen: { url: string; cache?: RequestCache }[] = [];
+  (globalThis as unknown as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
+    seen.push({ url, cache: init?.cache });
+    return { ok: true, status: 200, text: async () => JSON.stringify({ id: "evt-1", name: `v${version}` }) } as Response;
+  }) as typeof fetch;
+
+  assert.equal((await fetchBcpEventInfo("evt-1")).name, "v1");
+  version = 2;
+  assert.equal((await fetchBcpEventInfo("evt-1", true)).name, "v2");
+  // Answered from the refreshed copy, not the pre-refresh one.
+  assert.equal((await fetchBcpEventInfo("evt-1")).name, "v2");
+  assert.equal(seen.length, 2);
+  assert.equal(seen[1].cache, "reload");
+
+  // Once the in-memory copy is gone, the plain URL revalidates rather than
+  // taking whatever the browser cached before the refresh.
+  __clearRequestCacheForTests();
+  await fetchBcpEventInfo("evt-1", true);
+  __clearResponseCacheOnlyForTests();
+  await fetchBcpEventInfo("evt-1");
+  assert.equal(seen.at(-1)?.cache, "no-cache");
 });

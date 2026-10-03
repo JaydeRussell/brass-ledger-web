@@ -180,7 +180,10 @@ function HomeContent() {
   // signed-in visitor's guest-mode localStorage briefly shows before the
   // real, synced list replaces it.
   const { user, checked: authChecked, authError: authCheckFailed } = useCurrentUser();
-  useRedirectToLoginIfSignedOut(user, authChecked, authCheckFailed);
+  // Re-runs the event fetch when a lookup that failed (or a pending
+  // account) later comes back approved.
+  const approved = user?.status === "approved";
+  useRedirectToLoginIfSignedOut(user, authChecked);
 
   // The active tab and the search filter both live in the URL's query
   // string (`?tab=...&q=...`) instead of plain component state. Unlike
@@ -229,7 +232,12 @@ function HomeContent() {
       },
       { push = false }: { push?: boolean } = {}
     ) => {
-      const params = new URLSearchParams(searchParams.toString());
+      // Read from the live URL rather than this render's searchParams: the
+      // debounced search write below runs up to 300ms later, and a tab
+      // clicked in between would otherwise be undone.
+      const params = new URLSearchParams(
+        typeof window === "undefined" ? searchParams.toString() : window.location.search
+      );
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
         else params.set("tab", patch.tab);
@@ -306,6 +314,12 @@ function HomeContent() {
     },
     [updateQuery]
   );
+  React.useEffect(
+    () => () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    },
+    []
+  );
 
   const [eventInfo, setEventInfo] = React.useState<EventInfo | null>(null);
   const [players, setPlayers] = React.useState<Player[]>([]);
@@ -355,7 +369,10 @@ function HomeContent() {
     )
   );
   const [loading, setLoading] = React.useState(true);
-  const slowLoad = useDelayedFlag(loading);
+  // A cached snapshot (eventCache.ts) is shown while the fetch is in flight,
+  // and also when no fetch can start because /api/me couldn't be reached.
+  const rosterPending = loading && players.length === 0;
+  const slowLoad = useDelayedFlag(rosterPending);
   const [error, setError] = React.useState<string | null>(null);
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
   // Note: the shared Roster/Pairings/Placings search box's value
@@ -436,9 +453,8 @@ function HomeContent() {
     // localStorage is actually known.
     if (!authChecked) return;
 
-    // Wrapped in a resolved-promise callback, like every other effect in
-    // this file, so setState never runs synchronously in the effect body
-    // itself — see the comment on the event-loading effect below.
+    // Runs in a resolved-promise callback so the hydration setState calls
+    // happen after the effect body rather than during it.
     Promise.resolve().then(async () => {
       // A `?event=<id>` in the URL (see app/components/myEvents/
       // eventList.tsx's "View event page" link, which is how the My
@@ -504,25 +520,17 @@ function HomeContent() {
 
   // Load this event's data whenever the selected event changes. Waits for
   // the hydration effect above so it never fetches the fixed default event
-  // only to immediately re-fetch the real stored one. The actual state
-  // *reset* (loading/error/players) happens in the event
-  // handler that changes `eventId` (see handleChangeEvent below) rather
-  // than here, so this effect only ever calls setState from its async
-  // callbacks — never synchronously in the effect body itself.
+  // only to immediately re-fetch the real stored one. The state *reset*
+  // (loading/error/players) happens in the event handler that changes
+  // `eventId` (see handleChangeEvent below) rather than here; this effect
+  // only marks the refresh as in flight and applies the results.
   useEffect(() => {
     if (!hydrated) return;
-    // The backend now requires an approved session on every BCP route
-    // (the whole app is behind sign-in *and* approval, not just the
-    // account-specific features) — skip the fetch entirely rather than
-    // let it 401/403. Safe to read from closure without adding `user`
-    // to this effect's deps: `hydrated` only ever flips true after the
-    // sign-in check has already resolved (see the effect above), so
-    // `user`'s value is already settled by the time this effect's
-    // dependency actually changes. Below that, `user` is also read from
-    // this same closure for a best-effort write-through sync call — not
-    // worth re-running the whole event/player fetch over signing in
-    // without also changing events, which is an acceptable gap for a
-    // nice-to-have sync path.
+    // Every BCP route needs an approved session, so skip the fetch rather
+    // than let it 401/403. `approved` is a dependency, so a lookup that
+    // failed and later succeeds (or an account approved mid-visit) still
+    // loads; `user` itself is read from the closure, including for the
+    // best-effort recent-event sync below.
     if (!user || user.status !== "approved") return;
     let cancelled = false;
     setRefreshingEvent(true);
@@ -537,11 +545,11 @@ function HomeContent() {
         setDataAsOf(Date.now());
         saveCachedEvent(eventId, { eventInfo: info, players: playerList, cachedAt: Date.now() });
         setRecentEvents((prev) =>
-          recordRecentEvent(prev, {
-            id: info.id,
-            name: info.name,
-            teamEvent: info.teamEvent,
-          })
+          recordRecentEvent(
+            prev,
+            { id: info.id, name: info.name, teamEvent: info.teamEvent },
+            !user
+          )
         );
         if (user) {
           // Write-through: the local list above already updated
@@ -596,8 +604,8 @@ function HomeContent() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `user` intentionally excluded, see comment above
-  }, [eventId, hydrated, eventRefreshKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `user` itself excluded, see comment above
+  }, [eventId, hydrated, eventRefreshKey, approved]);
 
   // A direct user action (the page header's RefreshButton) — see
   // RefreshButton's own doc comment for why this is a button rather than a
@@ -827,8 +835,8 @@ function HomeContent() {
   ]);
 
   // Fetches the full pairings board for whichever round is selected —
-  // every matchup BCP has published for that round. Same "async
-  // callbacks only" shape as the effects above.
+  // every matchup BCP has published for that round. Sets state only from
+  // its async callbacks.
   useEffect(() => {
     if (!eventInfo || !boardRound || boardRound < 1) return;
 
@@ -931,21 +939,21 @@ function HomeContent() {
 
   const handleChangeEvent = (id: string) => {
     // Re-choosing the open event would reset the page and wait on a load
-    // effect that only re-runs when the id changes, so it never finished.
-    // Treat it as a refresh instead.
+    // effect that only re-runs when the id changes, so it would never
+    // finish. Treat it as a refresh instead.
     if (id === eventId) {
       refreshEventData();
       return;
     }
     setEventId(id);
     writeLocalStorage(EVENT_ID_STORAGE_KEY, id);
-    // These resets happen here, in a direct event handler, rather than in
-    // the data-loading effect above — the effect only ever sets state from
-    // its async callbacks. Tab and search filter reset together in one
+    // These resets happen here, in the event handler, rather than in the
+    // data-loading effect above, so they land together with the new id.
+    // Tab and search filter reset together in one
     // updateQuery call (see its comment above for why that has to be a
     // single call rather than two).
     updateQuery({ tab: "overview", q: "" });
-    // searchQuery itself is local state now (see its declaration above) —
+    // searchQuery itself is local state (see its declaration above) —
     // updateQuery only touches the URL, so it needs resetting here too,
     // and any pending debounced write cancelling so it can't fire after
     // and stomp this reset back to whatever was being typed before.
@@ -954,7 +962,7 @@ function HomeContent() {
     // Hydrate from this event's own last-known-good snapshot if one
     // exists (e.g. switching back to an event viewed earlier this
     // session) instead of blanking to null — see eventCache.ts. Falls
-    // back to today's null/[] when there's nothing cached for it yet.
+    // back to null/[] when there's nothing cached for it yet.
     const cached = loadCachedEvent(id);
     setEventInfo(cached?.eventInfo ?? null);
     setPlayers(cached?.players ?? []);
@@ -1126,7 +1134,7 @@ function HomeContent() {
           above already skips its redirect in that case — so if there's
           also a cached event snapshot to fall back on (see
           eventCache.ts), show it instead of rendering nothing. With
-          nothing cached either, there's genuinely nothing to show. */}
+          nothing cached, the layout's ServerUnreachableNotice explains. */}
       {!authChecked ? null : !user && !(authCheckFailed && eventInfo) ? null : user &&
         user.status !== "approved" ? (
         <PageMain>
@@ -1134,13 +1142,10 @@ function HomeContent() {
         </PageMain>
       ) : (
         <>
-          {authCheckFailed && (
-            <div className="mx-auto max-w-5xl px-4">
-              <ErrorAlert>
-                Can&apos;t reach the server right now
-                {dataAsOf ? ` — showing data from ${formatRelativeTime(dataAsOf)}` : ""}.
-              </ErrorAlert>
-            </div>
+          {authCheckFailed && dataAsOf && (
+            <p className="mx-auto max-w-5xl px-4 text-xs text-text-secondary">
+              Showing saved data from {formatRelativeTime(dataAsOf)}.
+            </p>
           )}
 
           {error && !authCheckFailed && (
@@ -1239,7 +1244,7 @@ function HomeContent() {
 
         {activeTab === "roster" && (
           <>
-            {!loading && (isTeamEvent ? sortedTeamNames : sortedPlayers).length >= 2 && (
+            {!rosterPending && (isTeamEvent ? sortedTeamNames : sortedPlayers).length >= 2 && (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {!compareMode && (
                   <label className="flex items-center gap-1.5 text-xs text-text-secondary">
@@ -1262,7 +1267,7 @@ function HomeContent() {
                 </Button>
               </div>
             )}
-            {!loading && compareMode && isTeamEvent ? (
+            {!rosterPending && compareMode && isTeamEvent ? (
               <TeamCompare
                 teamNames={sortedTeamNames}
                 teams={teams}
@@ -1274,7 +1279,7 @@ function HomeContent() {
                 onSelectA={(team) => updateQuery({ teamA: team })}
                 onSelectB={(team) => updateQuery({ teamB: team })}
               />
-            ) : !loading && compareMode && !isTeamEvent ? (
+            ) : !rosterPending && compareMode && !isTeamEvent ? (
               <PlayerCompare
                 players={sortPlayers(players, "name")}
                 itcLeagueId={itcLeagueId}
@@ -1285,7 +1290,7 @@ function HomeContent() {
                 onSelectA={(id) => updateQuery({ playerA: id })}
                 onSelectB={(id) => updateQuery({ playerB: id })}
               />
-            ) : loading ? (
+            ) : rosterPending ? (
               <div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <CardSkeleton />

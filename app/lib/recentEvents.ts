@@ -1,12 +1,12 @@
 // "Recently viewed events" list, so switching back to an event you've
-// already looked at doesn't mean re-pasting its URL. loadRecentEvents/
-// recordRecentEvent below are the original localStorage-only
-// implementation, still used for a signed-out (guest) visitor.
-// fetchRecentEventsFromServer/recordRecentEventOnServer, further down,
-// are this app's own backend's sync client (see internal/api/sync.go in
-// brass-ledger-api) for a signed-in visitor, so the list follows
-// them across devices instead of staying pinned to one browser. Neither
-// half talks to BCP.
+// already looked at doesn't mean re-pasting its URL. A signed-out (guest)
+// visitor's list lives in localStorage (loadRecentEvents, and
+// recordRecentEvent with saveLocally). A signed-in visitor's list lives
+// on this app's own backend (fetchRecentEventsFromServer/
+// recordRecentEventOnServer, see internal/api/sync.go in
+// brass-ledger-api), so it follows them across devices; recordRecentEvent
+// still updates their in-memory list but doesn't save it locally.
+// Neither half talks to BCP.
 
 const RECENT_EVENTS_STORAGE_KEY = "bcp-recent-events";
 const MAX_RECENT_EVENTS = 8;
@@ -40,19 +40,22 @@ function saveRecentEvents(events: RecentEvent[]) {
 
 /**
  * Records that an event was just viewed, moving it to the front of the
- * list (deduped by id) and persisting the result. Returns the updated list
- * so the caller can put it straight into state.
+ * list (deduped by id). Returns the updated list so the caller can put it
+ * straight into state. Saved to localStorage only for a guest
+ * (`saveLocally`); a signed-in account's list lives on the server, and a
+ * local copy would show it to whoever uses the device after sign-out.
  */
 export function recordRecentEvent(
   current: RecentEvent[],
-  event: { id: string; name: string; teamEvent: boolean }
+  event: { id: string; name: string; teamEvent: boolean },
+  saveLocally = true
 ): RecentEvent[] {
   const withoutThisOne = current.filter((e) => e.id !== event.id);
   const next = [
     { ...event, lastViewedAt: Date.now() },
     ...withoutThisOne,
   ].slice(0, MAX_RECENT_EVENTS);
-  saveRecentEvents(next);
+  if (saveLocally) saveRecentEvents(next);
   return next;
 }
 

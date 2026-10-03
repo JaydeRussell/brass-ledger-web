@@ -3,6 +3,7 @@ import React from "react";
 import Link from "next/link";
 import type { PlacingHistoryPoint } from "../../lib/myStats";
 import { ordinal } from "../../lib/formatStats";
+import { formatEventDate } from "../../lib/eventDates";
 
 type PlacingTrendChartProps = {
   // Chronological (oldest first) — see PlacingHistoryPoint's doc comment.
@@ -43,9 +44,7 @@ const PAD_TOP = 20;
 const PAD_BOTTOM = 12;
 
 function formatShortDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return formatEventDate(iso, { month: "short", day: "numeric", year: "numeric" }) ?? iso;
 }
 
 /** "Top X%" — undefined when the event never published a field size. */

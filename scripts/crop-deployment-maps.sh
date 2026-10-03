@@ -101,6 +101,9 @@ for pairing in "${PAIRINGS[@]}"; do
     # pdftoppm zero-pads the page number in its output filename.
     produced=$(printf "%s-%02d.png" "$tmp_prefix" "$page")
     cwebp -quiet -q 82 "$produced" -o "$OUT_ROOT/$dir/$letter.webp"
+    # The inline previews show these at about 100-320 CSS px; a 480px copy
+    # is a quarter of the size and stays legible.
+    cwebp -quiet -q 70 -resize 480 0 "$OUT_ROOT/$dir/$letter.webp" -o "$OUT_ROOT/$dir/$letter-thumb.webp"
     rm -rf "$tmpdir"
     page=$((page + 1))
   done

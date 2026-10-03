@@ -117,3 +117,14 @@ export function formatCountdown(startDate?: string, endDate?: string): string | 
   if (diffHour < 24) return `Starts in ${diffHour}h`;
   return `Starts in ${Math.round(diffHour / 24)}d`;
 }
+
+/**
+ * One event date for display, resolved to its calendar day through
+ * eventDateParts first, so a bare "2026-03-01" never shows as Feb 28 west
+ * of UTC. Undefined for missing or unparseable input.
+ */
+export function formatEventDate(dateStr: string | undefined, options: Intl.DateTimeFormatOptions): string | undefined {
+  const parts = eventDateParts(dateStr);
+  if (!parts) return undefined;
+  return new Date(parts.year, parts.month - 1, parts.day).toLocaleDateString(undefined, options);
+}

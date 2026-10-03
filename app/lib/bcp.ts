@@ -37,7 +37,8 @@ const BCP_SITE_BASE = "https://www.bestcoastpairings.com";
  * using the backend's own `{error}` message on a non-ok response (falling
  * back to a generic message if the body isn't parseable JSON), and treats
  * an empty 200 body as `null` rather than trying (and failing) to parse
- * it — the backend uses an empty body for "no ITC ranking found."
+ * it. "No ITC ranking found" arrives as a JSON `null` body, which parses
+ * to `null` as well.
  *
  * `credentials: "include"` matters now that these routes require a
  * session (see internal/api.RequireSession on the backend) — without it,
@@ -65,14 +66,11 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /**
- * How long a completed response is reused without asking again.
- *
- * Deliberately the same 60 seconds as the backend's own refetch
- * interval (bcp.MinRefetchInterval), because that is what makes it
- * safe rather than merely fast: inside that window the backend would
- * answer a second request from its in-memory cache without touching
- * BCP, so skipping the request entirely produces the same bytes. This
- * never serves anything staler than the server would have.
+ * How long a completed response is reused without asking again: the same
+ * 60 seconds as the backend's refetch interval and its Cache-Control
+ * max-age. The backend entry may already be up to that old when it
+ * answers, so a reading can be about two minutes behind BCP; the manual
+ * refresh is the way past that.
  */
 const REQUEST_CACHE_TTL_MS = 60_000;
 
@@ -88,10 +86,18 @@ type CacheEntry = { value: unknown; storedAt: number };
 
 const responseCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<unknown>>();
+// When each path was last invalidated, so a request that started before
+// a refresh can't store its older answer afterwards.
+const invalidatedAt = new Map<string, number>();
+// Plain paths the visitor has explicitly refreshed. The browser may still
+// hold a pre-refresh copy of them (for up to a day on an ended event), so
+// later reads revalidate with the server instead of using it.
+const refreshedPaths = new Set<string>();
 
-/** Drops a cached entry and anything derived from the same path. */
+/** Drops one cached entry. */
 function invalidateCached(path: string) {
   responseCache.delete(path);
+  invalidatedAt.set(path, Date.now());
 }
 
 /**
@@ -131,14 +137,20 @@ function rememberResponse(path: string, value: unknown) {
  * these responses, so without `cache: "reload"` an explicit refresh
  * could be answered from a copy the browser already had, which is a
  * refresh button that does nothing. It also drops the non-refresh URL's
- * cached copy, or the next ordinary read would put the stale value
- * straight back.
+ * cached copy and stores the fresh answer under it, and later ordinary
+ * reads of that path skip the browser's copy, or the stale value would
+ * come straight back.
  */
 async function getJSON<T>(path: string): Promise<T> {
   if (new URLSearchParams(path.split("?")[1] ?? "").get("refresh") === "true") {
-    invalidateCached(withoutRefresh(path));
+    const plain = withoutRefresh(path);
+    invalidateCached(plain);
     invalidateCached(path);
-    return fetchJSON<T>(path, { cache: "reload" });
+    if (refreshedPaths.size >= REQUEST_CACHE_MAX_ENTRIES) refreshedPaths.clear();
+    refreshedPaths.add(plain);
+    const value = await fetchJSON<T>(path, { cache: "reload" });
+    rememberResponse(plain, value);
+    return value;
   }
 
   const cached = responseCache.get(path);
@@ -149,12 +161,13 @@ async function getJSON<T>(path: string): Promise<T> {
   const existing = inFlight.get(path);
   if (existing) return existing as Promise<T>;
 
-  const request = fetchJSON<T>(path)
+  const startedAt = Date.now();
+  const request = fetchJSON<T>(path, refreshedPaths.has(path) ? { cache: "no-cache" } : undefined)
     .then((value) => {
       // Only successful responses are remembered. A failure is
       // usually transient (venue wifi), and caching it would turn one
       // dropped request into a minute of a blank panel.
-      rememberResponse(path, value);
+      if ((invalidatedAt.get(path) ?? 0) <= startedAt) rememberResponse(path, value);
       return value;
     })
     .finally(() => {
@@ -169,9 +182,15 @@ async function getJSON<T>(path: string): Promise<T> {
  * Empties the request cache. Exported for tests; nothing in the app
  * needs it, since a refresh invalidates exactly what it supersedes.
  */
+export function __clearResponseCacheOnlyForTests() {
+  responseCache.clear();
+}
+
 export function __clearRequestCacheForTests() {
   responseCache.clear();
   inFlight.clear();
+  invalidatedAt.clear();
+  refreshedPaths.clear();
 }
 
 // --- Event metadata -------------------------------------------------------
@@ -757,10 +776,10 @@ export async function fetchCurrentItcLeagueId(eventId: string): Promise<string |
 }
 
 /**
- * One player's ITC ranking (points + rank) within a league — see the "ITC
- * ranking" section above for why this is cheap (a real per-player filter
- * on the backend) rather than requiring the full leaderboard. Returns null
- * if this player has no ranking in this league.
+ * One player's ITC ranking (points + rank) within a league. Cheap: BCP's
+ * placings endpoint filters to one player via `userId[]`, so it's one
+ * request per player (cached server-side), never the full leaderboard.
+ * Returns null if this player has no ranking in this league.
  */
 export function fetchItcRanking(bcpUserId: string, leagueId: string): Promise<ItcRanking | null> {
   return getJSON<ItcRanking | null>(

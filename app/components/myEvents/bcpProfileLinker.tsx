@@ -102,6 +102,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
           onChange={(e) => setEventDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && loadRoster(eventDraft)}
           placeholder="Or paste an event URL/ID…"
+          aria-label="Event URL or ID"
           className="min-w-0 flex-1 rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
         />
         <Button onClick={() => loadRoster(eventDraft)} disabled={loading || !eventDraft.trim()} className="shrink-0">
@@ -122,6 +123,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Find your name…"
+            aria-label="Find your name in the roster"
             className="mb-1 w-full rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
           />
           {filtered.length === 0 ? (
@@ -200,9 +202,7 @@ export default function BcpProfileLinker({ onLinked }: { onLinked: (bcpUserId: s
   return (
     <div>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-text-secondary">
-          Link your Best Coast Pairings profile
-        </label>
+        <p className="text-xs font-medium text-text-secondary">Link your Best Coast Pairings profile</p>
         <button
           type="button"
           onClick={() => setLinkMode((m) => (m === "roster" ? "manual" : "roster"))}
@@ -224,6 +224,7 @@ export default function BcpProfileLinker({ onLinked }: { onLinked: (bcpUserId: s
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && performLink(draft, "manual")}
             placeholder="Profile URL or id…"
+            aria-label="Best Coast Pairings profile URL or ID"
             className="min-w-0 flex-1 rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
           />
           <Button onClick={() => performLink(draft, "manual")} disabled={linking || !draft.trim()} className="shrink-0">

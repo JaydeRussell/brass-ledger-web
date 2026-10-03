@@ -190,3 +190,12 @@ test("recordRecentEventOnServer: a non-ok response throws", async () => {
   installFetch(() => ({ status: 500, body: { error: "boom" } }));
   await assert.rejects(() => recordRecentEventOnServer({ id: "e1", name: "Event One", teamEvent: false }), /boom/);
 });
+
+test("recordRecentEvent: a signed-in view (saveLocally false) writes nothing to the device", () => {
+  reset();
+  const next = recordRecentEvent([], { id: "evt-1", name: "RMO", teamEvent: false }, false);
+  assert.equal(next.length, 1);
+  assert.deepEqual(loadRecentEvents(), []);
+  recordRecentEvent([], { id: "evt-2", name: "LVO", teamEvent: false });
+  assert.equal(loadRecentEvents()[0].id, "evt-2");
+});

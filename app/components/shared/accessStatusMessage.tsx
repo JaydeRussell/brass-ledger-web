@@ -2,10 +2,9 @@ import type { CurrentUser } from "../../lib/auth";
 
 type AccessStatusMessageProps = {
   // Only ever "pending" or "rejected" in practice — a caller checks
-  // `user.status !== "approved"` before rendering this at all, and
-  // "approved" means show the real page instead. Typed as the full
-  // union anyway so this stays a compile error to forget a case if
-  // Status ever grows a fourth value.
+  // `user.status !== "approved"` before rendering this at all. Anything
+  // other than "rejected" renders the pending message, so a new Status
+  // value would show as pending rather than fail to compile.
   status: CurrentUser["status"];
 };
 

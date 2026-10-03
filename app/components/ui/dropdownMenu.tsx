@@ -23,12 +23,10 @@ export const DropdownMenuContent = forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         collisionPadding={collisionPadding}
-        // collisionPadding above is Radix's real viewport-collision
-        // awareness (replaces eventSettings.tsx's manual
-        // max-w-[calc(100vw-2rem)] clamp); the max-w-[calc(100vw-2rem)]
-        // here is kept anyway as a CSS-only fallback in case Radix's
-        // positioning logic and this app's own layout ever disagree —
-        // cheap insurance, not load-bearing.
+        // collisionPadding only shifts the menu to stay inside the
+        // viewport; it never shrinks it. The max-w clamp is what keeps a
+        // wide menu (eventSettings.tsx's w-80) from overflowing a narrow
+        // phone screen.
         className={`z-20 max-w-[calc(100vw-2rem)] rounded-md border border-surface-border bg-surface-2 p-1 text-text-primary shadow-lg outline-none ${className}`}
         {...props}
       />
