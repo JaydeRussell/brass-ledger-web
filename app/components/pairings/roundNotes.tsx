@@ -103,6 +103,8 @@ export default function RoundNotes({ eventId, round }: RoundNotesProps) {
             }}
             placeholder="Private — only visible to you (e.g. matchup prep, list reminders)."
             rows={3}
+            // The backend rejects notes over 4,000 bytes.
+            maxLength={4000}
             disabled={status === "loading"}
             className="w-full rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brass-500 focus:outline-none focus:ring-2 focus:ring-brass-500/20 disabled:opacity-50"
           />
