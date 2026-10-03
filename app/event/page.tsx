@@ -180,6 +180,9 @@ function HomeContent() {
   // signed-in visitor's guest-mode localStorage briefly shows before the
   // real, synced list replaces it.
   const { user, checked: authChecked, authError: authCheckFailed } = useCurrentUser();
+  // Re-runs the event fetch when a lookup that failed (or a pending
+  // account) later comes back approved.
+  const approved = user?.status === "approved";
   useRedirectToLoginIfSignedOut(user, authChecked);
 
   // The active tab and the search filter both live in the URL's query
@@ -514,18 +517,11 @@ function HomeContent() {
   // callbacks — never synchronously in the effect body itself.
   useEffect(() => {
     if (!hydrated) return;
-    // The backend now requires an approved session on every BCP route
-    // (the whole app is behind sign-in *and* approval, not just the
-    // account-specific features) — skip the fetch entirely rather than
-    // let it 401/403. Safe to read from closure without adding `user`
-    // to this effect's deps: `hydrated` only ever flips true after the
-    // sign-in check has already resolved (see the effect above), so
-    // `user`'s value is already settled by the time this effect's
-    // dependency actually changes. Below that, `user` is also read from
-    // this same closure for a best-effort write-through sync call — not
-    // worth re-running the whole event/player fetch over signing in
-    // without also changing events, which is an acceptable gap for a
-    // nice-to-have sync path.
+    // Every BCP route needs an approved session, so skip the fetch rather
+    // than let it 401/403. `approved` is a dependency, so a lookup that
+    // failed and later succeeds (or an account approved mid-visit) still
+    // loads; `user` itself is read from the closure, including for the
+    // best-effort recent-event sync below.
     if (!user || user.status !== "approved") return;
     let cancelled = false;
     setRefreshingEvent(true);
@@ -599,8 +595,8 @@ function HomeContent() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `user` intentionally excluded, see comment above
-  }, [eventId, hydrated, eventRefreshKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `user` itself excluded, see comment above
+  }, [eventId, hydrated, eventRefreshKey, approved]);
 
   // A direct user action (the page header's RefreshButton) — see
   // RefreshButton's own doc comment for why this is a button rather than a
@@ -1129,7 +1125,7 @@ function HomeContent() {
           above already skips its redirect in that case — so if there's
           also a cached event snapshot to fall back on (see
           eventCache.ts), show it instead of rendering nothing. With
-          nothing cached either, there's genuinely nothing to show. */}
+          nothing cached, the layout's ServerUnreachableNotice explains. */}
       {!authChecked ? null : !user && !(authCheckFailed && eventInfo) ? null : user &&
         user.status !== "approved" ? (
         <PageMain>
@@ -1137,13 +1133,10 @@ function HomeContent() {
         </PageMain>
       ) : (
         <>
-          {authCheckFailed && (
-            <div className="mx-auto max-w-5xl px-4">
-              <ErrorAlert>
-                Can&apos;t reach the server right now
-                {dataAsOf ? ` — showing data from ${formatRelativeTime(dataAsOf)}` : ""}.
-              </ErrorAlert>
-            </div>
+          {authCheckFailed && dataAsOf && (
+            <p className="mx-auto max-w-5xl px-4 text-xs text-text-secondary">
+              Showing saved data from {formatRelativeTime(dataAsOf)}.
+            </p>
           )}
 
           {error && !authCheckFailed && (
