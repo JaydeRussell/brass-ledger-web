@@ -6,6 +6,7 @@ import { useCurrentUser } from "../../lib/auth";
 import { NAV_LINKS } from "../../lib/navLinks";
 import { loadRecentEvents, fetchRecentEventsFromServer, type RecentEvent } from "../../lib/recentEvents";
 import { logClientEvent } from "../../lib/clientLog";
+import { useDialogKeyboard } from "../../lib/useDialogKeyboard";
 
 type Result =
   | { kind: "page"; key: string; label: string; detail?: string; href: string }
@@ -46,9 +47,8 @@ function optionId(result: Result): string {
  * Plain conditionally-rendered backdrop+panel, not ui/dialog.tsx's
  * Radix-backed Dialog — same reasoning as feedbackWidget.tsx's own doc
  * comment: keeps this real-DOM and structurally testable via
- * react-dom/server, at the cost of Radix's automatic focus trap (a
- * known, minor gap — Escape-to-close and backdrop-click are still
- * handled by hand below).
+ * react-dom/server. useDialogKeyboard supplies Escape-to-close and focus
+ * containment; backdrop-click is handled below.
  */
 export default function CommandPaletteBody() {
   const { isOpen, close } = useCommandPalette();
@@ -59,6 +59,7 @@ export default function CommandPaletteBody() {
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const dialogRef = useDialogKeyboard<HTMLDivElement>(close);
 
   // Lazily loads recent events only once actually opened — never on
   // every page load, unlike app/page.tsx's own hydration effect, since
@@ -82,15 +83,6 @@ export default function CommandPaletteBody() {
       setRecentEvents(loadRecentEvents());
     }
   }, [isOpen, user]);
-
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen, close]);
 
   if (!isOpen) return null;
 
@@ -125,6 +117,7 @@ export default function CommandPaletteBody() {
     <>
       <div className="fixed inset-0 z-40 bg-black/30 print:hidden" onClick={close} aria-hidden />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Quick switcher"

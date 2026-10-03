@@ -5,6 +5,7 @@ import { useCurrentUser } from "../../lib/auth";
 import { submitFeedback, type FeedbackKind } from "../../lib/feedback";
 import { logClientEvent } from "../../lib/clientLog";
 import Button from "../ui/button";
+import { useDialogKeyboard } from "../../lib/useDialogKeyboard";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -22,10 +23,9 @@ type Status = "idle" | "submitting" | "success" | "error";
  * Radix-backed Dialog — that component portals its content to
  * document.body, which is real DOM behavior a plain react-dom/server
  * static-SSR test pass can't see into at all. Keeping this modal
- * in-place trades away Radix's focus-trapping/Escape-to-close for real
- * structural test coverage of the form itself, which matters more for a
- * widget whose entire point is being trivially easy to fill in and
- * submit.
+ * in-place keeps real structural test coverage of the form itself;
+ * useDialogKeyboard supplies the Escape-to-close and focus containment
+ * Radix would have.
  */
 export default function FeedbackPanel({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
@@ -41,6 +41,7 @@ export default function FeedbackPanel({ onClose }: { onClose: () => void }) {
   // a reopen always starts fresh. The old in-place version had to wipe
   // the fields by hand.
   const close = onClose;
+  const dialogRef = useDialogKeyboard<HTMLDivElement>(close);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +64,7 @@ export default function FeedbackPanel({ onClose }: { onClose: () => void }) {
     <>
       <div className="fixed inset-0 z-40 bg-black/30 print:hidden" onClick={close} aria-hidden />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="feedback-widget-title"
