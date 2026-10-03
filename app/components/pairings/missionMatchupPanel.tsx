@@ -89,10 +89,11 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
               className="flex-1 overflow-hidden rounded-md border border-surface-border text-left hover:border-brass-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-500/60"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- a
-                  pre-cropped local static asset, not a remote/optimizable
-                  image (see the plan's rationale for skipping next/image). */}
+                  pre-cropped local static asset with its own thumbnail. */}
               <img
-                src={layout.src}
+                src={layout.thumb}
+                srcSet={`${layout.thumb} 480w, ${layout.src} 983w`}
+                sizes="(min-width: 1024px) 320px, 33vw"
                 alt={`Layout ${layout.layout} for this deployment`}
                 loading="lazy"
                 className="w-full"
