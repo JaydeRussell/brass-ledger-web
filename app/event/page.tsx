@@ -385,6 +385,11 @@ function HomeContent() {
   const [boardRound, setBoardRound] = React.useState<number | null>(null);
   const [boardEntries, setBoardEntries] = React.useState<BoardPairing[]>([]);
   const [boardLoading, setBoardLoading] = React.useState(false);
+  // Which "eventId:round" boardEntries belongs to, set when a fetch
+  // settles. Until it matches the current event and round, the board is
+  // still loading — which also covers opening the tab by link, refresh or
+  // back, where no click set boardLoading.
+  const [boardLoadedFor, setBoardLoadedFor] = React.useState<string | null>(null);
   const [boardError, setBoardError] = React.useState<string | null>(null);
   // When `boardEntries` was last successfully fetched — same "as of"
   // purpose as the top-level dataAsOf, scoped to this one round's board.
@@ -403,6 +408,8 @@ function HomeContent() {
 
   const [placings, setPlacings] = React.useState<PlacingEntry[]>([]);
   const [placingsLoading, setPlacingsLoading] = React.useState(false);
+  // Same as boardLoadedFor, for placings (keyed by event id).
+  const [placingsLoadedFor, setPlacingsLoadedFor] = React.useState<string | null>(null);
   const [placingsError, setPlacingsError] = React.useState<string | null>(null);
   // Same purpose as boardDataAsOf, for PlacingsTable's RefreshButton.
   const [placingsDataAsOf, setPlacingsDataAsOf] = React.useState<number | null>(null);
@@ -843,7 +850,10 @@ function HomeContent() {
         }
       })
       .finally(() => {
-        if (!cancelled) setBoardLoading(false);
+        if (!cancelled) {
+          setBoardLoading(false);
+          setBoardLoadedFor(`${eventId}:${boardRound}`);
+        }
       });
 
     return () => {
@@ -878,7 +888,10 @@ function HomeContent() {
         }
       })
       .finally(() => {
-        if (!cancelled) setPlacingsLoading(false);
+        if (!cancelled) {
+          setPlacingsLoading(false);
+          setPlacingsLoadedFor(eventId);
+        }
       });
 
     return () => {
@@ -1339,7 +1352,7 @@ function HomeContent() {
                 minRound={1}
                 maxRound={Math.max(upToRound, boardRound)}
                 entries={filteredBoardEntries}
-                loading={boardLoading}
+                loading={boardLoading || boardLoadedFor !== `${eventId}:${boardRound}`}
                 error={boardError}
                 onRoundChange={changeBoardRound}
                 onRefresh={refreshBoard}
@@ -1363,7 +1376,7 @@ function HomeContent() {
           <PlacingsTable
             entries={filteredPlacings}
             badgeEntries={placings}
-            loading={placingsLoading}
+            loading={placingsLoading || placingsLoadedFor !== eventId}
             error={placingsError}
             onRefresh={refreshPlacings}
             myId={myRowId}
