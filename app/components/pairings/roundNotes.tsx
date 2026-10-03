@@ -42,7 +42,8 @@ export default function RoundNotes({ eventId, round }: RoundNotesProps) {
   // say "Show notes" when one exists, and collapsing and re-expanding
   // doesn't overwrite unsaved edits with the saved copy.
   React.useEffect(() => {
-    if (!signedInApproved) return;
+    // Round 0 means "Your round" hasn't resolved the current round yet.
+    if (!signedInApproved || round < 1) return;
     let cancelled = false;
     setStatus("loading");
     fetchRoundNote(eventId, round)
