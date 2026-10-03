@@ -269,6 +269,9 @@ export default function MyRoundCard({
             <MissionMatchupPanel myDisposition={myDisposition} opponentDisposition={opponentDisposition} />
           ) : (
             <PlayerStatsPanel
+              // Keyed so a new opponent starts from empty state rather than
+              // showing the previous player's stats or error.
+              key={resolved.opponentBcpUserId}
               mode="player"
               bcpUserId={resolved.opponentBcpUserId}
               playerName={resolved.opponentName}

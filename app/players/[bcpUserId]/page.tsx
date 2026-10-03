@@ -41,7 +41,7 @@ function PlayerStatsContent() {
         {!checked || !user ? null : user.status !== "approved" ? (
           <AccessStatusMessage status={user.status} />
         ) : (
-          <PlayerStatsPanel bcpUserId={bcpUserId} mode="player" playerName={name} />
+          <PlayerStatsPanel key={bcpUserId} bcpUserId={bcpUserId} mode="player" playerName={name} />
         )}
       </PageMain>
     </div>

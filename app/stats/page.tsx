@@ -70,7 +70,7 @@ export default function StatsPage() {
                 onChange={(dossierPublic) => setUser((prev) => (prev ? { ...prev, dossierPublic } : prev))}
               />
             </Card>
-            <PlayerStatsPanel bcpUserId={bcpUserId} />
+            <PlayerStatsPanel key={bcpUserId} bcpUserId={bcpUserId} />
           </>
         )}
       </PageMain>
