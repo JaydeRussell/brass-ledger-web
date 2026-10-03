@@ -40,7 +40,7 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
 //
 // Raw placing isn't comparable across a 12-player RTT and a 265-player GT
 // the way percentile (placing ÷ that event's own published field size)
-// is — the Best placing/GT/Teams/RTT tiles above already show raw placing
+// is — the Best placing/GT/Teams/RTT tiles below already show raw placing
 // (useful in its own right, "how well did I do at large events"), so
 // these three summarize the same already-fetched `history` a different,
 // format-agnostic way: on average, recently, and how often. All three are
@@ -103,6 +103,14 @@ function formatMonthYear(iso?: string): string | undefined {
   return formatEventDate(iso, { month: "short", year: "numeric" });
 }
 
+/** A format-specific best placing, "…" while the full stats are still
+ * on their way (eventDetailResolved false means "not looked up yet", not
+ * "none"), "—" once looked up and absent. */
+function formatSplit(stats: MyStats, placing: { placing: number } | undefined): string {
+  if (placing !== undefined) return ordinal(placing.placing);
+  return stats.eventDetailResolved ? "—" : "…";
+}
+
 /**
  * A player's stats — a "skill at a glance" row (ITC rank, plus three
  * plain percentile-based summaries: average, recent form, and top-quarter
@@ -119,20 +127,10 @@ function formatMonthYear(iso?: string): string | undefined {
  *
  * Two modes, sharing everything but which endpoint they hit and a couple
  * of copy strings: "me" (the default) is the signed-in account's own
- * stats, on its own page (app/stats/page.tsx) rather than as a card
- * squeezed onto another page, once there was enough here to warrant it.
- * "player" is an arbitrary other player's stats (app/players/[bcpUserId]
+ * stats, on its own page (app/stats/page.tsx). "player" is an arbitrary other player's stats (app/players/[bcpUserId]
  * /page.tsx), reached by clicking their name anywhere else in the app
  * (roster, pairings, placings) that already has their bcpUserId in hand.
  */
-/** A format-specific best placing, "…" while the full stats are still
- * on their way (eventDetailResolved false means "not looked up yet", not
- * "none"), "—" once looked up and absent. */
-function formatSplit(stats: MyStats, placing: { placing: number } | undefined): string {
-  if (placing !== undefined) return ordinal(placing.placing);
-  return stats.eventDetailResolved ? "—" : "…";
-}
-
 export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }: PlayerStatsPanelProps) {
   const [stats, setStats] = React.useState<MyStats | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -199,9 +197,9 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
     };
   }, [stats?.mostRecentEventId, bcpUserId]);
 
-  // stats is only ever null before the first fetchMyStats resolution —
-  // it always resolves to a real MyStats (with linked: false, not null,
-  // for an account with nothing to show) once it does.
+  // stats is only ever null before the first fetchMyStats/fetchPlayerStats
+  // resolution — it always resolves to a real MyStats (with linked: false,
+  // not null, for an account with nothing to show) once it does.
   const loading = stats === null && !error;
   const slowLoad = useDelayedFlag(loading);
 

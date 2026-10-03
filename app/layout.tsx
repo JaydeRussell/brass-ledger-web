@@ -60,9 +60,9 @@ export const viewport: Viewport = {
   themeColor: "#0c0d10",
 };
 
-// Applies the visitor's accent-color theme before first paint — see
-// lib/theme.ts for the same logic as real, testable TypeScript (this
-// string is necessarily a standalone duplicate: it has to run
+// Applies the visitor's accent-color theme before first paint — the same
+// read-and-apply as lib/theme.ts's readStoredAccentTheme/applyAccentTheme
+// (this string is necessarily a standalone duplicate: it has to run
 // synchronously in <head>, before any app code loads, to avoid a flash of
 // the wrong accent on every page load, not just first visit). Doesn't
 // validate the stored value against ACCENT_THEMES — an unrecognized
@@ -88,11 +88,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Resolved here, once, for every route. Reading the session cookie
-  // makes this render dynamic — which costs nothing, because these
-  // routes already are: production answers `cf-cache-status: BYPASS`
-  // and `cache-control: no-store` on both / and /my-events, measured
-  // 2026-09-20. The earlier worry that this would forfeit edge caching
-  // was about caching that turned out not to be switched on.
+  // (cookies()) makes every page dynamic, so none of them is served from
+  // the edge cache even though wrangler.jsonc enables it and
+  // vite.config.ts registers the CDN cache adapter.
   const initialUser = await resolveCurrentUserOnServer();
   return (
     <html lang="en" suppressHydrationWarning>

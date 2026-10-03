@@ -40,8 +40,8 @@ export function applyReduceMotion(reduce: boolean) {
   }
 }
 
-/** Same synchronous-in-<head>-script logic as lib/theme.ts's own
- * ACCENT_INIT_SCRIPT (see layout.tsx) — has to run before first paint to
+/** Same synchronous-in-<head>-script approach as layout.tsx's
+ * ACCENT_INIT_SCRIPT — has to run before first paint to
  * avoid a flash of motion for someone who's explicitly opted out. */
 export const REDUCE_MOTION_INIT_SCRIPT = `(function(){try{if(localStorage.getItem("${STORAGE_KEY}")==="1")document.documentElement.setAttribute("data-reduce-motion","true");}catch(e){}})();`;
 

@@ -19,9 +19,9 @@ export default function LinkifiedText({ text, className }: LinkifiedTextProps) {
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
-  // A fresh RegExp per call (rather than reusing the module-level one
-  // and resetting its lastIndex) — a shared stateful regex would break
-  // under concurrent/re-entrant renders.
+  // The extra RegExp copy is redundant but harmless: matchAll already
+  // clones the regex it's given, so the shared one's lastIndex is never
+  // touched either way.
   for (const match of text.matchAll(new RegExp(MARKDOWN_LINK))) {
     if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
     nodes.push(

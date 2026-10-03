@@ -8,12 +8,13 @@ const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhos
  * How long the server-side /api/me lookup may take before the render
  * gives up on it.
  *
- * This sits on the critical path of the HTML, which the client-side
- * lookup it replaces did not — so a slow or unreachable backend must
- * degrade to "we don't know, let the client ask" rather than hold the
- * page. Short on purpose: the call is Worker-to-container inside
- * Cloudflare's own network, and anything near this budget means
- * something is wrong rather than merely busy.
+ * This sits on the critical path of the HTML, so a slow or unreachable
+ * backend must degrade to "we don't know, let the client ask" rather
+ * than hold the page. Short on purpose: the call is Worker-to-container
+ * inside Cloudflare's own network. The trade-off is the backend
+ * container's cold start: it sleeps after 10 minutes idle and waking
+ * takes longer than this, so the first visit after a quiet spell times
+ * out here and the page falls back to the client-side lookup.
  */
 const SERVER_AUTH_TIMEOUT_MS = 1500;
 

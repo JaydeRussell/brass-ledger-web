@@ -44,9 +44,10 @@ export const SCORE_OUTCOME_CLASSES: Record<ScoreOutcome, string> = {
 // fallback for the rare ranking that carries points but no placing (see
 // rankingStrength below). There's no cheap way to know the true current
 // maximum across the whole leaderboard — that would mean pulling the
-// full multi-thousand-row list, which this app deliberately avoids (see
-// the ITC ranking section in lib/bcp.ts) — so this is a fixed "about as
-// good as it currently gets" ceiling.
+// full multi-thousand-row list, which this app deliberately avoids by
+// fetching each player's ranking on its own (fetchItcRanking in
+// lib/bcp.ts) — so this is a fixed "about as good as it currently gets"
+// ceiling.
 const ITC_GRADIENT_MAX_POINTS = 1500;
 
 // Rough normalization floor for a BCP placing (rank) — same idea as

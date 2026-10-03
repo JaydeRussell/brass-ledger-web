@@ -9,13 +9,15 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Next.js inlines NEXT_PUBLIC_* env vars into the built JS at build time —
-# the *browser*, not this container, is what calls the backend, so this
-# needs to be a browser-reachable URL (e.g. http://localhost:8080 when the
-# backend's port is published to the host), never a Docker-internal
-# service name like http://backend:8080. Passed via docker-compose.yml's
-# `build.args` for the compose-managed stack; override with
-# `--build-arg NEXT_PUBLIC_BACKEND_URL=...` for a standalone build.
+# Next.js inlines NEXT_PUBLIC_* env vars into the built JS at build time.
+# The browser makes most backend calls, so this needs to be a
+# browser-reachable URL (e.g. http://localhost:8080 when the backend's port
+# is published to the host), never a Docker-internal service name like
+# http://backend:8080. The server render also uses it for its /api/me
+# lookup (app/lib/serverAuth.ts); from inside this container localhost is
+# the container itself, so that lookup fails and the page falls back to
+# the client-side lookup. Override with
+# `--build-arg NEXT_PUBLIC_BACKEND_URL=...`.
 ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 RUN npm run build

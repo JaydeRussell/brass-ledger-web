@@ -453,9 +453,8 @@ function HomeContent() {
     // localStorage is actually known.
     if (!authChecked) return;
 
-    // Wrapped in a resolved-promise callback, like every other effect in
-    // this file, so setState never runs synchronously in the effect body
-    // itself — see the comment on the event-loading effect below.
+    // Runs in a resolved-promise callback so the hydration setState calls
+    // happen after the effect body rather than during it.
     Promise.resolve().then(async () => {
       // A `?event=<id>` in the URL (see app/components/myEvents/
       // eventList.tsx's "View event page" link, which is how the My
@@ -521,11 +520,10 @@ function HomeContent() {
 
   // Load this event's data whenever the selected event changes. Waits for
   // the hydration effect above so it never fetches the fixed default event
-  // only to immediately re-fetch the real stored one. The actual state
-  // *reset* (loading/error/players) happens in the event
-  // handler that changes `eventId` (see handleChangeEvent below) rather
-  // than here, so this effect only ever calls setState from its async
-  // callbacks — never synchronously in the effect body itself.
+  // only to immediately re-fetch the real stored one. The state *reset*
+  // (loading/error/players) happens in the event handler that changes
+  // `eventId` (see handleChangeEvent below) rather than here; this effect
+  // only marks the refresh as in flight and applies the results.
   useEffect(() => {
     if (!hydrated) return;
     // Every BCP route needs an approved session, so skip the fetch rather
@@ -837,8 +835,8 @@ function HomeContent() {
   ]);
 
   // Fetches the full pairings board for whichever round is selected —
-  // every matchup BCP has published for that round. Same "async
-  // callbacks only" shape as the effects above.
+  // every matchup BCP has published for that round. Sets state only from
+  // its async callbacks.
   useEffect(() => {
     if (!eventInfo || !boardRound || boardRound < 1) return;
 
@@ -941,21 +939,21 @@ function HomeContent() {
 
   const handleChangeEvent = (id: string) => {
     // Re-choosing the open event would reset the page and wait on a load
-    // effect that only re-runs when the id changes, so it never finished.
-    // Treat it as a refresh instead.
+    // effect that only re-runs when the id changes, so it would never
+    // finish. Treat it as a refresh instead.
     if (id === eventId) {
       refreshEventData();
       return;
     }
     setEventId(id);
     writeLocalStorage(EVENT_ID_STORAGE_KEY, id);
-    // These resets happen here, in a direct event handler, rather than in
-    // the data-loading effect above — the effect only ever sets state from
-    // its async callbacks. Tab and search filter reset together in one
+    // These resets happen here, in the event handler, rather than in the
+    // data-loading effect above, so they land together with the new id.
+    // Tab and search filter reset together in one
     // updateQuery call (see its comment above for why that has to be a
     // single call rather than two).
     updateQuery({ tab: "overview", q: "" });
-    // searchQuery itself is local state now (see its declaration above) —
+    // searchQuery itself is local state (see its declaration above) —
     // updateQuery only touches the URL, so it needs resetting here too,
     // and any pending debounced write cancelling so it can't fire after
     // and stomp this reset back to whatever was being typed before.
@@ -964,7 +962,7 @@ function HomeContent() {
     // Hydrate from this event's own last-known-good snapshot if one
     // exists (e.g. switching back to an event viewed earlier this
     // session) instead of blanking to null — see eventCache.ts. Falls
-    // back to today's null/[] when there's nothing cached for it yet.
+    // back to null/[] when there's nothing cached for it yet.
     const cached = loadCachedEvent(id);
     setEventInfo(cached?.eventInfo ?? null);
     setPlayers(cached?.players ?? []);

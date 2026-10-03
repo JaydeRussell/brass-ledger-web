@@ -37,7 +37,8 @@ const BCP_SITE_BASE = "https://www.bestcoastpairings.com";
  * using the backend's own `{error}` message on a non-ok response (falling
  * back to a generic message if the body isn't parseable JSON), and treats
  * an empty 200 body as `null` rather than trying (and failing) to parse
- * it — the backend uses an empty body for "no ITC ranking found."
+ * it. "No ITC ranking found" arrives as a JSON `null` body, which parses
+ * to `null` as well.
  *
  * `credentials: "include"` matters now that these routes require a
  * session (see internal/api.RequireSession on the backend) — without it,
@@ -775,10 +776,10 @@ export async function fetchCurrentItcLeagueId(eventId: string): Promise<string |
 }
 
 /**
- * One player's ITC ranking (points + rank) within a league — see the "ITC
- * ranking" section above for why this is cheap (a real per-player filter
- * on the backend) rather than requiring the full leaderboard. Returns null
- * if this player has no ranking in this league.
+ * One player's ITC ranking (points + rank) within a league. Cheap: BCP's
+ * placings endpoint filters to one player via `userId[]`, so it's one
+ * request per player (cached server-side), never the full leaderboard.
+ * Returns null if this player has no ranking in this league.
  */
 export function fetchItcRanking(bcpUserId: string, leagueId: string): Promise<ItcRanking | null> {
   return getJSON<ItcRanking | null>(

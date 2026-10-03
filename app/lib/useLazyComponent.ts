@@ -6,13 +6,10 @@ import { logClientEvent } from "./clientLog";
  * Loads a component's module on demand and returns the component once
  * it's there (null until then).
  *
- * Deliberately not next/dynamic. Under vinext — the Vite/Cloudflare
- * build this project actually deploys, see package.json's build:vinext —
- * `dynamic(() => import(…), { ssr: false })` fetches and resolves its
- * module but doesn't schedule a re-render when it does, so it goes on
- * rendering nothing until some unrelated state change re-renders the
- * parent. Holding the resolved component in state makes the update that
- * loads it the same update that renders it.
+ * Not next/dynamic, because the caller decides *when* to fetch:
+ * nothing loads until `shouldLoad` turns true, whereas a dynamic()
+ * component starts fetching as soon as it renders. The resolved
+ * component is held in state, so the load itself triggers the render.
  *
  * `loader` must be a stable, module-level function (it's in the effect's
  * dependency list). Memoize the import inside it if two call sites share

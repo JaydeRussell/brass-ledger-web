@@ -8,15 +8,9 @@ import { useLazyComponent } from "../../lib/useLazyComponent";
 // ~37 KB across three chunks on *every* route's critical path (including
 // /login) purely because this component is mounted in app/layout.tsx.
 //
-// Deliberately NOT next/dynamic. Under vinext — the Vite/Cloudflare build
-// this project actually deploys, see package.json's build:vinext —
-// `dynamic(() => import(…), { ssr: false })` fetches and resolves its
-// module but doesn't schedule a re-render when it does, so it goes on
-// rendering nothing until some unrelated state change re-renders the
-// parent. In a real browser that looked exactly like "the drawer never
-// mounts on its own, but clicking the hamburger works." Holding the
-// resolved component in state makes the update that loads it the same
-// update that renders it.
+// Loaded through useLazyComponent rather than next/dynamic so the fetch
+// waits for the idle/open triggers below (its `shouldLoad` gate).
+//
 // Memoized so the hover preload, the idle load and an open all share one
 // promise rather than racing on separate ones.
 let bodyModule: Promise<typeof import("./navDrawerBody")> | null = null;
@@ -42,8 +36,7 @@ export function preloadNavDrawerBody(): void {
  * a closed Dialog renders nothing into the DOM at all. Mounting the body
  * early therefore costs a React element and the Dialog's context, not
  * markup — and it isn't what makes the open animation work (the panel
- * enters the DOM on open either way, exactly as it did when this module
- * was statically imported). What early loading actually buys is that
+ * enters the DOM on open either way). What early loading actually buys is that
  * clicking the hamburger never waits on a network fetch.
  *
  * Two triggers:
@@ -54,8 +47,8 @@ export function preloadNavDrawerBody(): void {
  *    the one we want, but Chrome doesn't fire it at all in a hidden tab
  *    even with a `timeout`, so a page opened in a background tab would
  *    sit unloaded until the visitor switched to it and clicked. Safari
- *    before 17 has no requestIdleCallback at all, and there the timer is
- *    the whole story.
+ *    has no requestIdleCallback at all, and there the timer is the whole
+ *    story.
  *
  * 2. **The drawer being opened** — the safety net, for someone who hits
  *    the hamburger before either scheduler fires.
