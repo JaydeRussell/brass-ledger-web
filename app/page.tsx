@@ -49,7 +49,19 @@ function pickNextUp(events: MyEvents | null): { event: MyEvent; live: boolean } 
   return { event: sorted[0], live: false };
 }
 
-function NextUpCard({ events }: { events: MyEvents | null }) {
+function LoadFailed() {
+  return <p className="mt-2 text-sm text-text-secondary">Couldn&apos;t load this. Refresh the page to try again.</p>;
+}
+
+function NextUpCard({ events, failed }: { events: MyEvents | null; failed: boolean }) {
+  if (events === null && failed) {
+    return (
+      <Card className="p-4 shadow-sm">
+        <p className="text-sm font-semibold text-text-primary">Next up</p>
+        <LoadFailed />
+      </Card>
+    );
+  }
   if (events === null) {
     return (
       <Card role="status" aria-live="polite" className="p-4 shadow-sm">
@@ -155,10 +167,12 @@ function DismissCardButton({ onClick }: { onClick: () => void }) {
 function FriendsCard({
   requests,
   friends,
+  failed,
   onHide,
 }: {
   requests: IncomingFriendRequest[] | null;
   friends: Friend[] | null;
+  failed: boolean;
   onHide?: () => void;
 }) {
   const loading = requests === null || friends === null;
@@ -168,7 +182,9 @@ function FriendsCard({
         <p className="text-sm font-semibold text-text-primary">Friends</p>
         {onHide && <DismissCardButton onClick={onHide} />}
       </div>
-      {loading ? (
+      {loading && failed ? (
+        <LoadFailed />
+      ) : loading ? (
         <Skeleton className="mt-2 h-4 w-32" />
       ) : (
         <>
@@ -197,7 +213,7 @@ function FriendsCard({
 // badge, no faction breakdown, no trend chart. See /stats' own
 // PlayerStatsPanel for the full picture this links out to.
 
-function RecordCard({ stats, onHide }: { stats: MyStats | null; onHide?: () => void }) {
+function RecordCard({ stats, failed, onHide }: { stats: MyStats | null; failed: boolean; onHide?: () => void }) {
   const header = (
     <div className="flex items-start justify-between gap-2">
       <p className="text-sm font-semibold text-text-primary">Your record</p>
@@ -209,7 +225,7 @@ function RecordCard({ stats, onHide }: { stats: MyStats | null; onHide?: () => v
     return (
       <Card className="p-4 shadow-sm">
         {header}
-        <Skeleton className="mt-2 h-10 w-full" />
+        {failed ? <LoadFailed /> : <Skeleton className="mt-2 h-10 w-full" />}
       </Card>
     );
   }
@@ -338,12 +354,6 @@ function DashboardSkeleton() {
 function HomeContent() {
   const { user, checked, setUser } = useCurrentUser();
   useRedirectToLoginIfSignedOut(user, checked);
-  // Derived directly from `user`, not its own useState+useEffect — user
-  // itself is already null on both server and first client render (it
-  // only becomes non-null once the /api/me lookup resolves), so there's
-  // no hydration-mismatch risk here the way app/event/page.tsx's
-  // eventId has (that one reads localStorage, unavailable on the
-  // server, which is what actually needs the deferred-state pattern).
   const bcpUserId = user?.bcpUserId || undefined;
 
   const [events, setEvents] = React.useState<MyEvents | null>(null);
@@ -351,35 +361,36 @@ function HomeContent() {
   const [friendRequests, setFriendRequests] = React.useState<IncomingFriendRequest[] | null>(null);
   const [friends, setFriends] = React.useState<Friend[] | null>(null);
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
+  const [loadFailed, setLoadFailed] = React.useState(false);
+  // Fetch while the account might be approved: before the sign-in check
+  // has an answer, or once it says approved. A failed lookup turns this
+  // false and a successful retry back to true, which loads the cards.
+  const canLoad = !checked || user?.status === "approved";
   const { hidden: hiddenCards, hide: hideCard, showAll: showAllCards } = useHiddenDashboardCards();
 
-  // Friends + recent events need no linked BCP profile — and, since
-  // they're scoped by the session cookie rather than by anything in
-  // `user`, they don't need the /api/me result either. So they fire on
-  // mount, racing the sign-in check instead of queueing behind it: that
-  // takes the Friends and Jump-back-in cards from two round trips to
-  // one.
-  //
-  // The trade is that a signed-out visitor fires three requests that
-  // 401. That's deliberate and cheap — they're redirected to /login the
-  // moment the check resolves anyway — and it's why none of the three
-  // logs on failure: "not signed in" is an expected outcome of racing
-  // the check, not something worth a line in the console. Each card
-  // just stays empty, which is the same thing that happened before when
-  // the fetch was skipped outright.
+  // Friends and recent events are scoped by the session cookie, not by
+  // anything in `user`, so they start on mount (gated by canLoad) rather
+  // than waiting for the sign-in check.
   React.useEffect(() => {
+    if (!canLoad) return;
     let cancelled = false;
+    const failed = () => {
+      if (!cancelled) setLoadFailed(true);
+    };
+    Promise.resolve().then(() => {
+      if (!cancelled) setLoadFailed(false);
+    });
 
     fetchIncomingFriendRequests()
       .then((r) => {
         if (!cancelled) setFriendRequests(r);
       })
-      .catch(() => {});
+      .catch(failed);
     fetchFriends()
       .then((f) => {
         if (!cancelled) setFriends(f);
       })
-      .catch(() => {});
+      .catch(failed);
     fetchRecentEventsFromServer()
       .then((events) => {
         if (!cancelled) setRecentEvents(events);
@@ -393,37 +404,23 @@ function HomeContent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canLoad]);
 
-  // Next up / Your record. These fire on mount too, alongside the effect
-  // above, rather than waiting for the sign-in check to hand them a
-  // bcpUserId.
-  //
-  // They used to wait, which is what made this page a two-wave
-  // waterfall: nothing here could start until /api/me came back, and
-  // these are by far the slowest calls the app makes. The wait bought
-  // nothing — neither endpoint takes a bcpUserId. Both resolve it from
-  // the session server-side (see internal/api/me.go's Events and
-  // stats.go's Stats) and answer an account with no linked profile with
-  // an empty, already-correct response rather than an error. So the
-  // client was holding back a request the server was always ready to
-  // answer.
+  // Next up / Your record. Neither endpoint takes a bcpUserId: both
+  // resolve the account from the session and answer an unlinked one with
+  // an empty, already-correct response, so they start on mount too.
   React.useEffect(() => {
+    if (!canLoad) return;
     let cancelled = false;
+    const failed = () => {
+      if (!cancelled) setLoadFailed(true);
+    };
 
-    // Neither logs on failure, for the same reason the effect above
-    // doesn't: now that these race the sign-in check rather than
-    // queueing behind it, a signed-out visitor fires them and gets a
-    // 401. That's an expected outcome of the race, not something worth
-    // a line in the console — they're redirected to /login the moment
-    // the check resolves anyway. A signed-in account with no linked BCP
-    // profile isn't an error case at all: both endpoints answer it with
-    // an empty, already-correct response.
     fetchMyEvents()
       .then((data) => {
         if (!cancelled) setEvents(data);
       })
-      .catch(() => {});
+      .catch(failed);
     // summary: true skips the backend's per-event pass, which is 99% of
     // that endpoint's requests to BCP and exists entirely for the
     // Team/GT/RTT split and the "of N" field sizes. This card renders
@@ -433,12 +430,12 @@ function HomeContent() {
       .then((data) => {
         if (!cancelled) setStats(data);
       })
-      .catch(() => {});
+      .catch(failed);
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canLoad]);
 
   return (
     <div className="flex-1 bg-surface-0">
@@ -463,7 +460,7 @@ function HomeContent() {
                 />
               </Card>
             ) : (
-              <NextUpCard events={events} />
+              <NextUpCard events={events} failed={loadFailed} />
             )}
 
             {(!hiddenCards.has("friends") || (bcpUserId && !hiddenCards.has("record"))) && (
@@ -472,11 +469,12 @@ function HomeContent() {
                   <FriendsCard
                     requests={friendRequests}
                     friends={friends}
+                    failed={loadFailed}
                     onHide={() => hideCard("friends")}
                   />
                 )}
                 {bcpUserId && !hiddenCards.has("record") && (
-                  <RecordCard stats={stats} onHide={() => hideCard("record")} />
+                  <RecordCard stats={stats} failed={loadFailed} onHide={() => hideCard("record")} />
                 )}
               </div>
             )}
