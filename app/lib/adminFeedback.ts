@@ -70,18 +70,32 @@ export async function fetchOpenFeedbackCount(): Promise<number> {
   return count;
 }
 
+const FEEDBACK_COUNT_EVENT = "feedbackcountchange";
+
+/** Tells the nav badge (useOpenFeedbackCount) a report's status changed. */
+export function notifyFeedbackCountChanged(): void {
+  window.dispatchEvent(new Event(FEEDBACK_COUNT_EVENT));
+}
+
 /**
  * Fetches the open-feedback count once, only when `isAdmin` is true —
  * the nav drawer's session-start "take note of what's pending" badge
  * (see navDrawer.tsx). No polling (this project's one rule for every
- * fetch, own backend or third-party alike): it loads once when the
- * drawer mounts and stays put until the next full page load, the same
- * way useCurrentUser() itself only checks once per session rather than
- * refreshing on a timer. `null` means "not fetched yet or not an admin"
+ * fetch, own backend or third-party alike): it loads when the drawer
+ * mounts and again only after an admin changes a report's status. `null` means "not fetched yet or not an admin"
  * — the caller renders no badge for that, same as a real 0.
  */
 export function useOpenFeedbackCount(isAdmin: boolean): number | null {
   const [count, setCount] = useState<number | null>(null);
+  const [version, setVersion] = useState(0);
+
+  // Re-fetched when an admin resolves or reopens a report (see
+  // notifyFeedbackCountChanged) — an explicit action, not a timer.
+  useEffect(() => {
+    const onChange = () => setVersion((v) => v + 1);
+    window.addEventListener(FEEDBACK_COUNT_EVENT, onChange);
+    return () => window.removeEventListener(FEEDBACK_COUNT_EVENT, onChange);
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -99,7 +113,7 @@ export function useOpenFeedbackCount(isAdmin: boolean): number | null {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin]);
+  }, [isAdmin, version]);
 
   return count;
 }
