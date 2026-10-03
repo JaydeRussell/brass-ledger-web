@@ -88,8 +88,7 @@ export default function OverviewPanel({ eventInfo }: OverviewPanelProps) {
           </div>
           {slowLoad && (
             <p className="mt-3 text-xs text-text-tertiary">
-              Taking longer than usual — this is a first look at this event, so it&apos;s asking
-              Best Coast Pairings directly.
+              Taking longer than usual — still waiting on Best Coast Pairings.
             </p>
           )}
         </div>

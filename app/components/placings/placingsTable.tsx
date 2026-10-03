@@ -355,11 +355,14 @@ export default function PlacingsTable({
   const [sortKey, setSortKey] = React.useState<SortKey>("placing");
   const [sortDir, setSortDir] = React.useState<1 | -1>(1);
   const handleSort = (key: SortKey) => {
+    // Placing and name read best first ascending; a metric (Wins, Battle
+    // Points) reads best first descending, so that's its first tap.
+    const firstDir: 1 | -1 = key === "placing" || key === "name" ? 1 : -1;
     if (sortKey !== key) {
       setSortKey(key);
-      setSortDir(1);
-    } else if (sortDir === 1) {
-      setSortDir(-1);
+      setSortDir(firstDir);
+    } else if (sortDir === firstDir) {
+      setSortDir(firstDir === 1 ? -1 : 1);
     } else {
       setSortKey("placing");
       setSortDir(1);
@@ -395,7 +398,7 @@ export default function PlacingsTable({
             </div>
             {slowLoad && (
               <p className="mt-2 text-xs text-text-tertiary">
-                Taking longer than usual — first look at this event.
+                Taking longer than usual — still waiting on Best Coast Pairings.
               </p>
             )}
           </div>

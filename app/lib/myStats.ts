@@ -143,7 +143,28 @@ export async function fetchMyStats(opts?: StatsOptions): Promise<MyStats> {
  * caller's own linked profile the way fetchMyStats is.
  */
 export async function fetchPlayerStats(bcpUserId: string, opts?: StatsOptions): Promise<MyStats> {
-  return getJSON<MyStats>(
-    `/api/players/${encodeURIComponent(bcpUserId)}/stats${statsQuery(opts)}`
-  );
+  const path = `/api/players/${encodeURIComponent(bcpUserId)}/stats${statsQuery(opts)}`;
+  const recent = playerStatsRequests.get(path);
+  if (recent && Date.now() - recent.startedAt < PLAYER_STATS_REUSE_MS) return recent.request;
+  const request = getJSON<MyStats>(path).catch((err: unknown) => {
+    playerStatsRequests.delete(path);
+    throw err;
+  });
+  if (playerStatsRequests.size >= 64) {
+    const oldest = playerStatsRequests.keys().next();
+    if (!oldest.done) playerStatsRequests.delete(oldest.value);
+  }
+  playerStatsRequests.set(path, { request, startedAt: Date.now() });
+  return request;
+}
+
+// The opponent quick-look and head-to-head both ask for the same player's
+// summary on one screen, and the route is rate-limited per account, so a
+// request is shared while in flight and reused for a minute (the backend's
+// own refetch interval). Failures aren't kept.
+const PLAYER_STATS_REUSE_MS = 60_000;
+const playerStatsRequests = new Map<string, { request: Promise<MyStats>; startedAt: number }>();
+
+export function __clearPlayerStatsRequestsForTests() {
+  playerStatsRequests.clear();
 }

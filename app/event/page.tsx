@@ -1132,7 +1132,6 @@ function HomeContent() {
               lastSyncedAt={dataAsOf}
             />
             <EventSettings
-              eventId={eventId}
               eventName={eventInfo?.name}
               recentEvents={recentEvents.filter((e) => e.id !== eventId)}
               onChangeEvent={handleChangeEvent}
@@ -1310,12 +1309,11 @@ function HomeContent() {
                 </div>
                 {slowLoad && (
                   <p aria-live="polite" className="mt-3 text-center text-xs text-text-tertiary">
-                    Taking longer than usual — this is a first look at this event, so it&apos;s
-                    asking Best Coast Pairings directly.
+                    Taking longer than usual — still waiting on Best Coast Pairings.
                   </p>
                 )}
               </div>
-            ) : isTeamEvent ? (
+            ) : error && players.length === 0 ? null : isTeamEvent ? (
               sortedTeamNames.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
                   No rosters published for this event yet.

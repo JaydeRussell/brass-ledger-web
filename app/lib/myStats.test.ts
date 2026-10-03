@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 // Same fake-fetch-by-URL approach as myEvents.test.ts.
@@ -23,7 +23,11 @@ function installFetch(handler: (url: string, init?: RequestInit) => FakeResponse
   return { calls };
 }
 
-const { fetchMyStats, fetchPlayerStats } = await import("./myStats.ts");
+const { fetchMyStats, fetchPlayerStats, __clearPlayerStatsRequestsForTests } = await import("./myStats.ts");
+
+beforeEach(() => {
+  __clearPlayerStatsRequestsForTests();
+});
 
 test("fetchMyStats: sends credentials and returns the parsed body", async () => {
   const wantBody = {
@@ -107,4 +111,24 @@ test("fetchMyStats/fetchPlayerStats only ask for summary when told to", async ()
 
   await fetchPlayerStats("u1");
   assert.doesNotMatch(calls[3].url, /summary/);
+});
+
+test("fetchPlayerStats: two views asking for the same summary share one request", async () => {
+  const { calls } = installFetch(() => ({ status: 200, body: JSON.stringify({ linked: true, totalEvents: 3 }) }));
+  const [a, b] = await Promise.all([
+    fetchPlayerStats("opp-1", { summary: true }),
+    fetchPlayerStats("opp-1", { summary: true }),
+  ]);
+  await fetchPlayerStats("opp-1", { summary: true });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(a, b);
+});
+
+test("fetchPlayerStats: a failure isn't reused", async () => {
+  let status = 502;
+  const { calls } = installFetch(() => ({ status, body: JSON.stringify({ error: "down" }) }));
+  await assert.rejects(fetchPlayerStats("opp-2", { summary: true }));
+  status = 200;
+  await fetchPlayerStats("opp-2", { summary: true });
+  assert.equal(calls.length, 2);
 });

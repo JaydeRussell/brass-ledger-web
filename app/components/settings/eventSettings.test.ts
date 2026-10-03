@@ -14,7 +14,6 @@ import EventSettings from "./eventSettings.tsx";
 test("shows the event name on the gear button when known", () => {
   const html = renderToStaticMarkup(
     React.createElement(EventSettings, {
-      eventId: "e1",
       eventName: "The Challengers Cup 2026",
       recentEvents: [],
       onChangeEvent: () => {},
@@ -26,7 +25,6 @@ test("shows the event name on the gear button when known", () => {
 test("falls back to a loading label when the event name isn't known yet", () => {
   const html = renderToStaticMarkup(
     React.createElement(EventSettings, {
-      eventId: "e1",
       recentEvents: [],
       onChangeEvent: () => {},
     })
@@ -37,7 +35,6 @@ test("falls back to a loading label when the event name isn't known yet", () => 
 test("the dropdown itself is closed on first render", () => {
   const html = renderToStaticMarkup(
     React.createElement(EventSettings, {
-      eventId: "e1",
       eventName: "Event",
       recentEvents: [{ id: "e2", name: "Other Event", teamEvent: false, lastViewedAt: 0 }],
       onChangeEvent: () => {},

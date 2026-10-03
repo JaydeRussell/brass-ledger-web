@@ -64,7 +64,7 @@ export default function NavDrawer() {
   useEffect(() => {
     const ready = () => setIdleReady(true);
     const idleHandle =
-      typeof requestIdleCallback === "function" ? requestIdleCallback(ready, { timeout: 4000 }) : null;
+      typeof requestIdleCallback === "function" ? requestIdleCallback(ready) : null;
     const timerHandle = setTimeout(ready, 3000);
     return () => {
       if (idleHandle !== null) cancelIdleCallback(idleHandle);
