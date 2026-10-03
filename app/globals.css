@@ -216,6 +216,75 @@
   --font-display: var(--font-display-face);
 }
 
+/* Text sizes, scaled by the in-app Text size setting (--text-scale) on
+   top of the root font size, which follows the device's own text size.
+   Spacing scales only with the device size, not the in-app setting.
+   --text-3xs/--text-2xs replace the fixed 10px/11px labels so they scale
+   too. Line heights stay Tailwind's ratios. */
+@theme {
+  --spacing: calc(0.25rem * var(--os-text-normalize));
+  --text-3xs: calc(0.625rem * var(--text-scale));
+  --text-3xs--line-height: calc(1 / 0.625);
+  --text-2xs: calc(0.6875rem * var(--text-scale));
+  --text-2xs--line-height: calc(1 / 0.6875);
+  --text-xs: calc(0.75rem * var(--text-scale));
+  --text-sm: calc(0.875rem * var(--text-scale));
+  --text-base: calc(1rem * var(--text-scale));
+  --text-lg: calc(1.125rem * var(--text-scale));
+  --text-xl: calc(1.25rem * var(--text-scale));
+  --text-2xl: calc(1.5rem * var(--text-scale));
+}
+
+:root {
+  /* 1 everywhere except iOS, where the root size comes from Dynamic Type
+     (17px at the default setting, below) and this brings it back to the
+     16px everything was designed at. */
+  --os-text-normalize: 1;
+  --app-text-scale: 1;
+  --text-scale: calc(var(--app-text-scale) * var(--os-text-normalize));
+}
+:root[data-text-size="sm"] {
+  --app-text-scale: 0.9;
+}
+:root[data-text-size="lg"] {
+  --app-text-scale: 1.15;
+}
+:root[data-text-size="xl"] {
+  --app-text-scale: 1.3;
+}
+
+/* iOS Safari and home-screen apps: follow Dynamic Type (Settings >
+   Display & Brightness > Text Size). -apple-system-body sets the root
+   size from it but also the system font, so the family is restored.
+   -webkit-touch-callout limits this to iOS: macOS Safari also knows
+   -apple-system-body but maps it to 13px. */
+@supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+  html {
+    font: -apple-system-body;
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  }
+  :root {
+    --os-text-normalize: calc(16 / 17);
+  }
+}
+
+/* Higher contrast: the in-app switch, or the device asking for more
+   contrast. Brighter secondary/tertiary text and borders. */
+:root[data-contrast="more"] {
+  --text-primary: oklch(0.98 0.003 260);
+  --text-secondary: oklch(0.84 0.008 260);
+  --text-tertiary: oklch(0.74 0.01 260);
+  --surface-border: oklch(0.5 0.012 260);
+}
+@media (prefers-contrast: more) {
+  :root {
+    --text-primary: oklch(0.98 0.003 260);
+    --text-secondary: oklch(0.84 0.008 260);
+    --text-tertiary: oklch(0.74 0.01 260);
+    --surface-border: oklch(0.5 0.012 260);
+  }
+}
+
 html,
 body {
   /* Safety net for phone-width screens: nothing in the layout should

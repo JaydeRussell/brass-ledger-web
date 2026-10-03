@@ -77,7 +77,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
 
   return (
     <div>
-      <p className="text-[11px] text-text-tertiary">
+      <p className="text-2xs text-text-tertiary">
         Open an event you played in, then click your own name below.
       </p>
 
@@ -206,7 +206,7 @@ export default function BcpProfileLinker({ onLinked }: { onLinked: (bcpUserId: s
         <button
           type="button"
           onClick={() => setLinkMode((m) => (m === "roster" ? "manual" : "roster"))}
-          className="text-[11px] text-text-secondary hover:underline"
+          className="text-2xs text-text-secondary hover:underline"
         >
           {linkMode === "roster" ? "Paste a link/id instead" : "Pick from a roster instead"}
         </button>

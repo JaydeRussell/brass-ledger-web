@@ -57,5 +57,5 @@ test("size=\"xs\" uses the tighter text size class", () => {
   const html = renderToStaticMarkup(
     React.createElement(ItcBadge, { ranking: { points: 10 }, title: "t", size: "xs" })
   );
-  assert.match(html, /text-\[11px\]/);
+  assert.match(html, /text-2xs/);
 });

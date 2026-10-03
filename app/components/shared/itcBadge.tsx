@@ -46,7 +46,7 @@ export default function ItcBadge({ ranking, bcpUserId, leagueId, title, size = "
     </>
   );
   const { backgroundColor, color } = itcGradientStyle(ranking, viewerRanking);
-  const sizeClasses = size === "xs" ? "px-1.5 py-0.5 text-[11px]" : "px-1.5 py-0.5 text-xs";
+  const sizeClasses = size === "xs" ? "px-1.5 py-0.5 text-2xs" : "px-1.5 py-0.5 text-xs";
   const sharedClasses = `shrink-0 whitespace-nowrap rounded-full border border-white/10 font-medium ${sizeClasses}`;
 
   if (!bcpUserId) {

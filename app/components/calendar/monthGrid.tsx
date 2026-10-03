@@ -63,12 +63,12 @@ function DayCell({ day, isToday, names }: { day: number; isToday: boolean; names
         <div className="mt-0.5 flex flex-col gap-0.5">
           <span
             title={names[0]}
-            className="truncate rounded-sm bg-brass-500/20 px-1 py-0.5 text-[10px] font-medium leading-tight text-brass-400"
+            className="truncate rounded-sm bg-brass-500/20 px-1 py-0.5 text-3xs font-medium leading-tight text-brass-400"
           >
             {names[0]}
           </span>
           {names.length > 1 && (
-            <span title={names.slice(1).join(", ")} className="text-[10px] text-text-tertiary">
+            <span title={names.slice(1).join(", ")} className="text-3xs text-text-tertiary">
               +{names.length - 1} more
             </span>
           )}

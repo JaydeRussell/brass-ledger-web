@@ -234,17 +234,17 @@ function RecordCard({ stats, onHide }: { stats: MyStats | null; onHide?: () => v
       <div className="mt-2 grid grid-cols-3 gap-1 overflow-hidden rounded-md border border-surface-border">
         <div className="bg-surface-2 px-2 py-2 text-center">
           <div className="text-base font-semibold text-text-primary tabular-nums">{stats.totalEvents}</div>
-          <div className="text-[10px] uppercase tracking-wide text-text-tertiary">Events</div>
+          <div className="text-3xs uppercase tracking-wide text-text-tertiary">Events</div>
         </div>
         <div className="bg-surface-2 px-2 py-2 text-center">
           <div className="text-base font-semibold text-text-primary">
             {stats.bestPlacing ? ordinal(stats.bestPlacing.placing) : "—"}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-text-tertiary">Best placing</div>
+          <div className="text-3xs uppercase tracking-wide text-text-tertiary">Best placing</div>
         </div>
         <div className="bg-surface-2 px-2 py-2 text-center">
           <div className="truncate text-base font-semibold text-text-primary">{topFaction ?? "—"}</div>
-          <div className="text-[10px] uppercase tracking-wide text-text-tertiary">Top faction</div>
+          <div className="text-3xs uppercase tracking-wide text-text-tertiary">Top faction</div>
         </div>
       </div>
       <Link href="/stats" className="mt-2 inline-block text-xs font-medium text-brass-400 hover:underline">

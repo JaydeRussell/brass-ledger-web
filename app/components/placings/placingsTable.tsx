@@ -202,7 +202,7 @@ function PlacingRow({
                     key={name}
                     className="flex flex-col-reverse items-center gap-0.5 rounded-lg bg-surface-2 px-2.5 py-1.5"
                   >
-                    <dt className="text-[10px] text-text-tertiary">{name}</dt>
+                    <dt className="text-3xs text-text-tertiary">{name}</dt>
                     <dd className="text-xs font-semibold text-text-primary">
                       {entry.metrics.find((m) => m.name === name)?.value ?? "—"}
                     </dd>
@@ -280,7 +280,7 @@ function SortableHeader({
         }`}
       >
         {label}
-        <span aria-hidden className={`text-[10px] ${active ? "opacity-100" : "opacity-30"}`}>
+        <span aria-hidden className={`text-3xs ${active ? "opacity-100" : "opacity-30"}`}>
           {active && activeDir === -1 ? "▼" : "▲"}
         </span>
       </button>

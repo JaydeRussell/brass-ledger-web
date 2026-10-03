@@ -7,6 +7,7 @@ import { logClientEvent } from "../../lib/clientLog";
 import { handleSignInClick } from "../../lib/popupSignIn";
 import AccentThemePicker from "../ui/accentThemePicker";
 import ReduceMotionToggle from "../ui/reduceMotionToggle";
+import DisplaySettings from "../ui/displaySettings";
 
 /**
  * The signed-in-account bit of the nav drawer — sits at the top, above
@@ -42,6 +43,7 @@ export default function AccountSection() {
         </a>
         <AccentThemePicker />
         <ReduceMotionToggle />
+        <DisplaySettings />
       </div>
     );
   }
@@ -115,6 +117,7 @@ export default function AccountSection() {
       </div>
       <AccentThemePicker account={{ accentTheme: user.accentTheme }} />
       <ReduceMotionToggle />
+      <DisplaySettings />
     </div>
   );
 }

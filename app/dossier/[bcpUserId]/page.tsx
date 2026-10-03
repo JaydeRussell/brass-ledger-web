@@ -21,7 +21,7 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
     <div className="flex min-w-[6rem] flex-1 flex-col items-center rounded-lg bg-surface-2 px-3 py-2 text-center">
       <span className="text-lg font-semibold text-text-primary">{value}</span>
       <span className="text-xs text-text-secondary">{label}</span>
-      {detail && <span className="text-[10px] text-text-tertiary">{detail}</span>}
+      {detail && <span className="text-3xs text-text-tertiary">{detail}</span>}
     </div>
   );
 }
@@ -213,7 +213,7 @@ function DossierContent() {
               <HeadToHead myBcpUserId={user.bcpUserId} opponentBcpUserId={bcpUserId} opponentName={dossier.name} />
             )}
 
-            <p className="mt-3 border-t border-surface-border pt-3 text-[11px] text-text-tertiary">
+            <p className="mt-3 border-t border-surface-border pt-3 text-2xs text-text-tertiary">
               Pulled from Best Coast Pairings&apos; own published results — Brass Ledger doesn&apos;t
               score or rank players itself.
             </p>
