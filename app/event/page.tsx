@@ -433,6 +433,8 @@ function HomeContent() {
   // Same purpose as boardRefreshKey, for PlacingsTable's refresh button.
   const [placingsRefreshKey, setPlacingsRefreshKey] = React.useState(0);
   const placingsRefreshRequestedRef = React.useRef(false);
+  // The score strip's own copy, since the placings effect consumes the one above.
+  const roundScoresRefreshRequestedRef = React.useRef(false);
   // Round-by-round score strip for each placing row — a pure enrichment
   // of already-fetched round pairings (see fetchPlacingRoundScores' doc
   // comment), so a load/refresh failure here just leaves this empty and
@@ -920,7 +922,9 @@ function HomeContent() {
     if (upToRound <= 0) return;
 
     let cancelled = false;
-    fetchPlacingRoundScores(eventId, eventInfo.teamEvent, upToRound)
+    const refresh = roundScoresRefreshRequestedRef.current;
+    roundScoresRefreshRequestedRef.current = false;
+    fetchPlacingRoundScores(eventId, eventInfo.teamEvent, upToRound, refresh)
       .then((scores) => {
         if (!cancelled) setPlacingRoundScores(scores);
       })
@@ -1023,6 +1027,7 @@ function HomeContent() {
   // Same, for PlacingsTable's refresh button.
   const refreshPlacings = () => {
     placingsRefreshRequestedRef.current = true;
+    roundScoresRefreshRequestedRef.current = true;
     setPlacingsLoading(true);
     setPlacingsRefreshKey((k) => k + 1);
   };

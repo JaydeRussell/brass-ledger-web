@@ -141,7 +141,15 @@ function rememberResponse(path: string, value: unknown) {
  * reads of that path skip the browser's copy, or the stale value would
  * come straight back.
  */
-async function getJSON<T>(path: string): Promise<T> {
+async function getJSON<T>(path: string, { reload = false }: { reload?: boolean } = {}): Promise<T> {
+  // A client-side re-read: skips this cache and the browser's without
+  // asking the backend to refetch from BCP.
+  if (reload) {
+    invalidateCached(path);
+    const value = await fetchJSON<T>(path, { cache: "reload" });
+    rememberResponse(path, value);
+    return value;
+  }
   if (new URLSearchParams(path.split("?")[1] ?? "").get("refresh") === "true") {
     const plain = withoutRefresh(path);
     invalidateCached(plain);
@@ -363,14 +371,21 @@ async function fetchRoundPairings(
 async function fetchPairingsUpToRound(
   eventId: string,
   upToRound: number,
-  pairingType: "Pairing" | "TeamPairing"
+  pairingType: "Pairing" | "TeamPairing",
+  refresh = false
 ): Promise<BcpPairingRecord[]> {
   if (upToRound < 1) return [];
+  const base = `/api/events/${encodeURIComponent(eventId)}/pairings`;
+  // Only the latest round can still change, so a refresh asks the backend
+  // to refetch that one round (one BCP call), then re-reads the full set.
+  if (refresh) {
+    await getJSON<BcpPairingRecord[]>(
+      `${base}?${new URLSearchParams({ type: pairingType, round: String(upToRound), refresh: "true" })}`
+    );
+  }
   const rounds = Array.from({ length: upToRound }, (_, i) => String(i + 1));
   const params = new URLSearchParams({ type: pairingType, rounds: rounds.join(",") });
-  return getJSON<BcpPairingRecord[]>(
-    `/api/events/${encodeURIComponent(eventId)}/pairings?${params.toString()}`
-  );
+  return getJSON<BcpPairingRecord[]>(`${base}?${params.toString()}`, { reload: refresh });
 }
 
 function individualPairingToMine(
@@ -484,7 +499,8 @@ export async function fetchMyTeamPairings(
 export async function fetchPlacingRoundScores(
   eventId: string,
   teamEvent: boolean,
-  upToRound: number
+  upToRound: number,
+  refresh = false
 ): Promise<Map<string, MyPairing[]>> {
   const scoresById = new Map<string, MyPairing[]>();
   const addScore = (id: string | undefined, pairing: MyPairing | null) => {
@@ -497,7 +513,8 @@ export async function fetchPlacingRoundScores(
   const records = await fetchPairingsUpToRound(
     eventId,
     upToRound,
-    teamEvent ? "TeamPairing" : "Pairing"
+    teamEvent ? "TeamPairing" : "Pairing",
+    refresh
   );
   for (const record of records) {
     if (teamEvent) {
