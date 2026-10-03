@@ -1,5 +1,6 @@
 "use client";
 import type { ItcRanking } from "../../lib/bcp";
+import ArmyListLink from "./armyListLink";
 import DispositionBadge from "./dispositionBadge";
 import ItcBadge from "./itcBadge";
 import PlayerStatsLink from "./playerStatsLink";
@@ -24,7 +25,7 @@ type PlayerCardProps = {
  * matchup rows too, rather than each place hand-rolling its own version.
  *
  * The name links to the player's /players/[bcpUserId] stats page. When
- * BCP has a published army list, a separate "list" link sits beside it,
+ * BCP has a published army list, a separate List pill sits beside it,
  * so the list is visible rather than hidden behind the name.
  *
  * Callers own their own outer box (list-item background, card border,
@@ -46,18 +47,7 @@ export default function PlayerCard({ player, ranking, itcLeagueId, size = "xs" }
           {player.homeClub && <span className="ml-1.5 text-text-tertiary">({player.homeClub})</span>}
         </span>
         <DispositionBadge disposition={player.disposition} />
-        {player.list && (
-          <a
-            href={player.list}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`${player.name}'s army list on BCP`}
-            className="shrink-0 font-medium text-brass-400 hover:underline"
-          >
-            list
-          </a>
-        )}
+        {player.list && <ArmyListLink href={player.list} playerName={player.name} />}
       </div>
       {hasStatsRow && (
         // Faction stays left-anchored, ITC is pushed to the far right via

@@ -61,13 +61,13 @@ test("the player's name links to their stats page when a bcpUserId is known but 
   assert.match(withLink, /href="\/players\/bcp-1\?name=Jayde%20Russell"/);
 });
 
-test("a published list gets its own \"list\" link, and the name still links to the stats page", () => {
+test("a published list gets its own List link, and the name still links to the stats page", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlayerCard, {
       player: { ...basePlayer, bcpUserId: "bcp-1", list: "https://example.com/list" },
     })
   );
-  assert.match(html, /<a href="https:\/\/example\.com\/list"[^>]*>list<\/a>/);
+  assert.match(html, /<a href="https:\/\/example\.com\/list"[^>]*>[\s\S]*?List<\/a>/);
   assert.match(html, /href="\/players\/bcp-1/);
 });
 

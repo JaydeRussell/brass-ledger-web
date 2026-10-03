@@ -41,7 +41,7 @@ test("shows name+disposition on one row and faction+ITC badge on the next", () =
   assert.match(html, /<span class="sm:hidden">#15<\/span>/);
 });
 
-test("shows a separate BCP list link when one's published", () => {
+test("shows a separate BCP List link when one's published", () => {
   const html = renderStatic(
     React.createElement(TeamRosterList, {
       name: "Master Crafted",
@@ -56,7 +56,7 @@ test("shows a separate BCP list link when one's published", () => {
       ],
     })
   );
-  assert.match(html, /<a href="https:\/\/example\.com\/lists\/u1"[^>]*>list<\/a>/);
+  assert.match(html, /<a href="https:\/\/example\.com\/lists\/u1"[^>]*>[\s\S]*?List<\/a>/);
   assert.match(html, /href="\/players\/u1/);
 });
 
