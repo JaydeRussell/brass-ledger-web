@@ -26,6 +26,7 @@ function TeamPicker({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Find a team…"
+        aria-label={`${label}: find a team`}
         className="mt-2 w-full rounded-md border border-surface-border bg-surface-0 px-2 py-1.5 text-sm text-text-primary outline-none focus:border-brass-500"
       />
       {filtered.length === 0 ? (

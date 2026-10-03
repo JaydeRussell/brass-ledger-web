@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import type { RecentEvent } from "../../lib/recentEvents";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdownMenu";
 import Button from "../ui/button";
@@ -37,6 +37,7 @@ export default function EventSettings({
 }: EventSettingsProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(eventId);
+  const inputId = useId();
 
   const submit = (idOverride?: string) => {
     const parsed = parseEventId(idOverride ?? draft);
@@ -77,9 +78,12 @@ export default function EventSettings({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-80 p-3">
-        <label className="block text-xs font-medium text-text-secondary">BCP event URL or ID</label>
+        <label htmlFor={inputId} className="block text-xs font-medium text-text-secondary">
+          BCP event URL or ID
+        </label>
         <div className="relative mt-1">
           <input
+            id={inputId}
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
