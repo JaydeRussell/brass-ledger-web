@@ -17,7 +17,26 @@ roadmap item that brushes up against that needs to stay on the
 
 ## Ideas
 
-No open ideas right now — the 2026-09-12 UX-review batch (team-roster
+**"What's new" popup on visit** (2026-10-02): on opening the app, show
+the `app/lib/changelog.ts` entries released since this person last
+looked, and nothing at all when there are none. Dismissing it records
+the newest version shown as seen.
+- **Cross-device**: for a signed-in account, the last-seen version is
+  stored server-side on the account (one version string, e.g. a
+  `last_seen_version` column on `users`, read with `/api/me`, written
+  by a small `PUT`), so dismissing on a phone stops it showing on the
+  laptop. Signed out, it lives in `localStorage`. On sign-in, take the
+  newer of the two, so a version already dismissed on this device isn't
+  shown again.
+- **First visit ever** (no record anywhere): record the current version
+  without showing the whole history. At most, show only the latest
+  entry.
+- **Several releases missed**: list them newest first in one popup,
+  capped at a few with a link to the full changelog page.
+- **User data added**: one version string per account, no new personal
+  data. Delete it with the account.
+
+The 2026-09-12 UX-review batch (team-roster
 fallback, zip-dedup, linkified links, neutral stat comparison,
 My Events click-to-expand, Overview self-follow duplicate, Placings
 tab, richer pairing rows, jump-to-mine, polish batch, dual-league

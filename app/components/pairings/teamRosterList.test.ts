@@ -38,7 +38,7 @@ test("shows name+disposition on one row and faction+ITC badge on the next", () =
   );
   assert.match(html, /Jayde Russell[\s\S]*>Purge</);
   assert.match(html, /World Eaters/);
-  assert.match(html, /<span class="sm:hidden">#15<\/span>/);
+  assert.match(html, /<span class="sm:hidden roomy:hidden">#15<\/span>/);
 });
 
 test("shows a separate BCP List link when one's published", () => {

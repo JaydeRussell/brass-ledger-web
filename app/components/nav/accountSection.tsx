@@ -7,6 +7,8 @@ import { logClientEvent } from "../../lib/clientLog";
 import { handleSignInClick } from "../../lib/popupSignIn";
 import AccentThemePicker from "../ui/accentThemePicker";
 import ReduceMotionToggle from "../ui/reduceMotionToggle";
+import DisplaySettings from "../ui/displaySettings";
+import DisplayMenu from "./displayMenu";
 
 /**
  * The signed-in-account bit of the nav drawer — sits at the top, above
@@ -40,8 +42,11 @@ export default function AccountSection() {
         >
           Sign in with Google
         </a>
-        <AccentThemePicker />
-        <ReduceMotionToggle />
+        <DisplayMenu>
+          <AccentThemePicker />
+          <ReduceMotionToggle />
+          <DisplaySettings />
+        </DisplayMenu>
       </div>
     );
   }
@@ -113,8 +118,11 @@ export default function AccountSection() {
           {signingOut ? "…" : "Sign out"}
         </button>
       </div>
-      <AccentThemePicker account={{ accentTheme: user.accentTheme }} />
-      <ReduceMotionToggle />
+      <DisplayMenu>
+        <AccentThemePicker account={{ accentTheme: user.accentTheme }} />
+        <ReduceMotionToggle />
+        <DisplaySettings />
+      </DisplayMenu>
     </div>
   );
 }

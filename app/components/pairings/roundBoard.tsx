@@ -87,6 +87,14 @@ type RoundBoardProps = {
  * player's ITC ranking) are only ever fetched for a pairing once it's
  * actually expanded, never for the whole round up front.
  */
+// Roomy density shows each singles player's faction beside their name,
+// from the roster. Team sides have no single faction, so show nothing.
+function RoomyFaction({ bcpUserId, players }: { bcpUserId?: string; players?: Player[] }) {
+  const faction = bcpUserId ? players?.find((p) => p.bcpUserId === bcpUserId)?.faction : undefined;
+  if (!faction || faction === "Unknown") return null;
+  return <span className="hidden text-xs text-text-tertiary roomy:inline">({faction})</span>;
+}
+
 export default function RoundBoard({
   eventId,
   round,
@@ -312,10 +320,12 @@ export default function RoundBoard({
                       <span className={side1Mine ? "font-semibold" : undefined}>
                         <PlayerStatsLink name={entry.side1Name} bcpUserId={entry.side1UserId} />
                       </span>
+                      <RoomyFaction bcpUserId={entry.side1UserId} players={players} />
                       <span className="text-text-tertiary">vs</span>
                       <span className={side2Mine ? "font-semibold" : undefined}>
                         <PlayerStatsLink name={entry.side2Name} bcpUserId={entry.side2UserId} />
                       </span>
+                      <RoomyFaction bcpUserId={entry.side2UserId} players={players} />
                     </span>
                     {!entry.published ? (
                       <span className="shrink-0 text-xs text-text-tertiary">
@@ -335,7 +345,12 @@ export default function RoundBoard({
                       )
                     ) : (
                       <span className="shrink-0 text-xs text-warning-400">
-                        in progress
+                        <span className="compact:hidden">in progress</span>
+                        <span
+                          aria-label="in progress"
+                          title="in progress"
+                          className="hidden h-2 w-2 rounded-full bg-warning-400 compact:inline-block"
+                        />
                       </span>
                     )}
                     {canExpand && (

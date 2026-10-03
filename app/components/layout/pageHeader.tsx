@@ -29,7 +29,12 @@ export default function PageHeader({ title, subtitle, hideSubtitleOnMobile, acti
     <div>
       <h1 className="font-display text-xl font-bold tracking-tight text-text-primary sm:text-2xl">{title}</h1>
       {subtitle && (
-        <p className={clsx("mt-1 text-sm text-text-secondary", hideSubtitleOnMobile && "hidden sm:block")}>
+        <p
+          className={clsx(
+            "mt-1 text-sm text-text-secondary compact:hidden",
+            hideSubtitleOnMobile && "hidden sm:block"
+          )}
+        >
           {subtitle}
         </p>
       )}

@@ -74,3 +74,14 @@ test("shows the source version/date footnote", () => {
   );
   assert.match(html, /Warhammer Event Companion v1\.2/);
 });
+
+test("layouts open in the in-app viewer, not a new tab showing the raw image", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(MissionMatchupPanel, {
+      myDisposition: "Disruption",
+      opponentDisposition: "Priority Assets",
+    })
+  );
+  assert.match(html, /<button[^>]*aria-label="View layout A full screen"/);
+  assert.ok(!html.includes('target="_blank"'));
+});

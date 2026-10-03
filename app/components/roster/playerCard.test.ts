@@ -47,9 +47,9 @@ test("doesn't repeat the disposition as a subfaction suffix when BCP reused that
     })
   );
   assert.ok(!html.includes("Orks — Purge the Foe"));
-  assert.ok(!html.includes("Purge the Foe"));
-  // The badge itself still renders its (abbreviated) text once.
-  assert.equal((html.match(/Purge/g) ?? []).length, 1);
+  // The faction line carries no suffix; the disposition only appears in
+  // its badge.
+  assert.ok(!/Orks\s*—/.test(html));
 });
 
 test("the player's name links to their stats page only when a bcpUserId is known", () => {

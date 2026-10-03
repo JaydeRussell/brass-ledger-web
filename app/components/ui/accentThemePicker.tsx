@@ -56,7 +56,7 @@ export default function AccentThemePicker({ account = null }: AccentThemePickerP
         <span className="text-xs text-text-secondary">
           Theme: <span className="font-medium text-text-primary">{active.label}</span>
         </span>
-        <span className="ml-auto text-[10px] text-brass-400">Change</span>
+        <span className="ml-auto text-3xs text-brass-400">Change</span>
       </button>
     );
   }
@@ -69,7 +69,7 @@ export default function AccentThemePicker({ account = null }: AccentThemePickerP
           type="button"
           onClick={() => setExpanded(false)}
           aria-expanded={true}
-          className="text-[10px] text-brass-400"
+          className="text-3xs text-brass-400"
         >
           Done
         </button>
@@ -97,7 +97,7 @@ export default function AccentThemePicker({ account = null }: AccentThemePickerP
                 className="h-5 w-5 rounded-full border border-surface-border"
                 style={{ backgroundColor: option.swatch }}
               />
-              <span className="text-center text-[10px] leading-tight text-text-secondary">{option.label}</span>
+              <span className="text-center text-3xs leading-tight text-text-secondary">{option.label}</span>
             </button>
           );
         })}

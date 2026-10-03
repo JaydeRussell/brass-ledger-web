@@ -43,7 +43,7 @@ export default function PlayerCard({
     >
       <div
         aria-hidden
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-text-secondary"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-text-secondary compact:hidden"
       >
         {initials(player.name)}
       </div>

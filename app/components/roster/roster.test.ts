@@ -46,8 +46,9 @@ test("doesn't repeat the disposition as a subfaction suffix when BCP reused that
     React.createElement(TeamRoster, { teamName: "Team A", players: withDisposition })
   );
   assert.ok(!html.includes("Aeldari — Reconnaissance"));
-  assert.ok(!html.includes("Reconnaissance"));
-  assert.equal((html.match(/Recon/g) ?? []).length, 1);
+  // The faction line carries no suffix; the disposition only appears in
+  // its badge.
+  assert.ok(!/Aeldari\s*—/.test(html));
 });
 
 test("shows a placeholder message when the team has no players yet", () => {

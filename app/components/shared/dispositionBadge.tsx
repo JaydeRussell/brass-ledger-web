@@ -37,5 +37,11 @@ export default function DispositionBadge({ disposition }: DispositionBadgeProps)
   if (!disposition) return null;
 
   const known = isDisposition(disposition) ? DISPOSITIONS[disposition] : undefined;
-  return <Badge tone={known?.tone ?? "neutral"}>{known?.label ?? disposition}</Badge>;
+  // Roomy density spells out the full disposition name.
+  return (
+    <Badge tone={known?.tone ?? "neutral"} title={disposition}>
+      <span className="roomy:hidden">{known?.label ?? disposition}</span>
+      <span className="hidden roomy:inline">{disposition}</span>
+    </Badge>
+  );
 }

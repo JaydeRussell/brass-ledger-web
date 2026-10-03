@@ -36,8 +36,9 @@ test("doesn't repeat the disposition as a subfaction suffix when BCP reused that
     })
   );
   assert.ok(!html.includes("Orks — Purge the Foe"));
-  assert.ok(!html.includes("Purge the Foe"));
-  assert.equal((html.match(/Purge/g) ?? []).length, 1);
+  // The faction line carries no suffix; the disposition only appears in
+  // its badge.
+  assert.ok(!/Orks\s*—/.test(html));
 });
 
 test("shows a disposition badge only when present", () => {
@@ -78,5 +79,5 @@ test("shows the ITC badge only when a ranking is known, always after the faction
   const withBadge = renderToStaticMarkup(
     React.createElement(PlayerCard, { player: basePlayer, ranking: { points: 1465.4, placing: 15 } })
   );
-  assert.match(withBadge, /<span class="sm:hidden">#15<\/span>/);
+  assert.match(withBadge, /<span class="sm:hidden roomy:hidden">#15<\/span>/);
 });

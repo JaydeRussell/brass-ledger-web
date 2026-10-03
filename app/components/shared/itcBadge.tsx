@@ -36,18 +36,22 @@ export default function ItcBadge({ ranking, bcpUserId, leagueId, title, size = "
   // faction, this badge, a score) has no room for the full "#15 ·
   // 1,465 pts" — the placing alone is the more universally-readable
   // number at that width (roadmap #8), with the full label back once
-  // there's room (Tailwind's `sm:` breakpoint).
+  // there's room (Tailwind's `sm:` breakpoint). Roomy density always
+  // shows the full label, prefixed "ITC".
   const compactLabel = `#${ranking.placing ?? "?"}`;
   const fullLabel = `#${ranking.placing ?? "?"} · ${Math.round(ranking.points)} pts`;
   const label = (
     <>
-      <span className="sm:hidden">{compactLabel}</span>
-      <span className="hidden sm:inline">{fullLabel}</span>
+      <span className="sm:hidden roomy:hidden">{compactLabel}</span>
+      <span className="hidden sm:inline roomy:inline">
+        <span className="hidden roomy:inline">ITC </span>
+        {fullLabel}
+      </span>
     </>
   );
   const { backgroundColor, color } = itcGradientStyle(ranking, viewerRanking);
-  const sizeClasses = size === "xs" ? "px-1.5 py-0.5 text-[11px]" : "px-1.5 py-0.5 text-xs";
-  const sharedClasses = `shrink-0 whitespace-nowrap rounded-full border border-white/10 font-medium ${sizeClasses}`;
+  const sizeClasses = size === "xs" ? "px-1.5 py-0.5 text-2xs" : "px-1.5 py-0.5 text-xs";
+  const sharedClasses = `inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-white/10 font-medium roomy:min-h-7 ${sizeClasses}`;
 
   if (!bcpUserId) {
     return (

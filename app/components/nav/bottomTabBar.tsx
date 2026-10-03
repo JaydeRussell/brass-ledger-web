@@ -73,7 +73,7 @@ export default function BottomTabBar() {
     >
       {tabs.map((tab) => {
         const active = "href" in tab && tab.isActive(pathname);
-        const classes = `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
+        const classes = `flex flex-1 flex-col items-center gap-0.5 py-2 text-2xs font-medium ${
           active ? "text-brass-400" : "text-text-tertiary"
         }`;
         if ("href" in tab) {

@@ -126,7 +126,7 @@ export default function FeedbackPanel({ onClose }: { onClose: () => void }) {
             />
 
             {user && (
-              <p className="text-[11px] text-text-tertiary">Submitting as {user.name} ({user.email})</p>
+              <p className="text-2xs text-text-tertiary">Submitting as {user.name} ({user.email})</p>
             )}
 
             {status === "error" && errorMessage && (

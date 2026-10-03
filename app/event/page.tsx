@@ -52,6 +52,7 @@ import { useCurrentUser } from "../lib/auth";
 import { logClientEvent } from "../lib/clientLog";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
 import { createRequestQueue } from "../lib/requestQueue";
+import { ROSTER_SORT_OPTIONS, isRosterSortKey, sortPlayers, type RosterSortKey } from "../lib/rosterSort";
 
 // The default BCP event to open on first visit. Use the settings (gear)
 // button in the header to switch to a different event — the choice is
@@ -203,24 +204,31 @@ function HomeContent() {
   const compareTeamBParam = searchParams.get("teamB");
   const comparePlayerAParam = searchParams.get("playerA");
   const comparePlayerBParam = searchParams.get("playerB");
+  const sortParam = searchParams.get("sort");
+  const rosterSort: RosterSortKey = isRosterSortKey(sortParam) ? sortParam : "name";
 
   // Applies one or more query-param changes at once (never omit a field
   // that's changing in the same call — see the two call sites below that
   // change both tab and q together — since each call replaces the whole
   // query string built from the current URL, so two separate calls in the
   // same tick would race and the second would clobber the first's change).
-  // Uses router.replace (not push) so switching tabs/typing a search never
-  // piles up back-button history entries.
+  // Replaces the current history entry by default, so typing a search or
+  // toggling compare never piles up back-button entries. `push` adds one
+  // instead — used for tab switches, so back returns to the previous tab.
   const updateQuery = React.useCallback(
-    (patch: {
-      tab?: TabKey;
-      q?: string;
-      compare?: boolean;
-      teamA?: string | null;
-      teamB?: string | null;
-      playerA?: string | null;
-      playerB?: string | null;
-    }) => {
+    (
+      patch: {
+        tab?: TabKey;
+        q?: string;
+        compare?: boolean;
+        teamA?: string | null;
+        teamB?: string | null;
+        playerA?: string | null;
+        playerB?: string | null;
+        sort?: RosterSortKey;
+      },
+      { push = false }: { push?: boolean } = {}
+    ) => {
       const params = new URLSearchParams(searchParams.toString());
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
@@ -260,6 +268,10 @@ function HomeContent() {
         if (!patch.playerB) params.delete("playerB");
         else params.set("playerB", patch.playerB);
       }
+      if ("sort" in patch) {
+        if (!patch.sort || patch.sort === "name") params.delete("sort");
+        else params.set("sort", patch.sort);
+      }
       // `event` (see the hydration effect below, which is what actually
       // reads and consumes it — search for "?event=") is a one-shot
       // "open this event" link target, not persistent URL state. It's
@@ -269,7 +281,9 @@ function HomeContent() {
       // stale searchParams snapshot.
       params.delete("event");
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      const href = query ? `${pathname}?${query}` : pathname;
+      if (push) router.push(href, { scroll: false });
+      else router.replace(href, { scroll: false });
     },
     [pathname, router, searchParams]
   );
@@ -961,7 +975,8 @@ function HomeContent() {
   };
 
   const changeTab = (tab: TabKey) => {
-    updateQuery({ tab });
+    if (tab === activeTab) return;
+    updateQuery({ tab }, { push: true });
     if (tab === "placings" && placings.length === 0) {
       // A direct user action (clicking the tab) — the placings-loading
       // effect only ever sets state from its own async callbacks, so the
@@ -980,7 +995,7 @@ function HomeContent() {
   // rather than showing an empty roster panel labeled with a stale name.
   const compareTeamA = compareTeamAParam && sortedTeamNames.includes(compareTeamAParam) ? compareTeamAParam : null;
   const compareTeamB = compareTeamBParam && sortedTeamNames.includes(compareTeamBParam) ? compareTeamBParam : null;
-  const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedPlayers = sortPlayers(players, rosterSort);
   // Same "fall back to unpicked rather than a stale reference" reasoning
   // as compareTeamA/B above, for a singles event's player-compare mode.
   const comparePlayerA =
@@ -1010,7 +1025,8 @@ function HomeContent() {
   const playerMatches = (player: Player) =>
     matchesSearch(player.name, searchQuery) ||
     matchesSearch(player.faction, searchQuery) ||
-    matchesSearch(player.subFaction, searchQuery);
+    matchesSearch(player.subFaction, searchQuery) ||
+    matchesSearch(player.homeClub, searchQuery);
 
   const filteredTeamNames = sortedTeamNames.filter(
     (team) => matchesSearch(team, searchQuery) || (teams.get(team) ?? []).some(playerMatches)
@@ -1026,11 +1042,14 @@ function HomeContent() {
   const filteredBoardEntries = boardEntries.filter(
     (entry) => sideMatches(entry.side1Name, entry.side1Id) || sideMatches(entry.side2Name, entry.side2Id)
   );
+  // A singles placing's id is the event player id, so its club comes from
+  // the roster.
   const filteredPlacings = placings.filter(
     (entry) =>
       matchesSearch(entry.name, searchQuery) ||
       matchesSearch(entry.faction, searchQuery) ||
-      matchesSearch(entry.subFaction, searchQuery)
+      matchesSearch(entry.subFaction, searchQuery) ||
+      matchesSearch(playerById.get(entry.id)?.homeClub, searchQuery)
   );
 
   return (
@@ -1110,7 +1129,7 @@ function HomeContent() {
                 ? "Search teams, players, factions…"
                 : activeTab === "pairings"
                   ? "Search teams, players, factions…"
-                  : "Search standings or factions…"
+                  : "Search standings, factions, teams…"
             }
           />
         )}
@@ -1175,17 +1194,26 @@ function HomeContent() {
 
         {activeTab === "roster" && (
           <>
-            {!loading && isTeamEvent && sortedTeamNames.length >= 2 && (
-              <div className="flex justify-end">
+            {!loading && (isTeamEvent ? sortedTeamNames : sortedPlayers).length >= 2 && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {!compareMode && (
+                  <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                    {isTeamEvent ? "Sort players by" : "Sort by"}
+                    <select
+                      value={rosterSort}
+                      onChange={(e) => updateQuery({ sort: e.target.value as RosterSortKey })}
+                      className="rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-500/60"
+                    >
+                      {ROSTER_SORT_OPTIONS.map((o) => (
+                        <option key={o.key} value={o.key}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <Button variant="secondary" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
-                  {compareMode ? "← Back to roster" : "⇄ Compare two teams"}
-                </Button>
-              </div>
-            )}
-            {!loading && !isTeamEvent && sortedPlayers.length >= 2 && (
-              <div className="flex justify-end">
-                <Button variant="secondary" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
-                  {compareMode ? "← Back to roster" : "⇄ Compare two players"}
+                  {compareMode ? "← Back to roster" : isTeamEvent ? "⇄ Compare two teams" : "⇄ Compare two players"}
                 </Button>
               </div>
             )}
@@ -1202,7 +1230,7 @@ function HomeContent() {
               />
             ) : !loading && compareMode && !isTeamEvent ? (
               <PlayerCompare
-                players={sortedPlayers}
+                players={sortPlayers(players, "name")}
                 itcLeagueId={itcLeagueId}
                 itcRankings={itcRankings}
                 selectedA={comparePlayerA}
@@ -1238,7 +1266,7 @@ function HomeContent() {
                     <TeamRoster
                       key={team}
                       teamName={team}
-                      players={teams.get(team) ?? []}
+                      players={sortPlayers(teams.get(team) ?? [], rosterSort)}
                       itcLeagueId={itcLeagueId}
                       itcRankings={itcRankings}
                       onPlayerVisible={requestItcRanking}

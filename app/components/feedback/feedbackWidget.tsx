@@ -39,7 +39,7 @@ export default function FeedbackWidget() {
       // bottom-20 (not bottom-4) below `sm:` — BottomTabBar
       // (bottomTabBar.tsx) is fixed to the bottom of the viewport at
       // that same breakpoint and would otherwise sit right under this.
-      className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full border border-surface-border bg-surface-1 px-3.5 py-2.5 text-sm font-medium text-text-primary shadow-lg hover:bg-surface-2 sm:bottom-4 print:hidden"
+      className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full border border-surface-border bg-surface-1 px-3.5 py-2.5 text-sm font-medium text-text-primary shadow-lg compact:gap-0 compact:px-2.5 hover:bg-surface-2 sm:bottom-4 print:hidden"
     >
       <svg aria-hidden viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0">
         <path
@@ -49,7 +49,7 @@ export default function FeedbackWidget() {
           strokeLinejoin="round"
         />
       </svg>
-      Feedback
+      <span className="compact:sr-only">Feedback</span>
     </button>
   );
 }
