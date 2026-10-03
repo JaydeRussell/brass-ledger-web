@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.8",
+    date: "2026-10-03",
+    title: "ITC ranks during a blip",
+    highlights: [
+      "A momentary Best Coast Pairings hiccup no longer hides ITC ranks for a minute; the next look tries again.",
+    ],
+  },
+  {
     version: "0.23.7",
     date: "2026-10-03",
     title: "Bigger tap targets on player cards",
