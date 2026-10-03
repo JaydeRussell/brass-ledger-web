@@ -15,10 +15,11 @@ test("renders nothing before the sign-in check resolves", () => {
 
 test("renders nothing for a confirmed signed-out visitor", () => {
   const html = renderToStaticMarkup(
-    React.createElement(CurrentUserProvider, {
-      initialUser: null,
-      children: React.createElement(ServerUnreachableNotice),
-    })
+    React.createElement(
+      CurrentUserProvider,
+      { initialUser: null } as React.ComponentProps<typeof CurrentUserProvider>,
+      React.createElement(ServerUnreachableNotice)
+    )
   );
   assert.equal(html, "");
 });
