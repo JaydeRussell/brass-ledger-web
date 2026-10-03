@@ -19,6 +19,7 @@ import Button from "../ui/button";
 import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
+import { motionReduced } from "../../lib/motionPrefs";
 
 type BoardsState = {
   loading: boolean;
@@ -130,7 +131,9 @@ export default function RoundBoard({
   const myEntry = myId ? entries.find((e) => e.side1Id === myId || e.side2Id === myId) : undefined;
   const jumpToMine = () => {
     if (!myEntry) return;
-    rowRefs.current.get(myEntry.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    rowRefs.current
+      .get(myEntry.id)
+      ?.scrollIntoView({ block: "nearest", behavior: motionReduced() ? "auto" : "smooth" });
   };
 
   const loadItcFor = React.useCallback(
