@@ -23,6 +23,20 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.2",
+    date: "2026-10-03",
+    title: "Fewer false empty screens, and more privacy by default",
+    highlights: [
+      "Opening Placings or Pairings by link or after a refresh shows a loading state until the data arrives, instead of briefly saying nothing has been published.",
+      "\"Save image\" on a dossier opens your phone's share sheet (so you can save it to Photos), and on a computer the download no longer gets cancelled.",
+      "ITC badges are coloured by the player's own ranking only, never by how they compare with you, keeping the app clear of anything that reads as matchup advice.",
+      "New accounts start with their public dossier switched off; turn it on from your stats page. Existing accounts keep their current setting.",
+      "The wording for a hidden dossier now says what it does: the public link is off, but your results stay public on Best Coast Pairings.",
+      "If the app updates while a page is open, the menu, Quick search and Feedback still open instead of silently doing nothing.",
+      "Behind the scenes: loading your stats asks Best Coast Pairings for less, feedback and sign-up alerts no longer include people's names or emails, and admin access requires a verified Google email.",
+    ],
+  },
+  {
     version: "0.23.1",
     date: "2026-10-03",
     title: "ITC ranks for past events, and a round of fixes",
