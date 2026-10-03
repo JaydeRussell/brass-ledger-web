@@ -197,10 +197,43 @@ export function itcGradientStyle(
 ): { backgroundColor: string; color: string } {
   const strength = rankingStrength(ranking);
   const t = viewerRanking ? relativeToViewer(strength, rankingStrength(viewerRanking)) : strength;
+  return itcRampStyle(t);
+}
+
+/** The badge colours at position t (0–1) along the ITC gradient. */
+export function itcRampStyle(t: number): { backgroundColor: string; color: string } {
   const { r, g, b } = interpolateGradient(GRADIENT_STOPS, t);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return {
     backgroundColor: `rgb(${r}, ${g}, ${b})`,
-    color: luminance > 0.6 ? "#27272a" /* zinc-800 */ : "#fafafa" /* zinc-50 */,
+    color: readableTextOn(r, g, b),
   };
+}
+
+// Pure black and white: with zinc-800/zinc-50 the brightest red stop of
+// the ramp topped out at 3.83:1 whichever was picked; black/white keep
+// every point of the ramp at 5.4:1 or better.
+const DARK_TEXT = { hex: "#000000", rgb: [0, 0, 0] as const };
+const LIGHT_TEXT = { hex: "#ffffff", rgb: [255, 255, 255] as const };
+
+/** WCAG relative luminance of an sRGB colour (0–255 channels). */
+export function relativeLuminance(r: number, g: number, b: number): number {
+  const lin = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+export function contrastRatio(a: number, b: number): number {
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Whichever of the dark and light text colours contrasts more with the
+ * background, by WCAG's measure rather than a brightness cutoff. */
+export function readableTextOn(r: number, g: number, b: number): string {
+  const bg = relativeLuminance(r, g, b);
+  const dark = contrastRatio(bg, relativeLuminance(...DARK_TEXT.rgb));
+  const light = contrastRatio(bg, relativeLuminance(...LIGHT_TEXT.rgb));
+  return dark >= light ? DARK_TEXT.hex : LIGHT_TEXT.hex;
 }
