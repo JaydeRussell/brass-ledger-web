@@ -180,7 +180,7 @@ function HomeContent() {
   // signed-in visitor's guest-mode localStorage briefly shows before the
   // real, synced list replaces it.
   const { user, checked: authChecked, authError: authCheckFailed } = useCurrentUser();
-  useRedirectToLoginIfSignedOut(user, authChecked, authCheckFailed);
+  useRedirectToLoginIfSignedOut(user, authChecked);
 
   // The active tab and the search filter both live in the URL's query
   // string (`?tab=...&q=...`) instead of plain component state. Unlike

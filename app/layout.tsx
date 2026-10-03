@@ -14,6 +14,7 @@ import ToastViewport from "./components/shared/toastViewport";
 import { CurrentUserProvider } from "./lib/auth";
 import { resolveCurrentUserOnServer } from "./lib/serverAuth";
 import AccentThemeSync from "./components/shared/accentThemeSync";
+import ServerUnreachableNotice from "./components/shared/serverUnreachableNotice";
 import PopupSignInBridge from "./components/shared/popupSignInBridge";
 
 const geistSans = Geist({
@@ -116,6 +117,7 @@ export default async function RootLayout({
             <CommandPaletteProvider>
               <NavProvider>
                 <NavDrawer />
+                <ServerUnreachableNotice />
                 {children}
                 <Footer />
                 <FeedbackWidget />
