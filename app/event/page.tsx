@@ -54,11 +54,15 @@ import { loadCachedEvent, saveCachedEvent, formatRelativeTime } from "../lib/eve
 import { useCurrentUser } from "../lib/auth";
 import { logClientEvent } from "../lib/clientLog";
 import { useDelayedFlag } from "../lib/useDelayedFlag";
+import { createRequestQueue } from "../lib/requestQueue";
 
 // The default BCP event to open on first visit. Use the settings (gear)
 // button in the header to switch to a different event — the choice is
 // remembered locally after that.
 const DEFAULT_EVENT_ID = "uC7tqqdPYLtT"; // The Challengers Cup 2026
+
+// How many ITC ranking lookups run at once. Each is one BCP request.
+const ITC_LOOKUP_CONCURRENCY = 3;
 
 // NOTE ON SCOPE: this app intentionally only displays data (rosters, event
 // info, already-published pairings, and already-computed placings) pulled
@@ -315,16 +319,27 @@ function HomeContent() {
   // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. Null until it
   // resolves; player cards fall back to an unscoped profile link until then.
   const [itcLeagueId, setItcLeagueId] = React.useState<string | null>(null);
-  // ITC ranking (score + rank), keyed by BCP global user id. Only ever
-  // populated for followed individual players, followed teams' own roster
-  // members, and followed individual players' round-by-round opponents —
-  // never a whole roster — see the lookup effect below.
+  // ITC ranking (score + rank), keyed by BCP global user id. Populated for
+  // followed players and teams and their opponents (the lookup effect
+  // below), and for each roster card once it has been on screen.
   const [itcRankings, setItcRankings] = React.useState<Record<string, ItcRanking | null>>({});
-  // Tracks which user ids have already been requested (successfully or
-  // not), so the lookup effect below doesn't re-fetch on every render —
-  // a ref rather than state since it's bookkeeping, not something that
-  // should trigger a re-render on its own.
+  // User ids already requested, so nothing is fetched twice. A failed
+  // lookup is removed so a later attempt can retry it.
   const requestedItcIdsRef = React.useRef<Set<string>>(new Set());
+  // Each lookup is one BCP request (BCP has no batch form), so they run a
+  // few at a time rather than all at once when a roster scrolls into view.
+  const [itcQueue] = React.useState(() =>
+    createRequestQueue<{ bcpUserId: string; leagueId: string }>(
+      ({ bcpUserId, leagueId }) =>
+        fetchItcRanking(bcpUserId, leagueId).then(
+          (ranking) => setItcRankings((prev) => ({ ...prev, [bcpUserId]: ranking })),
+          () => {
+            requestedItcIdsRef.current.delete(bcpUserId);
+          }
+        ),
+      ITC_LOOKUP_CONCURRENCY
+    )
+  );
   const [following, setFollowing] = React.useState<Followed[]>([]);
   const [loading, setLoading] = React.useState(true);
   const slowLoad = useDelayedFlag(loading);
@@ -824,17 +839,23 @@ function HomeContent() {
     return map;
   }, [players]);
 
+  const requestItcRanking = React.useCallback(
+    (bcpUserId: string) => {
+      if (!itcLeagueId || requestedItcIdsRef.current.has(bcpUserId)) return;
+      requestedItcIdsRef.current.add(bcpUserId);
+      itcQueue.enqueue({ bcpUserId, leagueId: itcLeagueId });
+    },
+    [itcLeagueId, itcQueue]
+  );
+
   // Looks up ITC ranking (score + rank) for: each followed individual
-  // player, each followed team's own roster members (plus, for a neutral
-  // avg-ITC comparison — roadmap #4 — the opposing team's roster in its
-  // latest pairing), each followed individual player's round-by-round
-  // opponents, and (for the same roadmap #4 comparison on "Your round")
-  // my own team's roster and my own opponent team's roster. Never
-  // includes myTeammates (see myTeamPanel.tsx — that view deliberately
-  // dropped ITC display to stay skimmable across a dozen-plus teammates)
-  // or a whole roster beyond what's actually shown, to avoid a burst of
-  // requests
-  // against BCP's API. Purely a read of an already-published BCP number.
+  // player, each followed team's own roster members (plus the opposing
+  // team's roster in its latest pairing, for the neutral avg-ITC
+  // comparison), each followed individual player's round-by-round
+  // opponents, and my own team's and opponent team's rosters for "Your
+  // round". Never includes myTeammates (see myTeamPanel.tsx — that view
+  // leaves ITC out to stay skimmable). Roster cards request their own
+  // once on screen.
   useEffect(() => {
     if (!itcLeagueId) return;
 
@@ -877,33 +898,9 @@ function HomeContent() {
       }
     }
 
-    const toFetch = Array.from(wanted).filter((id) => !requestedItcIdsRef.current.has(id));
-    if (toFetch.length === 0) return;
-
-    toFetch.forEach((bcpUserId) => {
-      requestedItcIdsRef.current.add(bcpUserId);
-      fetchItcRanking(bcpUserId, itcLeagueId)
-        .then((ranking) => {
-          // Always commit — this effect re-runs often while an event's
-          // data is still loading in (following/players/followedPairings
-          // each arrive separately), and requestedItcIdsRef already
-          // guards against ever re-requesting the same id, so a result
-          // from an "earlier" run is not stale, just late. Discarding it
-          // here (as a `cancelled`-gated version of this used to) meant
-          // the ranking was fetched successfully but never stored, and
-          // never retried either — permanently stuck with no rating
-          // shown. Bit us hardest on team events, where a whole roster's
-          // worth of ids fire together and the race window is wider.
-          setItcRankings((prev) => ({ ...prev, [bcpUserId]: ranking }));
-        })
-        .catch(() => {
-          // Non-critical — cards just fall back to showing no ITC
-          // ranking. Clearing lets a later retry (e.g. after
-          // reconnecting) succeed instead of staying stuck.
-          requestedItcIdsRef.current.delete(bcpUserId);
-        });
-    });
+    wanted.forEach(requestItcRanking);
   }, [
+    requestItcRanking,
     itcLeagueId,
     following,
     followedPairings,
@@ -1135,6 +1132,7 @@ function HomeContent() {
     setItcLeagueId(null);
     setItcRankings({});
     requestedItcIdsRef.current = new Set();
+    itcQueue.clear();
     setLoading(true);
     setError(null);
     if (user) {
@@ -1524,6 +1522,7 @@ function HomeContent() {
                         trackedCount={teamPlayerId ? trackedCounts[`team:${teamPlayerId}`] : undefined}
                         itcLeagueId={itcLeagueId}
                         itcRankings={itcRankings}
+                        onPlayerVisible={requestItcRanking}
                       />
                     );
                   })}
@@ -1548,6 +1547,7 @@ function HomeContent() {
                     trackedCount={trackedCounts[`player:${player.id}`]}
                     itcLeagueId={itcLeagueId}
                     itcRanking={player.bcpUserId ? itcRankings[player.bcpUserId] : undefined}
+                    onVisible={player.bcpUserId ? () => requestItcRanking(player.bcpUserId!) : undefined}
                   />
                 ))}
               </div>

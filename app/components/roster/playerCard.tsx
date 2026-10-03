@@ -1,5 +1,6 @@
 "use client";
 import type { ItcRanking } from "../../lib/bcp";
+import { useOnVisible } from "../../lib/useOnVisible";
 import SharedPlayerCard from "../shared/playerCard";
 
 function initials(name: string) {
@@ -19,10 +20,11 @@ type PlayerCardProps = {
   // BCP's current flagship ITC ranking league id (see fetchCurrentItcLeagueId
   // in lib/bcp.ts) — used to build the profile link below.
   itcLeagueId?: string | null;
-  // This player's already-published ITC score + rank, when known — only
-  // fetched (by page.tsx) for followed players, so this is undefined for
-  // everyone else rather than triggering a lookup per card.
+  // This player's already-published ITC score + rank, when known.
   itcRanking?: ItcRanking | null;
+  // Called once when the card has been on screen briefly — page.tsx uses
+  // it to look up this player's ITC ranking.
+  onVisible?: () => void;
 };
 
 /**
@@ -33,9 +35,19 @@ type PlayerCardProps = {
  * Same "no scoring or ranking" scope as TeamRoster — see the note in
  * types/player.d.ts.
  */
-export default function PlayerCard({ player, onTrack, tracked, trackedCount, itcLeagueId, itcRanking }: PlayerCardProps) {
+export default function PlayerCard({
+  player,
+  onTrack,
+  tracked,
+  trackedCount,
+  itcLeagueId,
+  itcRanking,
+  onVisible,
+}: PlayerCardProps) {
+  const ref = useOnVisible<HTMLDivElement>(onVisible);
   return (
     <div
+      ref={ref}
       className={`flex items-center gap-3 overflow-hidden rounded-lg border bg-surface-1 p-3 shadow-sm ${
         tracked ? "border-brass-500/50 ring-1 ring-brass-500/30" : "border-surface-border"
       }`}

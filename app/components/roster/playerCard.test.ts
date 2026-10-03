@@ -1,9 +1,16 @@
-import { test } from "node:test";
+import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import PlayerCard from "./playerCard.tsx";
 import { find } from "../../lib/testUtils.ts";
+
+// Stubbed so the card can also be called as a plain function (see the
+// Follow button test), which a real hook would refuse outside a render.
+mock.module("../../lib/useOnVisible.ts", {
+  namedExports: { useOnVisible: () => ({ current: null }) },
+});
+
+const { default: PlayerCard } = await import("./playerCard.tsx");
 
 const basePlayer: Player = { id: "p1", name: "Jayde Russell", faction: "Orks" };
 

@@ -19,6 +19,9 @@ type TeamRosterProps = {
   // team is followed, so members show nothing until then rather than
   // triggering a lookup per player on every roster card.
   itcRankings?: Record<string, ItcRanking | null>;
+  // Called with a player's BCP user id once their card has been on screen
+  // briefly, so their ITC ranking can be looked up.
+  onPlayerVisible?: (bcpUserId: string) => void;
 };
 
 /**
@@ -34,6 +37,7 @@ export default function TeamRoster({
   trackedCount,
   itcLeagueId,
   itcRankings,
+  onPlayerVisible,
 }: TeamRosterProps) {
   return (
     <div
@@ -84,6 +88,11 @@ export default function TeamRoster({
                   player={player}
                   itcLeagueId={itcLeagueId}
                   itcRanking={player.bcpUserId ? itcRankings?.[player.bcpUserId] : undefined}
+                  onVisible={
+                    player.bcpUserId && onPlayerVisible
+                      ? () => onPlayerVisible(player.bcpUserId!)
+                      : undefined
+                  }
                 />
               </li>
             ))}
