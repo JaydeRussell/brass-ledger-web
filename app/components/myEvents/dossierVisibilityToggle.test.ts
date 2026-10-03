@@ -27,7 +27,7 @@ test("shows the private state with no link", () => {
   const html = renderStatic(
     React.createElement(DossierVisibilityToggle, { bcpUserId: "u1", dossierPublic: false, onChange: () => {} })
   );
-  assert.match(html, /Hidden — only you can see this/);
+  assert.match(html, /Hidden — your public link is off/);
   assert.ok(!html.includes("/dossier/u1"));
   assert.match(html, /aria-checked="false"/);
 });
