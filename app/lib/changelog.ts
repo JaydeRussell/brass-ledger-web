@@ -23,6 +23,20 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.6",
+    date: "2026-10-03",
+    title: "Smaller fixes from the hunt",
+    highlights: [
+      "Checking for updated placings now refreshes the round-by-round score strip too.",
+      "Reduce motion (and your device's own setting) now also stops sliding toggles and smooth scrolling.",
+      "The display switches and the theme picker's Done button are easier to tap.",
+      "Going back after a search puts that search back in the box.",
+      "Placings columns stay the same while you search, and a strength-of-schedule column is no longer mistaken for the win record.",
+      "The \"cards hidden\" note on Home counts only cards that would actually show.",
+      "Saved event data makes room for itself when your browser's storage is full.",
+    ],
+  },
+  {
     version: "0.23.5",
     date: "2026-10-03",
     title: "Venue wifi, privacy and safer sign-in",
