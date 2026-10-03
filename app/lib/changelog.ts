@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.21.0",
+    date: "2026-10-02",
+    title: "ITC ranks on every roster card, and faction search",
+    highlights: [
+      "Every player card on the Roster now shows their ITC rank, filling in as you scroll. Before, only players you followed and their opponents had one.",
+      "Army lists are easier to find: cards show a List button that opens the player's list on Best Coast Pairings, and the player's name now always opens their stats.",
+      "Search the Placings and Pairings tabs by faction, not just by name, the same as the Roster already allowed.",
+      "\"Best in faction\" badges no longer move while you search. They always go to the best-placed player in the whole event, even if that player is hidden by your search.",
+      "The Public dossier switch on the stats page, and the Reduce motion switch in the menu, no longer have their dot sitting off-centre.",
+    ],
+  },
+  {
     version: "0.20.0",
     date: "2026-10-01",
     title: "Install Brass Ledger on your phone",
