@@ -23,6 +23,20 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.1",
+    date: "2026-10-03",
+    title: "ITC ranks for past events, and a round of fixes",
+    highlights: [
+      "ITC ranks now show for finished events. Before, every event that had ended came back with no ITC league, so no ranks loaded anywhere for it.",
+      "The event page's refresh button now really checks for new data, instead of reusing what it had and saying \"Synced just now\".",
+      "Picking the event you're already on in the event switcher no longer leaves the page stuck loading, and opening a recent event from Quick search while on an event page now switches to it.",
+      "Every page has its own title, so browser tabs, history and the installed app's switcher can tell them apart.",
+      "Easier to read: faint grey text and some ITC badges were below the standard contrast for small text, and now meet it.",
+      "Error messages say what happened in plain words, instead of showing technical details.",
+      "Behind the scenes: sign-in sessions are stored more securely and old ones are cleared out, emails no longer appear in server logs, and some ways the server could be overloaded are closed off.",
+    ],
+  },
+  {
     version: "0.23.0",
     date: "2026-10-02",
     title: "Display settings, roster sorting, and a back button that behaves",
