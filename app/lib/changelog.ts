@@ -23,6 +23,21 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.5",
+    date: "2026-10-03",
+    title: "Venue wifi, privacy and safer sign-in",
+    highlights: [
+      "When the server can't be reached you stay where you were, with a Try again button, instead of being sent to the sign-in page. The event page keeps showing its saved roster in the meantime.",
+      "The refresh button's result now sticks: an older copy held by your browser no longer comes back on the next view.",
+      "Deployment-map previews on Your Round load about four times less data on phones.",
+      "Home cards that fail to load say so instead of showing a loading placeholder forever.",
+      "Dates on the placing chart and dossiers no longer show a day early in American time zones.",
+      "Tapping a tab right after typing a search no longer jumps back to the previous tab.",
+      "The footer's version line is no longer hidden behind the bottom tab bar on phones.",
+      "Security and privacy: sign-in links can't send you to another site, other sites can't make changes to your account, your recent events aren't left on a shared device after sign-out, and player ids no longer appear in server logs.",
+    ],
+  },
+  {
     version: "0.23.4",
     date: "2026-10-03",
     title: "Round notes, narrow screens and team events",
