@@ -33,9 +33,9 @@ const DISPOSITION_BLURBS: Record<Disposition, string> = {
  * full VP scoring, and the special-action glossary that fills in the
  * terms the print-sheet PDF's front faces don't define. This is
  * reference material, not tournament-format or tactical-strategy content
- * — for a specific pairing's plain-language write-up, tactics, and
- * deployment maps, see the mission-matchup panel itself (only shown for
- * singles events where both sides' dispositions are known).
+ * — for a specific pairing's missions, VP scoring and deployment maps,
+ * see the mission-matchup panel itself (only shown for singles events
+ * where both sides' dispositions are known).
  */
 export default function WikiPage() {
   return (
@@ -98,7 +98,7 @@ export default function WikiPage() {
         <Card className="p-4">
           <h2 className="mb-2 text-sm font-semibold text-text-primary">Matchup lookup</h2>
           <p className="mb-3 text-xs text-text-secondary">
-            Pick any two dispositions to see the full write-up, tactics, VP scoring, and
+            Pick any two dispositions to see each side&apos;s mission, VP scoring, and
             deployment maps for that pairing — the same content the &quot;Your round&quot; panel
             shows for a real pairing, without needing to be in one.
           </p>

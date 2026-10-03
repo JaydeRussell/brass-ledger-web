@@ -28,7 +28,7 @@ type PlacingsTableProps = {
   onRefresh: () => void;
   // For a team event, a row's own entry.id is that team's teamPlayerId
   // (see PlacingEntry's doc comment) — looked up here to let a row
-  // expand into that team's already-published roster (roadmap #7),
+  // expand into that team's already-published roster,
   // reusing the same rosterByTeamId Roster/Pairings already build.
   // Absent (or empty for a given id) for a singles event, where a
   // placing row is already one person — such a row just doesn't expand.
@@ -53,8 +53,8 @@ type PlacingsTableProps = {
 // A metric whose name looks like a win/loss-derived record (BCP's own
 // "Match Points", a literal "Wins" count, etc.) — moved to the front of
 // the columns regardless of where BCP's own metrics array happens to put
-// it, since it's the number most players actually track first (roadmap
-// #7). Excludes anything that also looks like the opponent-win-rate
+// it, since it's the number most players actually track first.
+// Excludes anything that also looks like the opponent-win-rate
 // metric below (BCP's real "Oppt. Game Win %" name matches both, being
 // itself win-shaped), which would otherwise get mistaken for the record.
 const WIN_LOSS_METRIC_PATTERN = /win|match points|record|w\/l/i;
@@ -69,8 +69,7 @@ const isRecordMetric = (name: string) =>
   WIN_LOSS_METRIC_PATTERN.test(name) && !OPPONENT_WIN_PCT_METRIC_PATTERN.test(name);
 
 // The one column shown on a collapsed row; everything else BCP publishes
-// moves behind the row's expand toggle rather than crowding the table
-// (roadmap #7 follow-up).
+// moves behind the row's expand toggle rather than crowding the table.
 function orderMetricColumns(names: string[]): string[] {
   const idx = names.findIndex(isRecordMetric);
   if (idx <= 0) return names;
@@ -153,8 +152,7 @@ function PlacingRow({
       >
         <td className="px-2 py-1.5 text-text-secondary">{entry.placing ?? "—"}</td>
         {/* Sticky so the name stays on screen while scrolling a long
-            event's metric columns sideways on a phone — see roadmap
-            note on horizontal-scroll tables. A solid background (rather
+            event's metric columns sideways on a phone. A solid background (rather
             than relying on the <tr>'s own translucent highlight tint
             showing through) since a sticky cell paints in its own layer
             above whatever scrolls underneath it. */}

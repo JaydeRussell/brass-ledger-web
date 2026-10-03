@@ -8,25 +8,23 @@ type TabBarProps = {
   onChange: (tab: TabKey) => void;
   // Whether to show the Team tab — only when the signed-in account has a
   // shared home club with at least one other player at this event (see
-  // app/page.tsx's myTeammates and myTeamPanel.tsx's own doc comment).
+  // app/event/page.tsx's myTeammates and myTeamPanel.tsx's own doc comment).
   // A tab with nothing behind it isn't worth showing.
   showTeamTab: boolean;
 };
 
 /**
- * Originally a straight mirror of BCP's own event-page tabs (Overview /
- * Roster / Pairings / Placings), so the app felt familiar to anyone
- * who'd used bestcoastpairings.com directly. Personalized content lives
+ * Mirrors BCP's own event-page tabs (Overview / Roster / Pairings /
+ * Placings), so the app feels familiar to anyone who's used
+ * bestcoastpairings.com directly. Personalized content lives
  * in its own Mine tab ("Your round", always shown) and Team tab (shown
  * only when relevant), keeping Overview to the event facts BCP's own tab
  * shows.
  *
  * Built on ui/tabs.tsx's Radix-backed Tabs primitive (real roving-tabindex
  * keyboard nav — arrow keys move between tabs, Home/End jump to the
- * first/last — which the plain <button> row this replaced never had).
- * Keeps the exact same {active, onChange} external shape the original
- * hand-rolled version had, so app/page.tsx's URL-sync wiring needed no
- * changes at all.
+ * first/last). The {active, onChange} shape lets app/event/page.tsx keep
+ * the active tab in sync with the URL.
  *
  * On a phone-width screen, several tabs plus comfortable tap targets
  * don't reliably fit without squishing — rather than shrinking the

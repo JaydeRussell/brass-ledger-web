@@ -9,7 +9,7 @@ const SELECT_CLASSES =
 /**
  * An interactive version of the wiki's static matchup matrix/mission
  * tables above — pick any two Force Dispositions and see the exact same
- * write-up, tactics, VP scoring, and deployment maps the "Your round"
+ * missions, VP scoring, and deployment maps the "Your round"
  * mission-matchup panel shows for a real live pairing
  * (missionMatchupPanel.tsx), without needing to actually be in one.
  * MissionMatchupPanel itself takes just the two dispositions as props —

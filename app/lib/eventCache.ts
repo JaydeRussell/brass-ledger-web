@@ -1,11 +1,9 @@
 // A small localStorage cache of each event's last-successfully-fetched
-// `eventInfo`/`players` (roadmap "Resilience on bad venue wifi") — lets
-// app/page.tsx show the last-known view instead of blanking to an error
-// when a refetch fails on a spotty venue connection. Deliberately not a
-// service worker/offline app-shell (that fuller approach is deferred
-// until the planned mobile app work — see ROADMAP.md's note on this
-// item); this only ever falls back to data already successfully loaded
-// in this browser, nothing fetched offline.
+// `eventInfo`/`players` — lets app/event/page.tsx show the last-known
+// view instead of blanking to an error when a refetch fails on a spotty
+// venue connection. Not a service worker/offline app-shell: this only
+// ever falls back to data already successfully loaded in this browser,
+// nothing fetched offline.
 
 import type { EventInfo } from "./bcp";
 

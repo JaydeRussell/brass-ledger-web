@@ -61,17 +61,16 @@ function formatMonthYear(iso?: string): string | undefined {
  * own dossier — HeadToHead itself already renders nothing without both
  * ids, this page's own guard just adds "and they're not the same id."
  *
- * A "Share" button (ShareDossierButton) copies a plain-text summary
- * plus this page's own URL to the clipboard — see that component's doc
- * comment for why this is a clipboard copy rather than a generated
- * share-card image.
+ * ShareDossierButton copies a plain-text summary plus this page's own
+ * URL to the clipboard, and offers a client-rendered share-card image
+ * to save (see lib/shareCard.ts).
  *
  * An "Add Friend" button (AddFriendButton), same signed-in-and-not-your-
  * own-dossier guard as HeadToHead above, is this app's one entry point
  * into sending a friend request — see internal/api/friends.go's own doc
  * comment for why there's no separate search/browse route.
  *
- * No colocated page.test.ts — confirmed this project's Node
+ * No colocated page.test.ts — this project's Node
  * test-runner setup never discovers a *.test.ts file inside a `[param]`
  * dynamic-route directory (its file-discovery glob treats the brackets
  * as a character class, so the file silently matches nothing; `npm
@@ -79,7 +78,7 @@ function formatMonthYear(iso?: string): string | undefined {
  * exists). The sibling /players/[bcpUserId]/page.tsx has the same gap
  * for the same reason. DossierVisibilityToggle and the two formatting
  * helpers this page reuses (ordinal, fieldDetail) are still covered by
- * their own tests; this page's own rendering is verified live instead.
+ * their own tests.
  */
 function DossierContent() {
   const params = useParams<{ bcpUserId: string }>();

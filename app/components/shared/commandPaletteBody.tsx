@@ -35,7 +35,7 @@ function optionId(result: Result): string {
  * deliberately narrow for a first cut: pages (see lib/navLinks.ts) and
  * recent events (lib/recentEvents.ts, already-fetched data this app
  * already keeps — a signed-in account's cross-device list, or a guest's
- * local one, same source app/page.tsx's own hydration already uses).
+ * local one, same source app/event/page.tsx's own hydration uses).
  * Full "search any player/team" isn't here — this app has no global
  * player-search index to query (rosters are fetched per-event, not
  * aggregated), which is a separate, bigger feature to build.
@@ -62,7 +62,7 @@ export default function CommandPaletteBody() {
   const dialogRef = useDialogKeyboard<HTMLDivElement>(close);
 
   // Lazily loads recent events only once actually opened — never on
-  // every page load, unlike app/page.tsx's own hydration effect, since
+  // every page load, unlike app/event/page.tsx's own hydration effect, since
   // this palette might never be opened in a given visit at all.
   React.useEffect(() => {
     if (!isOpen) return;

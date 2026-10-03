@@ -4,8 +4,8 @@
 // from the signed-in account's linked BCP profile's placing history —
 // the same already-published data "my events" uses, just summarized.
 //
-// Like app/lib/myEvents.ts (and unlike bcp.ts's plain unauthenticated
-// reads), session state lives in an httpOnly cookie, so this request
+// Like app/lib/myEvents.ts and bcp.ts, session state lives in an
+// httpOnly cookie, so this request
 // needs credentials: "include" — same small getJSON duplicated here as
 // in myEvents.ts, for the same reason noted there.
 

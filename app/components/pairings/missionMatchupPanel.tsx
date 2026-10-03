@@ -38,12 +38,6 @@ function MissionRules({ label, missionId }: { label: string; missionId: MissionI
  * — no fetch, nothing to keep in sync live. See myRoundCard.tsx for the
  * gating (singles events only, both dispositions known) that decides when
  * this renders instead of PlayerStatsPanel.
- *
- * Used to also show a hand-authored plain-language matchup summary and
- * tactical suggestions (missionMatchups.ts's MISSION_MATCHUPS) — removed,
- * along with that data and its lookup function, since they didn't add
- * enough over the mission names/VP rules/deployment maps to earn the
- * space.
  */
 export default function MissionMatchupPanel({ myDisposition, opponentDisposition }: MissionMatchupPanelProps) {
   const myMission = getPrimaryMission(myDisposition, opponentDisposition);

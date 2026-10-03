@@ -35,7 +35,6 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
   );
 }
 
-// Exported for app/dossier/[bcpUserId]/page.tsx, the public counterpart
 // --- "Skill at a glance" summary tiles ------------------------------------
 //
 // Raw placing isn't comparable across a 12-player RTT and a 265-player GT
@@ -209,9 +208,9 @@ export default function PlayerStatsPanel({ bcpUserId, mode = "me", playerName }:
   const slowLoad = useDelayedFlag(loading);
 
   if (error) {
-    // In "me" mode this fails quietly — the event tabs below are the
-    // important part of /stats. In "player" mode there's nothing else on
-    // the page, so a silent null would just look broken; show it.
+    // In "me" mode (/stats) this fails quietly, leaving the rest of that
+    // page usable. In "player" mode there's nothing else on the page, so a
+    // silent null would just look broken; show it.
     if (mode !== "player") return null;
     return (
       <ErrorAlert size="sm">Couldn&apos;t load {playerName ?? "this player"}&apos;s stats: {error}</ErrorAlert>

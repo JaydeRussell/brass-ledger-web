@@ -7,13 +7,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "About" };
 
 /**
- * A public, unguarded page describing what Brass Ledger is — unlike
- * every other route in this app, it doesn't call
- * useRedirectToLoginIfSignedOut: there's nothing here that needs an
- * account or touches BCP, so it's also this app's first plain server
- * component page (no "use client", no hooks). Reachable from
- * NavDrawer's link list (app/components/nav/navDrawer.tsx) whether
- * signed in or out.
+ * A public, unguarded page describing what Brass Ledger is. It doesn't
+ * call useRedirectToLoginIfSignedOut: nothing here needs an account or
+ * touches BCP, so it's a plain server component (no "use client", no
+ * hooks). Listed in lib/navLinks.ts, so it's reachable from the nav
+ * drawer whether signed in or out.
  */
 export default function AboutPage() {
   return (

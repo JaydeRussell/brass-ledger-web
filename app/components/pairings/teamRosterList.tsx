@@ -12,7 +12,7 @@ type TeamRosterListProps = {
 /** One team's already-published roster, as a compact labeled list —
  * factored out of TeamRosterFallback (which shows two of these side by
  * side) so a single roster can also be shown on its own, e.g. a
- * Placings row expanding to show that team's roster (roadmap #7). */
+ * Placings row expanding to show that team's roster. */
 export default function TeamRosterList({ name, players, itcByUserId, itcLeagueId }: TeamRosterListProps) {
   return (
     <div className="flex flex-col gap-1">

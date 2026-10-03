@@ -9,7 +9,7 @@ type PlayerFactionDetailsProps = {
 
 /** Faction (plus disposition badge and a list link, when BCP has them)
  * for whichever player a pairing row is showing — looked up from the
- * already-fetched roster by bcpUserId, not a new fetch (roadmap #8).
+ * already-fetched roster by bcpUserId, not a new fetch.
  * Renders nothing when the roster doesn't have a match (e.g. still
  * loading, or a player with no linked BCP account). */
 export default function PlayerFactionDetails({ bcpUserId, players }: PlayerFactionDetailsProps) {
