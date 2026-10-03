@@ -8,20 +8,8 @@ import PageHeader from "../components/layout/pageHeader";
 import PageMain from "../components/layout/pageMain";
 import { googleSignInUrl, useCurrentUser } from "../lib/auth";
 import { handleSignInClick } from "../lib/popupSignIn";
+import { safeReturnPath } from "../lib/safeReturnPath";
 
-// Mirrors the backend's isSafeReturnPath (brass-ledger-api's
-// internal/api/auth.go) — same purpose (don't redirect somewhere
-// unexpected), just applied to this page's own client-side
-// router.replace rather than the backend's server-side one. A
-// ?return_to that fails this check is dropped rather than rejected
-// outright — worst case, an already-signed-in visitor lands on the
-// homepage instead of back where they started.
-function safeReturnPath(path: string | null): string | undefined {
-  if (!path || path[0] !== "/" || path.startsWith("//") || path.includes("://")) {
-    return undefined;
-  }
-  return path;
-}
 
 /**
  * The default landing page for a signed-out visitor — every gated page
@@ -43,7 +31,10 @@ function LoginContent() {
   const { user, checked } = useCurrentUser();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = safeReturnPath(searchParams.get("return_to"));
+  const returnTo = safeReturnPath(
+    searchParams.get("return_to"),
+    typeof window === "undefined" ? undefined : window.location.origin
+  );
   const signInUrl = googleSignInUrl(returnTo);
 
   // Already signed in — a stale bookmark, or the back button after
