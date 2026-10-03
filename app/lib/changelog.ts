@@ -34,6 +34,7 @@ export const CHANGELOG: ChangelogRelease[] = [
       "If removing a friend fails, they're put back in your list and you're told.",
       "Head-to-head no longer counts events it couldn't load as checked.",
       "Events you've dropped from no longer show up as upcoming in My Events.",
+      "Event countdowns no longer flip to \"over\" the evening before an event's last day, or to \"Live now\" the evening before it starts, in US time zones.",
       "Behind the scenes: server logs no longer record IP addresses, browsers or anything identifying in addresses; sign-in times are no longer recorded; and a few ways the server could be overloaded are closed off.",
     ],
   },
