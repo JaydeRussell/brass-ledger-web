@@ -28,8 +28,8 @@ export default function ReduceMotionToggle() {
       >
         <span
           aria-hidden
-          className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-surface-0 transition-transform ${
-            reduceMotion ? "translate-x-4" : "translate-x-0.5"
+          className={`absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-surface-0 transition-transform ${
+            reduceMotion ? "translate-x-4" : "translate-x-0"
           }`}
         />
       </button>

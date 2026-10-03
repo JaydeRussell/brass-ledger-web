@@ -43,6 +43,10 @@ type PlacingsTableProps = {
   // When `entries` was last fetched — passed straight through to
   // RefreshButton's own label. See its doc comment.
   lastSyncedAt?: number | null;
+  // The event's full placings, unfiltered by search. "Best in faction"
+  // badges are judged across the whole event, so they are computed from
+  // this rather than from `entries`. Defaults to `entries`.
+  badgeEntries?: PlacingEntry[];
 };
 
 // A metric whose name looks like a win/loss-derived record (BCP's own
@@ -293,15 +297,14 @@ export default function PlacingsTable({
   rosterByTeamId,
   roundScoresById,
   lastSyncedAt,
+  badgeEntries = entries,
 }: PlacingsTableProps) {
   const orderedMetricNames = orderMetricColumns(entries[0]?.metrics.map((m) => m.name) ?? []);
   const visibleMetricNames = orderedMetricNames.slice(0, 1);
   const hiddenMetricNames = orderedMetricNames.slice(1);
   const recordMetricName = findRecordMetricName(orderedMetricNames);
   const slowLoad = useDelayedFlag(loading);
-  // Pure over `entries` (no new prop threaded in from a caller) — see
-  // computePlacingBadges' own doc comment.
-  const badges = React.useMemo(() => computePlacingBadges(entries), [entries]);
+  const badges = React.useMemo(() => computePlacingBadges(badgeEntries), [badgeEntries]);
 
   const [sortKey, setSortKey] = React.useState<SortKey>("placing");
   const [sortDir, setSortDir] = React.useState<1 | -1>(1);

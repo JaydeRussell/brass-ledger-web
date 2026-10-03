@@ -211,6 +211,24 @@ test("a \"best in faction\" badge renders in its own column between Name and Rec
   assert.match(badgeCell, /Best Necrons/);
 });
 
+test("badges are judged across badgeEntries, not the search-filtered entries", () => {
+  const all: PlacingEntry[] = [
+    { id: "p1", name: "Anna Adams", placing: 1, metrics: [{ name: "Wins", value: 3 }], faction: "Necrons" },
+    { id: "p2", name: "Ben Baker", placing: 2, metrics: [{ name: "Wins", value: 2 }], faction: "Necrons" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, {
+      entries: [all[1]],
+      badgeEntries: all,
+      loading: false,
+      error: null,
+      onRefresh: noop,
+    })
+  );
+  assert.ok(html.includes("Ben Baker"));
+  assert.ok(!html.includes("Best Necrons"), "a filtered-out higher placing should still hold the badge");
+});
+
 test("falls back to the plain metric value when no round scores are available for an entry", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, {

@@ -1,9 +1,16 @@
-import { test } from "node:test";
+import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import PlayerCard from "./playerCard.tsx";
 import { find } from "../../lib/testUtils.ts";
+
+// Stubbed so the card can also be called as a plain function (see the
+// Follow button test), which a real hook would refuse outside a render.
+mock.module("../../lib/useOnVisible.ts", {
+  namedExports: { useOnVisible: () => ({ current: null }) },
+});
+
+const { default: PlayerCard } = await import("./playerCard.tsx");
 
 const basePlayer: Player = { id: "p1", name: "Jayde Russell", faction: "Orks" };
 
@@ -64,7 +71,7 @@ test("the player's name links to their stats page only when a bcpUserId is known
   assert.match(withLink, /href="\/players\/bcp-1\?name=Jayde%20Russell"/);
 });
 
-test("the player's name links to their published list instead of their stats page, when one's available", () => {
+test("a published list gets its own List link, and the name still links to the stats page", () => {
   const noList = renderToStaticMarkup(
     React.createElement(PlayerCard, { player: { ...basePlayer, bcpUserId: "bcp-1" } })
   );
@@ -75,8 +82,8 @@ test("the player's name links to their published list instead of their stats pag
       player: { ...basePlayer, bcpUserId: "bcp-1", list: "https://example.com/list" },
     })
   );
-  assert.match(withList, /<a href="https:\/\/example\.com\/list"[^>]*>Jayde Russell<\/a>/);
-  assert.ok(!withList.includes("/players/bcp-1"));
+  assert.match(withList, /<a href="https:\/\/example\.com\/list"[^>]*>[\s\S]*?List<\/a>/);
+  assert.match(withList, /href="\/players\/bcp-1/);
 });
 
 test("the Follow button only appears when onTrack is given, and reflects tracked state", () => {

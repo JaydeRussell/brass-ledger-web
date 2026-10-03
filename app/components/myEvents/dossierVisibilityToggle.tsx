@@ -89,8 +89,8 @@ export default function DossierVisibilityToggle({
       >
         <span
           aria-hidden
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface-0 transition-transform ${
-            dossierPublic ? "translate-x-5" : "translate-x-0.5"
+          className={`absolute left-px top-px h-5 w-5 rounded-full bg-surface-0 transition-transform ${
+            dossierPublic ? "translate-x-5" : "translate-x-0"
           }`}
         />
       </button>

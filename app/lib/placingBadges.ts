@@ -21,10 +21,9 @@ export type PlacingBadge = {
  * `placing` yet are simply never awarded one — this needs no special
  * team-event handling, the data just isn't there to award on.
  *
- * Returns a lookup by entry.id, computed once per render off the
- * `entries` PlacingsTable already has (see that component's useMemo) —
- * not a new prop threaded in from further up like `followedIds`, since
- * everything needed is already in `entries` itself.
+ * Returns a lookup by entry.id. Pass the event's full placings, not a
+ * search-filtered subset, or the badges go to whoever is best among the
+ * filtered rows.
  */
 export function computePlacingBadges(entries: readonly PlacingEntry[]): Map<string, PlacingBadge> {
   const minPlacingByFaction = new Map<string, number>();

@@ -38,5 +38,6 @@ jobs:
       # train everyone to ignore this check. High/critical (the ones that
       # were actually live here — see the 2026-09-12 dependency bump
       # commit, which found real RCE/SSRF-class Next.js CVEs this way)
-      # still blocks.
-      - run: npm audit --audit-level=high
+      # still blocks. scripts/audit.mjs applies that gate with a short,
+      # expiring list of accepted advisories that have no fix yet.
+      - run: node scripts/audit.mjs

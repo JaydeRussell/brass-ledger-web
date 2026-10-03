@@ -1,4 +1,5 @@
 "use client";
+import ArmyListLink from "./armyListLink";
 import DispositionBadge from "./dispositionBadge";
 
 type PlayerFactionDetailsProps = {
@@ -19,17 +20,7 @@ export default function PlayerFactionDetails({ bcpUserId, players }: PlayerFacti
     <span className="inline-flex min-w-0 items-center gap-1 text-xs text-text-tertiary">
       {player.faction && <span className="truncate">({player.faction})</span>}
       <DispositionBadge disposition={player.disposition} />
-      {player.list && (
-        <a
-          href={player.list}
-          target="_blank"
-          rel="noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0 font-medium text-brass-400 hover:underline"
-        >
-          list
-        </a>
-      )}
+      {player.list && <ArmyListLink href={player.list} playerName={player.name} />}
     </span>
   );
 }
