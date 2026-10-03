@@ -5,7 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dr
 import Button from "../ui/button";
 
 type EventSettingsProps = {
-  eventId: string;
   eventName?: string;
   recentEvents: RecentEvent[]; // excludes the currently-open event
   onChangeEvent: (eventId: string) => void;
@@ -30,13 +29,12 @@ function parseEventId(input: string): string {
  * one over-abstracted component.
  */
 export default function EventSettings({
-  eventId,
   eventName,
   recentEvents,
   onChangeEvent,
 }: EventSettingsProps) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(eventId);
+  const [draft, setDraft] = useState("");
   const inputId = useId();
 
   const submit = (idOverride?: string) => {

@@ -1132,7 +1132,6 @@ function HomeContent() {
               lastSyncedAt={dataAsOf}
             />
             <EventSettings
-              eventId={eventId}
               eventName={eventInfo?.name}
               recentEvents={recentEvents.filter((e) => e.id !== eventId)}
               onChangeEvent={handleChangeEvent}
