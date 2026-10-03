@@ -48,6 +48,9 @@ const ADMIN_LINKS: readonly { href: string; label: string }[] = [
  * drawer usually puts the account card above its menu items than to a
  * peer link listed alongside "Home"/"My Events".
  */
+const shortcutLabel =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K";
+
 export default function NavDrawerBody() {
   const { isOpen, close } = useNav();
   const pathname = usePathname();
@@ -113,7 +116,10 @@ export default function NavDrawerBody() {
             className="flex items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-text-secondary hover:bg-surface-2 hover:text-text-primary"
           >
             Quick search
-            <span className="text-xs text-text-tertiary">⌘K</span>
+            {/* Only where there's a keyboard shortcut to use: hidden on
+                touch-only devices, and Ctrl rather than ⌘ off Apple. The
+                drawer body only renders client-side, after hydration. */}
+            <span className="text-xs text-text-tertiary [@media(hover:none)]:hidden">{shortcutLabel}</span>
           </button>
           {BASE_LINKS.map((link) => {
             const active = pathname === link.href;
