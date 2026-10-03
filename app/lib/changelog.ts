@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.7",
+    date: "2026-10-03",
+    title: "Bigger tap targets on player cards",
+    highlights: [
+      "The List link and ITC rank on every roster card are taller, so they're easier to tap on a phone.",
+    ],
+  },
+  {
     version: "0.23.6",
     date: "2026-10-03",
     title: "Smaller fixes from the hunt",
