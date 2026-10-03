@@ -20,7 +20,12 @@ import { useLazyComponent } from "../../lib/useLazyComponent";
 // Memoized so the hover preload, the idle load and an open all share one
 // promise rather than racing on separate ones.
 let bodyModule: Promise<typeof import("./navDrawerBody")> | null = null;
-const loadNavDrawerBody = () => (bodyModule ??= import("./navDrawerBody"));
+const loadNavDrawerBody = () =>
+  (bodyModule ??= import("./navDrawerBody").catch((err: unknown) => {
+    // Forget the failed attempt so the next open tries again.
+    bodyModule = null;
+    throw err;
+  }));
 
 /** Starts fetching the drawer chunk without mounting it. */
 export function preloadNavDrawerBody(): void {

@@ -5,7 +5,12 @@ import { useLazyComponent } from "../../lib/useLazyComponent";
 
 // Memoized so repeated opens share one promise.
 let bodyModule: Promise<typeof import("./commandPaletteBody")> | null = null;
-const loadBody = () => (bodyModule ??= import("./commandPaletteBody"));
+const loadBody = () =>
+  (bodyModule ??= import("./commandPaletteBody").catch((err: unknown) => {
+    // Forget the failed attempt so the next open tries again.
+    bodyModule = null;
+    throw err;
+  }));
 
 /**
  * The always-mounted shell for the ⌘K command palette, mounted once in
