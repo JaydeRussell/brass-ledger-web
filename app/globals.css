@@ -392,11 +392,24 @@ body {
   .animate-spin {
     animation: none;
   }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 :root[data-reduce-motion="true"] .animate-fade-in,
 :root[data-reduce-motion="true"] .animate-pulse,
 :root[data-reduce-motion="true"] .animate-spin {
   animation: none;
+}
+/* Slides, toggles and the refresh cooldown bar move by transition. */
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* ---------------------------------------------------------------------

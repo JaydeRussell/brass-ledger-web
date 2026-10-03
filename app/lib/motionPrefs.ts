@@ -26,6 +26,15 @@ function readStoredPreference(): boolean {
  * removes the attribute entirely (rather than setting it to "false") so
  * globals.css's `:root[data-reduce-motion="true"]` selector only ever
  * has one way to match. */
+/** Whether motion should be reduced right now: the in-app setting or the OS's. */
+export function motionReduced(): boolean {
+  if (typeof document === "undefined") return false;
+  return (
+    document.documentElement.getAttribute("data-reduce-motion") === "true" ||
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
+}
+
 export function applyReduceMotion(reduce: boolean) {
   if (typeof document === "undefined") return;
   if (reduce) {

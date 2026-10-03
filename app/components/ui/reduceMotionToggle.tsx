@@ -22,7 +22,7 @@ export default function ReduceMotionToggle() {
         aria-checked={reduceMotion}
         aria-label="Reduce motion"
         onClick={() => setReduceMotion(!reduceMotion)}
-        className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+        className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors before:absolute before:-inset-x-1 before:-inset-y-2 before:content-[''] ${
           reduceMotion ? "border-brass-500 bg-brass-500" : "border-surface-border bg-surface-2"
         }`}
       >

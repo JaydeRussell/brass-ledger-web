@@ -34,11 +34,21 @@ function readLocalStorage<T>(key: string, fallback: T): T {
   }
 }
 
-function writeLocalStorage<T>(key: string, value: T) {
+/** Best-effort write; false when storage refused it (full, or private browsing). */
+function writeLocalStorage<T>(key: string, value: T): boolean {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    // best-effort only (e.g. private browsing can throw) — not worth surfacing
+    return false;
+  }
+}
+
+function removeLocalStorage(key: string) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // best-effort only, same as writeLocalStorage
   }
 }
 
@@ -54,23 +64,24 @@ export function loadCachedEvent(eventId: string): CachedEventSnapshot | null {
 
 /**
  * Saves this event's snapshot and bumps it to the front of the recency
- * index, evicting the oldest entry beyond MAX_CACHED_EVENTS so this
- * doesn't grow forever for someone who browses many different events
- * over a long period.
+ * index, keeping at most MAX_CACHED_EVENTS. When storage is full, the
+ * oldest snapshots are evicted until this one fits; if it never fits,
+ * its older snapshot is dropped too, so the index never points at a
+ * missing or out-of-date entry.
  */
 export function saveCachedEvent(eventId: string, snapshot: CachedEventSnapshot) {
-  writeLocalStorage(snapshotKey(eventId), snapshot);
+  const others = readIndex().filter((id) => id !== eventId);
+  others.slice(MAX_CACHED_EVENTS - 1).forEach((id) => removeLocalStorage(snapshotKey(id)));
+  const kept = others.slice(0, MAX_CACHED_EVENTS - 1);
 
-  const nextIndex = [eventId, ...readIndex().filter((id) => id !== eventId)];
-  const evicted = nextIndex.slice(MAX_CACHED_EVENTS);
-  writeLocalStorage(INDEX_KEY, nextIndex.slice(0, MAX_CACHED_EVENTS));
-  evicted.forEach((id) => {
-    try {
-      window.localStorage.removeItem(snapshotKey(id));
-    } catch {
-      // best-effort only, same as writeLocalStorage above
-    }
-  });
+  let saved = writeLocalStorage(snapshotKey(eventId), snapshot);
+  while (!saved && kept.length > 0) {
+    removeLocalStorage(snapshotKey(kept.pop()!));
+    saved = writeLocalStorage(snapshotKey(eventId), snapshot);
+  }
+  if (!saved) removeLocalStorage(snapshotKey(eventId));
+
+  writeLocalStorage(INDEX_KEY, saved ? [eventId, ...kept] : kept);
 }
 
 /** "3 minutes ago" / "2 hours ago" / "just now", for a Date.now()-style timestamp. */

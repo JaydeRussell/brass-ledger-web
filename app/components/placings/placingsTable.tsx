@@ -65,8 +65,20 @@ const WIN_LOSS_METRIC_PATTERN = /win|match points|record|w\/l/i;
 // everything else BCP publishes.
 const OPPONENT_WIN_PCT_METRIC_PATTERN = /opp(?:onent|t)?\.?\s*(?:game\s*)?win/i;
 
-const isRecordMetric = (name: string) =>
-  WIN_LOSS_METRIC_PATTERN.test(name) && !OPPONENT_WIN_PCT_METRIC_PATTERN.test(name);
+// Strength-of-schedule tiebreakers ("Wins SoS") are win-shaped too.
+const STRENGTH_OF_SCHEDULE_PATTERN = /\bsos\b|strength of schedule/i;
+
+export const isRecordMetric = (name: string) =>
+  WIN_LOSS_METRIC_PATTERN.test(name) &&
+  !OPPONENT_WIN_PCT_METRIC_PATTERN.test(name) &&
+  !STRENGTH_OF_SCHEDULE_PATTERN.test(name);
+
+/** Every metric name across the entries, in first-seen order. */
+export function metricNamesOf(entries: PlacingEntry[]): string[] {
+  const names = new Set<string>();
+  for (const e of entries) for (const m of e.metrics) names.add(m.name);
+  return [...names];
+}
 
 // The one column shown on a collapsed row; everything else BCP publishes
 // moves behind the row's expand toggle rather than crowding the table.
@@ -88,10 +100,6 @@ function orderMetricColumns(names: string[]): string[] {
 function findRecordMetricName(names: string[]): string | undefined {
   return names.find(isRecordMetric);
 }
-
-// RoundScoreStrip now lives in ../shared/roundScoreStrip.tsx — reused
-// as-is on the Team tab (myTeamPanel.tsx) once that needed the same
-// glanceable record too.
 
 /**
  * One placings row. Only the lead record column (see orderMetricColumns)
@@ -336,7 +344,8 @@ export default function PlacingsTable({
   lastSyncedAt,
   badgeEntries = entries,
 }: PlacingsTableProps) {
-  const orderedMetricNames = orderMetricColumns(entries[0]?.metrics.map((m) => m.name) ?? []);
+  // From the unfiltered list, so searching never changes which columns show.
+  const orderedMetricNames = orderMetricColumns(metricNamesOf(badgeEntries));
   const visibleMetricNames = orderedMetricNames.slice(0, 1);
   const hiddenMetricNames = orderedMetricNames.slice(1);
   const recordMetricName = findRecordMetricName(orderedMetricNames);

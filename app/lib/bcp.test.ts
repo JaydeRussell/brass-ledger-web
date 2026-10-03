@@ -429,3 +429,21 @@ test("getJSON: a refresh replaces the plain URL's cached answer and later reads 
   await fetchBcpEventInfo("evt-1");
   assert.equal(seen.at(-1)?.cache, "no-cache");
 });
+
+test("fetchPlacingRoundScores: a refresh refetches only the latest round upstream, then re-reads the set", async () => {
+  const seen: { url: string; cache?: RequestCache }[] = [];
+  (globalThis as unknown as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
+    seen.push({ url, cache: init?.cache });
+    return { ok: true, status: 200, text: async () => "[]" } as Response;
+  }) as typeof fetch;
+
+  await fetchPlacingRoundScores("evt-strip", false, 3);
+  await fetchPlacingRoundScores("evt-strip", false, 3, true);
+  const paths = seen.map((s) => decodeURIComponent(s.url.replace(/^https?:\/\/[^/]+/, "")));
+  assert.deepEqual(paths, [
+    "/api/events/evt-strip/pairings?type=Pairing&rounds=1,2,3",
+    "/api/events/evt-strip/pairings?type=Pairing&round=3&refresh=true",
+    "/api/events/evt-strip/pairings?type=Pairing&rounds=1,2,3",
+  ]);
+  assert.equal(seen[2].cache, "reload");
+});

@@ -69,7 +69,7 @@ export default function AccentThemePicker({ account = null }: AccentThemePickerP
           type="button"
           onClick={() => setExpanded(false)}
           aria-expanded={true}
-          className="text-3xs text-brass-400"
+          className="-my-1.5 -mr-1 px-2 py-1.5 text-3xs text-brass-400"
         >
           Done
         </button>

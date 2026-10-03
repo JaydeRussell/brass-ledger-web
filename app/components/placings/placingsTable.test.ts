@@ -384,3 +384,17 @@ test("compact density has a star standing in for the Best badges, with their tex
   assert.match(html, /<span class="compact:hidden">/);
   assert.match(html, /<span class="hidden compact:inline"><button[^>]*aria-label="Best Xenos, Best Necrons"[^>]*>★/);
 });
+
+test("isRecordMetric: record-shaped names count, tiebreakers don't", async () => {
+  const { isRecordMetric } = await import("./placingsTable.tsx");
+  for (const name of ["Wins", "Match Points", "Record", "W/L"]) assert.equal(isRecordMetric(name), true, name);
+  for (const name of ["Wins SoS", "Oppt. Game Win %", "Strength of Schedule Wins", "Battle Points"]) {
+    assert.equal(isRecordMetric(name), false, name);
+  }
+});
+
+test("metricNamesOf: union across entries in first-seen order", async () => {
+  const { metricNamesOf } = await import("./placingsTable.tsx");
+  const entry = (names: string[]) => ({ metrics: names.map((name) => ({ name, value: 0 })) }) as never;
+  assert.deepEqual(metricNamesOf([entry(["Wins"]), entry(["Wins", "Battle Points"])]), ["Wins", "Battle Points"]);
+});
