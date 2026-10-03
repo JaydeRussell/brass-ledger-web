@@ -115,6 +115,13 @@ export default function RoundBoard({
 }: RoundBoardProps) {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [boardsById, setBoardsById] = React.useState<Record<string, BoardsState>>({});
+  // Read by the effects below without re-running them on every change.
+  const expandedRef = React.useRef(expanded);
+  const boardsRef = React.useRef(boardsById);
+  React.useEffect(() => {
+    expandedRef.current = expanded;
+    boardsRef.current = boardsById;
+  }, [expanded, boardsById]);
   const [itcByUserId, setItcByUserId] = React.useState<Record<string, ItcRanking | null>>({});
   const requestedItcIdsRef = React.useRef<Set<string>>(new Set());
   const slowLoad = useDelayedFlag(loading);
@@ -144,6 +151,50 @@ export default function RoundBoard({
     [itcLeagueId]
   );
 
+  const fetchBoard = React.useCallback(
+    (entry: BoardPairing) => {
+      setBoardsById((prev) => ({
+        ...prev,
+        [entry.id]: { loading: true, error: null, matchups: [] },
+      }));
+
+      fetchTeamPairingBoards(eventId, round, entry.id)
+        .then((matchups) => {
+          setBoardsById((prev) => ({ ...prev, [entry.id]: { loading: false, error: null, matchups } }));
+          if (matchups.length > 0) {
+            loadItcFor(
+              matchups.flatMap((m) => [m.player1UserId, m.player2UserId].filter((id): id is string => Boolean(id)))
+            );
+          } else {
+            // No individual boards yet — fall back to showing each side's
+            // roster instead, so their ITC ratings are still worth fetching.
+            const side1Roster = entry.side1Id ? rosterByTeamId?.get(entry.side1Id) ?? [] : [];
+            const side2Roster = entry.side2Id ? rosterByTeamId?.get(entry.side2Id) ?? [] : [];
+            loadItcFor(
+              [...side1Roster, ...side2Roster]
+                .map((p) => p.bcpUserId)
+                .filter((id): id is string => Boolean(id))
+            );
+          }
+        })
+        .catch((err) => {
+          setBoardsById((prev) => ({
+            ...prev,
+            [entry.id]: {
+              loading: false,
+              // A generic fallback, not "Failed to load boards" — this
+              // always renders after an existing "Couldn't load boards:"
+              // prefix (see the render below), so a fallback that repeats
+              // "load boards" read as a stutter.
+              error: err instanceof Error ? err.message : "an unknown error",
+              matchups: [],
+            },
+          }));
+        });
+    },
+    [eventId, round, rosterByTeamId, loadItcFor]
+  );
+
   const toggleExpand = (entry: BoardPairing) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -154,48 +205,36 @@ export default function RoundBoard({
       next.add(entry.id);
       return next;
     });
-
-    if (boardsById[entry.id]) return; // already fetched (or in flight)
-
-    setBoardsById((prev) => ({
-      ...prev,
-      [entry.id]: { loading: true, error: null, matchups: [] },
-    }));
-
-    fetchTeamPairingBoards(eventId, round, entry.id)
-      .then((matchups) => {
-        setBoardsById((prev) => ({ ...prev, [entry.id]: { loading: false, error: null, matchups } }));
-        if (matchups.length > 0) {
-          loadItcFor(
-            matchups.flatMap((m) => [m.player1UserId, m.player2UserId].filter((id): id is string => Boolean(id)))
-          );
-        } else {
-          // No individual boards yet — fall back to showing each side's
-          // roster instead, so their ITC ratings are still worth fetching.
-          const side1Roster = entry.side1Id ? rosterByTeamId?.get(entry.side1Id) ?? [] : [];
-          const side2Roster = entry.side2Id ? rosterByTeamId?.get(entry.side2Id) ?? [] : [];
-          loadItcFor(
-            [...side1Roster, ...side2Roster]
-              .map((p) => p.bcpUserId)
-              .filter((id): id is string => Boolean(id))
-          );
-        }
-      })
-      .catch((err) => {
-        setBoardsById((prev) => ({
-          ...prev,
-          [entry.id]: {
-            loading: false,
-            // A generic fallback, not "Failed to load boards" — this
-            // always renders after an existing "Couldn't load boards:"
-            // prefix (see the render below), so a fallback that repeats
-            // "load boards" read as a stutter.
-            error: err instanceof Error ? err.message : "an unknown error",
-            matchups: [],
-          },
-        }));
-      });
+    // Fetched once, but a failed fetch is retried on the next expand.
+    const existing = boardsById[entry.id];
+    if (existing && !existing.error) return;
+    fetchBoard(entry);
   };
+
+  // When the round's pairings come back (a refresh, or a new round), the
+  // boards cached for it may be stale: re-fetch the rows that are open
+  // and forget the rest.
+  React.useEffect(() => {
+    Promise.resolve().then(() => {
+      setBoardsById({});
+      entries.filter((e) => expandedRef.current.has(e.id)).forEach(fetchBoard);
+    });
+    // Keyed on entries only; fetchBoard's own inputs don't mean the
+    // pairings changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries]);
+
+  // Boards loaded before the ITC league resolved got no ranks; look them
+  // up once it does.
+  React.useEffect(() => {
+    if (!itcLeagueId) return;
+    loadItcFor(
+      Object.values(boardsRef.current).flatMap((b) =>
+        b.matchups.flatMap((m) => [m.player1UserId, m.player2UserId].filter((id): id is string => Boolean(id)))
+      )
+    );
+  }, [itcLeagueId, loadItcFor]);
+
 
   return (
     <Card className="overflow-hidden shadow-sm">
