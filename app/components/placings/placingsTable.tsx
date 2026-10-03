@@ -167,20 +167,23 @@ function PlacingRow({
           )}
         </td>
         <td className="px-2 py-1.5">
-          {badge?.bestSuperFaction && (
-            <Badge tone="brass" title={`Best-placed ${badge.bestSuperFaction} player`}>
-              Best {badge.bestSuperFaction}
-            </Badge>
-          )}
-          {badge?.bestFaction && (
-            <Badge
-              tone="brass"
-              className={badge.bestSuperFaction ? "ml-1.5" : ""}
-              title={`Best-placed ${badge.bestFaction} player`}
-            >
-              Best {badge.bestFaction}
-            </Badge>
-          )}
+          <span className="compact:hidden">
+            {badge?.bestSuperFaction && (
+              <Badge tone="brass" title={`Best-placed ${badge.bestSuperFaction} player`}>
+                Best {badge.bestSuperFaction}
+              </Badge>
+            )}
+            {badge?.bestFaction && (
+              <Badge
+                tone="brass"
+                className={badge.bestSuperFaction ? "ml-1.5" : ""}
+                title={`Best-placed ${badge.bestFaction} player`}
+              >
+                Best {badge.bestFaction}
+              </Badge>
+            )}
+          </span>
+          {badge && <CompactBadgeStar entryId={entry.id} badge={badge} />}
         </td>
         {visibleMetricNames.map((name) => (
           <td key={name} className="px-2 py-1.5 text-right text-text-secondary">
@@ -285,6 +288,41 @@ function SortableHeader({
         </span>
       </button>
     </th>
+  );
+}
+
+// Compact density's stand-in for the "Best …" badges: one star that opens
+// the full list in a native popover on tap.
+function CompactBadgeStar({ entryId, badge }: { entryId: string; badge: PlacingBadge }) {
+  const labels = [
+    badge.bestSuperFaction && `Best ${badge.bestSuperFaction}`,
+    badge.bestFaction && `Best ${badge.bestFaction}`,
+  ].filter(Boolean) as string[];
+  const popoverId = `best-${entryId}`;
+  return (
+    <span className="hidden compact:inline">
+      <button
+        type="button"
+        popoverTarget={popoverId}
+        onClick={(e) => e.stopPropagation()}
+        aria-label={labels.join(", ")}
+        title={labels.join(", ")}
+        className="rounded-sm px-1 text-brass-400 hover:bg-brass-500/15"
+      >
+        ★
+      </button>
+      <span
+        id={popoverId}
+        popover="auto"
+        className="m-auto rounded-md border border-surface-border bg-surface-1 p-3 text-xs text-text-primary shadow-xl"
+      >
+        {labels.map((l) => (
+          <span key={l} className="block">
+            {l}
+          </span>
+        ))}
+      </span>
+    </span>
   );
 }
 

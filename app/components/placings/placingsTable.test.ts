@@ -373,3 +373,14 @@ test("an expandable row is keyboard-operable (role=button, tabIndex, aria-expand
   assert.match(row, /tabIndex="?0"?|tabindex="0"/);
   assert.match(row, /aria-expanded="false"/);
 });
+
+test("compact density has a star standing in for the Best badges, with their text as its label", () => {
+  const withFactions: PlacingEntry[] = [
+    { id: "p1", name: "Anna Adams", placing: 1, metrics: [{ name: "Wins", value: 3 }], faction: "Necrons" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: withFactions, loading: false, error: null, onRefresh: noop })
+  );
+  assert.match(html, /<span class="compact:hidden">/);
+  assert.match(html, /<span class="hidden compact:inline"><button[^>]*aria-label="Best Xenos, Best Necrons"[^>]*>★/);
+});

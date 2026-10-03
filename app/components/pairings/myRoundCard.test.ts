@@ -120,8 +120,8 @@ test("shows the opponent's disposition and ITC badge, when known", () => {
   assert.match(html, />Purge</);
   // The compact (mobile) label carries just the placing, the full label
   // (desktop) adds points — both render server-side, toggled by CSS.
-  assert.match(html, /<span class="sm:hidden">#15<\/span>/);
-  assert.match(html, /<span class="hidden sm:inline">#15 · 1465 pts<\/span>/);
+  assert.match(html, /<span class="sm:hidden roomy:hidden">#15<\/span>/);
+  assert.match(html, /<span class="hidden sm:inline roomy:inline">.*#15 · 1465 pts<\/span>/);
   // My own disposition is unknown in this scenario, so even though the
   // opponent's is known, the mission-matchup panel shouldn't render.
   assert.match(html, /Loading player stats/);

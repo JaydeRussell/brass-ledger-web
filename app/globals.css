@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* `compact:` and `roomy:` utilities, keyed to the Density setting's
+   attribute on <html> (lib/displayPrefs.ts). Compact hides decoration and
+   shortens labels; roomy spells things out. Pure CSS, so the right
+   version shows before first paint. */
+@custom-variant compact (&:where([data-density="compact"], [data-density="compact"] *));
+@custom-variant roomy (&:where([data-density="comfortable"], [data-density="comfortable"] *));
+
 /* ---------------------------------------------------------------------
  * "Brass Ledger" design tokens
  *
@@ -256,9 +263,14 @@
 }
 :root[data-density="compact"] {
   --density: 0.875;
+  --text-xs--line-height: 1.35;
+  --text-sm--line-height: 1.35;
 }
 :root[data-density="comfortable"] {
   --density: 1.125;
+  --text-xs--line-height: 1.6;
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.65;
 }
 
 /* iOS Safari and home-screen apps: follow Dynamic Type (Settings >

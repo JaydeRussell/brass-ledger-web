@@ -41,3 +41,9 @@ test("shows an unrecognized disposition value as-is in a neutral tone", () => {
   assert.match(html, />Something New</);
   assert.match(html, /bg-surface-2/);
 });
+
+test("roomy density spells out the full disposition name", () => {
+  const html = renderToStaticMarkup(React.createElement(DispositionBadge, { disposition: "Take and Hold" }));
+  assert.match(html, /<span class="roomy:hidden">T&amp;H<\/span>/);
+  assert.match(html, /<span class="hidden roomy:inline">Take and Hold<\/span>/);
+});

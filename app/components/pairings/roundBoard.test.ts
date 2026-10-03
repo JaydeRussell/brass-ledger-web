@@ -181,3 +181,17 @@ test("shows a 'Jump to mine' control only when myId matches a row in this round 
   const noMyId = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, entries }));
   assert.ok(!noMyId.includes("Jump to mine"));
 });
+
+test("roomy density shows each singles player's faction from the roster", () => {
+  const entries: BoardPairing[] = [
+    { id: "b1", side1Name: "Alice", side1UserId: "u-a", side2Name: "Bob", side2UserId: "u-b", published: true, isDone: false, isBye: false },
+  ];
+  const players: Player[] = [
+    { id: "p1", name: "Alice", faction: "Aeldari", bcpUserId: "u-a" },
+    { id: "p2", name: "Bob", faction: "Unknown", bcpUserId: "u-b" },
+  ];
+  const html = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, entries, players }));
+  assert.match(html, /class="hidden text-xs text-text-tertiary roomy:inline">\(Aeldari\)/);
+  assert.ok(!html.includes("(Unknown)"));
+  assert.match(html, /compact:inline-block/);
+});

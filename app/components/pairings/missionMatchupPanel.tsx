@@ -71,7 +71,21 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
 
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Deployment layouts</p>
-        <div className="mt-1.5 flex gap-2">
+        {/* Compact density swaps the thumbnails for one button into the viewer. */}
+        <div className="mt-1.5 hidden gap-1.5 compact:flex">
+          {layouts.map((layout) => (
+            <button
+              key={layout.layout}
+              type="button"
+              onClick={() => viewer.openLayout(layout.layout)}
+              aria-label={`View layout ${layout.layout} full screen`}
+              className="rounded-md border border-surface-border px-2.5 py-1 text-xs text-text-secondary hover:border-brass-500/40 hover:text-text-primary"
+            >
+              Layout {layout.layout}
+            </button>
+          ))}
+        </div>
+        <div className="mt-1.5 flex gap-2 compact:hidden">
           {layouts.map((layout) => (
             <button
               key={layout.layout}

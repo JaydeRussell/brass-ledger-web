@@ -49,8 +49,9 @@ test("carries both a placing-only compact label and the full label, toggled resp
   const html = renderToStaticMarkup(
     React.createElement(ItcBadge, { ranking: { points: 1465.4, placing: 15 }, title: "t" })
   );
-  assert.match(html, /<span class="sm:hidden">#15<\/span>/);
-  assert.match(html, /<span class="hidden sm:inline">#15 · 1465 pts<\/span>/);
+  assert.match(html, /<span class="sm:hidden roomy:hidden">#15<\/span>/);
+  assert.match(html, /<span class="hidden sm:inline roomy:inline">.*#15 · 1465 pts<\/span>/);
+  assert.match(html, /<span class="hidden roomy:inline">ITC <\/span>/);
 });
 
 test("size=\"xs\" uses the tighter text size class", () => {
