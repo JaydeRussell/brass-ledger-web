@@ -355,7 +355,10 @@ function HomeContent() {
     )
   );
   const [loading, setLoading] = React.useState(true);
-  const slowLoad = useDelayedFlag(loading);
+  // A cached snapshot (eventCache.ts) is shown while the fetch is in flight,
+  // and also when no fetch can start because /api/me couldn't be reached.
+  const rosterPending = loading && players.length === 0;
+  const slowLoad = useDelayedFlag(rosterPending);
   const [error, setError] = React.useState<string | null>(null);
   const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
   // Note: the shared Roster/Pairings/Placings search box's value
@@ -1239,7 +1242,7 @@ function HomeContent() {
 
         {activeTab === "roster" && (
           <>
-            {!loading && (isTeamEvent ? sortedTeamNames : sortedPlayers).length >= 2 && (
+            {!rosterPending && (isTeamEvent ? sortedTeamNames : sortedPlayers).length >= 2 && (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {!compareMode && (
                   <label className="flex items-center gap-1.5 text-xs text-text-secondary">
@@ -1262,7 +1265,7 @@ function HomeContent() {
                 </Button>
               </div>
             )}
-            {!loading && compareMode && isTeamEvent ? (
+            {!rosterPending && compareMode && isTeamEvent ? (
               <TeamCompare
                 teamNames={sortedTeamNames}
                 teams={teams}
@@ -1274,7 +1277,7 @@ function HomeContent() {
                 onSelectA={(team) => updateQuery({ teamA: team })}
                 onSelectB={(team) => updateQuery({ teamB: team })}
               />
-            ) : !loading && compareMode && !isTeamEvent ? (
+            ) : !rosterPending && compareMode && !isTeamEvent ? (
               <PlayerCompare
                 players={sortPlayers(players, "name")}
                 itcLeagueId={itcLeagueId}
@@ -1285,7 +1288,7 @@ function HomeContent() {
                 onSelectA={(id) => updateQuery({ playerA: id })}
                 onSelectB={(id) => updateQuery({ playerB: id })}
               />
-            ) : loading ? (
+            ) : rosterPending ? (
               <div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <CardSkeleton />
