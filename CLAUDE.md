@@ -148,10 +148,9 @@ Stable, not touched recently unless noted below:
   `app/lib/myEvents.ts`) — confirmed working end-to-end with a real
   account, including a real BCP API bug found and fixed along the way
   (an unencoded pagination cursor — see the backend repo's `CLAUDE.md`).
-- **Cross-device sync for follows + recent events** (`app/lib/follows.ts`,
-  `app/lib/recentEvents.ts`) — persists to a signed-in account via the
-  backend's sync routes; a signed-out visitor still uses `localStorage`
-  only, unchanged.
+- **Cross-device sync for recent events** (`app/lib/recentEvents.ts`) —
+  persists to a signed-in account via the backend's sync routes; a
+  signed-out visitor uses `localStorage` only.
 - **Client-side logging** (`app/lib/clientLog.ts`) — a consistent
   level/message/context wrapper over `console.log/warn/error`, plus
   `clientErrorLogger.tsx` routing uncaught errors and unhandled

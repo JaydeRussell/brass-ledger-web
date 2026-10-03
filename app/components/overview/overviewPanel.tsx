@@ -34,9 +34,9 @@ function FactRow({ label, value }: { label: string; value?: string }) {
 /**
  * The event's landing tab: what it is, where it's at, plus the event facts
  * BCP's own Overview tab shows (dates, venue, organizer, registration
- * counts, description). Deliberately just this — your own round, your
- * team, and who you're following each moved to their own tab (Mine/Team)
- * once this one got crowded; see minePanel.tsx and myTeamPanel.tsx.
+ * counts, description). Deliberately just this — your own round and your
+ * team have their own tabs (Mine/Team); see minePanel.tsx and
+ * myTeamPanel.tsx.
  */
 export default function OverviewPanel({ eventInfo }: OverviewPanelProps) {
   const dateRange = eventInfo ? formatDateRange(eventInfo.startDate, eventInfo.endDate) : undefined;

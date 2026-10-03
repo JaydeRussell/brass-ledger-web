@@ -11,12 +11,6 @@ function initials(name: string) {
 
 type PlayerCardProps = {
   player: Player;
-  onTrack?: () => void;
-  tracked?: boolean;
-  // How many distinct accounts follow this player (see lib/follows.ts's
-  // fetchFollowCounts) — undefined (shown as nothing) until page.tsx's
-  // lazy Roster-tab fetch resolves, same as itcRanking below.
-  trackedCount?: number;
   // BCP's current flagship ITC ranking league id (see fetchCurrentItcLeagueId
   // in lib/bcp.ts) — used to build the profile link below.
   itcLeagueId?: string | null;
@@ -29,17 +23,14 @@ type PlayerCardProps = {
 
 /**
  * A plain, read-only card for one player (singles/individual-event mode,
- * and each member of a TeamRoster) — the avatar circle and optional
- * Follow button around the shared PlayerCard template (shared/playerCard,
+ * and each member of a TeamRoster) — the avatar circle around the shared
+ * PlayerCard template (shared/playerCard,
  * name+disposition/faction+ITC) used everywhere else a player is listed.
  * Same "no scoring or ranking" scope as TeamRoster — see the note in
  * types/player.d.ts.
  */
 export default function PlayerCard({
   player,
-  onTrack,
-  tracked,
-  trackedCount,
   itcLeagueId,
   itcRanking,
   onVisible,
@@ -48,9 +39,7 @@ export default function PlayerCard({
   return (
     <div
       ref={ref}
-      className={`flex items-center gap-3 overflow-hidden rounded-lg border bg-surface-1 p-3 shadow-sm ${
-        tracked ? "border-brass-500/50 ring-1 ring-brass-500/30" : "border-surface-border"
-      }`}
+      className="flex items-center gap-3 overflow-hidden rounded-lg border border-surface-border bg-surface-1 p-3 shadow-sm"
     >
       <div
         aria-hidden
@@ -61,27 +50,6 @@ export default function PlayerCard({
       <div className="min-w-0 flex-1">
         <SharedPlayerCard player={player} ranking={itcRanking} itcLeagueId={itcLeagueId} size="sm" />
       </div>
-      {onTrack && (
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <button
-            type="button"
-            onClick={onTrack}
-            title={tracked ? "Following this player's pairings" : "Follow this player's pairings"}
-            className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              tracked
-                ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
-                : "border-surface-border text-text-secondary hover:bg-surface-2"
-            }`}
-          >
-            {tracked ? "Following ✓" : "Follow"}
-          </button>
-          {Boolean(trackedCount) && (
-            <span className="text-[10px] text-text-tertiary">
-              {trackedCount} tracking
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

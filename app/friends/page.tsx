@@ -93,8 +93,7 @@ export default function FriendsPage() {
         logClientEvent("warn", "friends: removing a friend failed", {
           error: err instanceof Error ? err.message : String(err),
         });
-        // Best-effort optimistic removal, same posture as follows sync
-        // (app/page.tsx's persistFollowChange) — a failure here just
+        // Best-effort optimistic removal — a failure here just
         // means the removal silently didn't take; re-opening this page
         // later shows the real state either way.
       });

@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import TeamRoster from "./roster.tsx";
-import { find } from "../../lib/testUtils.ts";
 
 const players: Player[] = [
   { id: "p1", name: "Alice Anderson", faction: "Space Marines" },
@@ -54,38 +53,4 @@ test("doesn't repeat the disposition as a subfaction suffix when BCP reused that
 test("shows a placeholder message when the team has no players yet", () => {
   const html = renderToStaticMarkup(React.createElement(TeamRoster, { teamName: "Empty", players: [] }));
   assert.match(html, /No players with a submitted list found/);
-});
-
-test("the Follow button only appears when onTrack is given, and calls it on click", () => {
-  const noButton = TeamRoster({ teamName: "Team A", players });
-  assert.equal(find(noButton, (el) => el.type === "button"), undefined);
-
-  const calls: number[] = [];
-  const withButton = TeamRoster({ teamName: "Team A", players, onTrack: () => calls.push(1) });
-  const followBtn = find(withButton, (el) => el.type === "button");
-  assert.equal(followBtn?.props.children, "Follow");
-  followBtn!.props.onClick();
-  assert.deepEqual(calls, [1]);
-});
-
-test("shows a tracked-count only when it's a truthy number, and only alongside the Follow button", () => {
-  const html = renderToStaticMarkup(
-    React.createElement(TeamRoster, { teamName: "Team A", players, onTrack: () => {}, trackedCount: 6 })
-  );
-  assert.match(html, /6 tracking/);
-
-  const zeroHtml = renderToStaticMarkup(
-    React.createElement(TeamRoster, { teamName: "Team A", players, onTrack: () => {}, trackedCount: 0 })
-  );
-  assert.ok(!zeroHtml.includes("tracking"));
-
-  const undefinedHtml = renderToStaticMarkup(
-    React.createElement(TeamRoster, { teamName: "Team A", players, onTrack: () => {} })
-  );
-  assert.ok(!undefinedHtml.includes("tracking"));
-
-  const noTrackHtml = renderToStaticMarkup(
-    React.createElement(TeamRoster, { teamName: "Team A", players, trackedCount: 6 })
-  );
-  assert.ok(!noTrackHtml.includes("tracking"));
 });

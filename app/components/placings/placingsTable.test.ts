@@ -265,14 +265,14 @@ test("a team row with a roster available shows an expand affordance; a singles r
   assert.ok(!html.includes("Nicholas Kudriavetz"));
 });
 
-test("highlights a followed row", () => {
+test("highlights my own row", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, {
       entries,
       loading: false,
       error: null,
       onRefresh: noop,
-      followedIds: new Set(["t2"]),
+      myId: "t2",
     })
   );
   // Team Two's row should carry the highlight class; Team One's shouldn't.

@@ -308,11 +308,10 @@ export type MyPairing = {
   opponentTeamPlayerId?: string;
   // Set only for a team-vs-team pairing — the raw TeamPairing record's own
   // id, i.e. the same id its individual board results reference as
-  // `teamPairingId` (see fetchTeamPairingBoards). Lets a followed team's
-  // round row expand into its individual boards, the same way a full
-  // round-board row does.
+  // `teamPairingId` (see fetchTeamPairingBoards). Lets "Your round" find
+  // my own individual board within the team pairing.
   teamPairingId?: string;
-  // Set only alongside teamPairingId: whether the followed team was
+  // Set only alongside teamPairingId: whether this team was
   // BCP's teamPlayer1 (vs. teamPlayer2) side of this team-vs-team
   // pairing. The individual board results fetchTeamPairingBoards returns
   // are in BCP's raw player1/player2 order, which is tied to that same
@@ -355,12 +354,9 @@ async function fetchRoundPairings(
 /**
  * Every pairing across rounds 1..upToRound, in one request.
  *
- * The callers below used to walk the rounds in a serial `await` loop,
- * so a five-round event cost five sequential round trips before
- * anything could render — and once per followed player, since each
- * follower ran its own loop. The backend resolves them a few at a time
- * from the same per-round cache, so this is the same number of requests
- * to BCP, just not chained through the browser.
+ * The backend resolves all rounds a few at a time from the same
+ * per-round cache, so this is the same number of requests to BCP as one
+ * per round, just not chained through the browser.
  *
  * Each record carries the round it belongs to. The backend stamps it
  * when BCP doesn't: their own `round` field is nullable, which the old
@@ -534,7 +530,7 @@ export type BoardPairing = {
   // into its individual boards.
   id: string;
   table?: number;
-  // Ids let the UI highlight a followed team/player's own row reliably —
+  // Ids let the UI highlight my own row reliably —
   // matching on name alone could collide (two players with the same name).
   // For an individual pairing, this is the event-scoped player id (not
   // BCP's cross-event account id) — see side1UserId/side2UserId below for

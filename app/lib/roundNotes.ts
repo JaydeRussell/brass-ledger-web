@@ -2,16 +2,14 @@
 // list reminders) — client for this app's own backend's round-note
 // endpoints (see internal/api/sync.go's GetRoundNote/SetRoundNote in the
 // brass-ledger-api repo). Signed-in + approved only, same as
-// follows.ts/recentEvents.ts's account-synced half — no guest/localStorage
-// fallback, since there's no previous purely-local version of this
-// feature to preserve parity with (see components/pairings/roundNotes.tsx's
-// doc comment for the full scoping call).
+// recentEvents.ts's account-synced half — no guest/localStorage fallback
+// (see components/pairings/roundNotes.tsx's doc comment for why).
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
-/** Same decode/error handling as follows.ts's handleJSONResponse — kept
- * as its own small copy here rather than shared, matching this app's
- * established app/lib/*.ts convention (see follows.ts's own doc comment). */
+/** Same decode/error handling as recentEvents.ts's handleJSONResponse —
+ * kept as its own small copy here rather than shared, matching this
+ * app's app/lib/*.ts convention. */
 async function handleJSONResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {

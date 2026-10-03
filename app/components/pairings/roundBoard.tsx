@@ -10,7 +10,6 @@ import {
 import { resolveRosterPlayer } from "../../lib/players";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import PlayerCard from "../shared/playerCard";
-import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
 import Skeleton from "../shared/skeleton";
@@ -43,7 +42,6 @@ type RoundBoardProps = {
   // pairing is a manual, explicit action rather than something this
   // component does on its own on a timer.
   onRefresh: () => void;
-  followedIds?: Set<string>; // ids of followed teams/players, highlighted if present in this round
   // Whether this round's entries are team-vs-team pairings — only those
   // can expand into individual boards; a singles-event row is already an
   // individual matchup.
@@ -62,19 +60,13 @@ type RoundBoardProps = {
   // a team-vs-team pairing is published but its individual boards aren't
   // yet, rather than showing nothing useful.
   rosterByTeamId?: Map<string, Player[]>;
-  // This event's full roster — used only to look up a followed side's
-  // faction/disposition/list (already-published roster fields, not
-  // fetched separately) on its row (roadmap #8). Only shown for a
-  // followed side, not every row, since this board can list dozens of
-  // matchups at once.
+  // This event's full roster — used to resolve each expanded board's
+  // players to their roster entries.
   players?: Player[];
   // The signed-in account's own side1Id/side2Id-space identifier —
   // teamPlayerId for a team event, event-scoped player id for a singles
-  // one (same id space as followedIds, but specifically "mine" rather
-  // than anyone followed, since those aren't always the same entry).
-  // Lets "Jump to mine" (roadmap #9) scroll straight to that row on a
-  // large board (Challengers Cup has 68 teams) instead of leaving a
-  // scrollbar as the only hint it even scrolls.
+  // one. My row is highlighted, and "Jump to mine" scrolls straight to it
+  // on a large board (Challengers Cup has 68 teams).
   myId?: string;
   // When `entries` was last fetched — passed straight through to
   // RefreshButton's own label. See its doc comment.
@@ -105,7 +97,6 @@ export default function RoundBoard({
   error,
   onRoundChange,
   onRefresh,
-  followedIds,
   teamEvent,
   itcLeagueId,
   emptyMessage,
@@ -266,22 +257,21 @@ export default function RoundBoard({
         {!error && !loading && entries.length > 0 && (
           <ul className="animate-fade-in flex flex-col gap-1.5">
             {entries.map((entry) => {
-              const side1Followed = Boolean(entry.side1Id && followedIds?.has(entry.side1Id));
-              const side2Followed = Boolean(entry.side2Id && followedIds?.has(entry.side2Id));
-              const isFollowed = side1Followed || side2Followed;
+              const side1Mine = Boolean(myId && entry.side1Id === myId);
+              const side2Mine = Boolean(myId && entry.side2Id === myId);
+              const isMine = side1Mine || side2Mine;
               const canExpand = teamEvent && !entry.isBye;
               const isExpanded = canExpand && expanded.has(entry.id);
               const boardState = boardsById[entry.id];
 
-              // Color the final score from whichever side is followed,
-              // when exactly one is — so a followed row reads as "are
-              // they winning" — otherwise side1 by default (an arbitrary
-              // but consistent anchor).
+              // Color the final score from my side on my row, so it reads
+              // as "am I winning"; otherwise from side1 (an arbitrary but
+              // consistent anchor).
               const scoreOutcome =
                 entry.side1Score !== undefined && entry.side2Score !== undefined
                   ? classifyScore(
-                      side2Followed && !side1Followed ? entry.side2Score : entry.side1Score,
-                      side2Followed && !side1Followed ? entry.side1Score : entry.side2Score
+                      side2Mine ? entry.side2Score : entry.side1Score,
+                      side2Mine ? entry.side1Score : entry.side2Score
                     )
                   : undefined;
 
@@ -293,7 +283,7 @@ export default function RoundBoard({
                     else rowRefs.current.delete(entry.id);
                   }}
                   className={`rounded-md border text-sm ${
-                    isFollowed ? "border-brass-500/40 bg-brass-500/10" : "border-surface-border"
+                    isMine ? "border-brass-500/40 bg-brass-500/10" : "border-surface-border"
                   }`}
                 >
                   <div
@@ -319,15 +309,13 @@ export default function RoundBoard({
                       {entry.table ? `Tbl ${entry.table}` : ""}
                     </span>
                     <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-primary">
-                      <span className={side1Followed ? "font-semibold" : undefined}>
+                      <span className={side1Mine ? "font-semibold" : undefined}>
                         <PlayerStatsLink name={entry.side1Name} bcpUserId={entry.side1UserId} />
                       </span>
-                      {side1Followed && <PlayerFactionDetails bcpUserId={entry.side1UserId} players={players} />}
                       <span className="text-text-tertiary">vs</span>
-                      <span className={side2Followed ? "font-semibold" : undefined}>
+                      <span className={side2Mine ? "font-semibold" : undefined}>
                         <PlayerStatsLink name={entry.side2Name} bcpUserId={entry.side2UserId} />
                       </span>
-                      {side2Followed && <PlayerFactionDetails bcpUserId={entry.side2UserId} players={players} />}
                     </span>
                     {!entry.published ? (
                       <span className="shrink-0 text-xs text-text-tertiary">

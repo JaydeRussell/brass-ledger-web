@@ -5,19 +5,10 @@ import PlayerCard from "./playerCard";
 type TeamRosterProps = {
   teamName: string;
   players: Player[];
-  onTrack?: () => void;
-  tracked?: boolean;
-  // How many distinct accounts follow this team (see lib/follows.ts's
-  // fetchFollowCounts) — undefined (shown as nothing) until page.tsx's
-  // lazy Roster-tab fetch resolves, same as itcRankings below.
-  trackedCount?: number;
   // BCP's current flagship ITC ranking league id (see fetchCurrentItcLeagueId
   // in lib/bcp.ts) — used to build each player's profile link below.
   itcLeagueId?: string | null;
-  // Already-published ITC score + rank, keyed by BCP global user id — only
-  // populated (by page.tsx) for this team's own roster members while the
-  // team is followed, so members show nothing until then rather than
-  // triggering a lookup per player on every roster card.
+  // Already-published ITC score + rank, keyed by BCP global user id.
   itcRankings?: Record<string, ItcRanking | null>;
   // Called with a player's BCP user id once their card has been on screen
   // briefly, so their ITC ranking can be looked up.
@@ -32,18 +23,13 @@ type TeamRosterProps = {
 export default function TeamRoster({
   teamName,
   players,
-  onTrack,
-  tracked,
-  trackedCount,
   itcLeagueId,
   itcRankings,
   onPlayerVisible,
 }: TeamRosterProps) {
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-lg border bg-surface-1 shadow-sm ${
-        tracked ? "border-brass-500/50 ring-1 ring-brass-500/30" : "border-surface-border"
-      }`}
+      className="flex flex-col overflow-hidden rounded-lg border border-surface-border bg-surface-1 shadow-sm"
     >
       <div className="flex items-center justify-between gap-3 border-b border-surface-border bg-surface-2 px-4 py-3">
         <div>
@@ -52,27 +38,6 @@ export default function TeamRoster({
             {players.length} player{players.length === 1 ? "" : "s"}
           </p>
         </div>
-        {onTrack && (
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={onTrack}
-              title={tracked ? "Following this team's pairings" : "Follow this team's pairings"}
-              className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                tracked
-                  ? "border-brass-500/40 bg-brass-500/15 text-brass-400"
-                  : "border-surface-border text-text-secondary hover:bg-surface-1"
-              }`}
-            >
-              {tracked ? "Following ✓" : "Follow"}
-            </button>
-            {Boolean(trackedCount) && (
-              <span className="text-[10px] text-text-tertiary">
-                {trackedCount} tracking
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="p-3">

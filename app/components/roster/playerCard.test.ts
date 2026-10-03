@@ -1,16 +1,8 @@
-import { test, mock } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { find } from "../../lib/testUtils.ts";
-
-// Stubbed so the card can also be called as a plain function (see the
-// Follow button test), which a real hook would refuse outside a render.
-mock.module("../../lib/useOnVisible.ts", {
-  namedExports: { useOnVisible: () => ({ current: null }) },
-});
-
-const { default: PlayerCard } = await import("./playerCard.tsx");
+import PlayerCard from "./playerCard.tsx";
 
 const basePlayer: Player = { id: "p1", name: "Jayde Russell", faction: "Orks" };
 
@@ -84,37 +76,4 @@ test("a published list gets its own List link, and the name still links to the s
   );
   assert.match(withList, /<a href="https:\/\/example\.com\/list"[^>]*>[\s\S]*?List<\/a>/);
   assert.match(withList, /href="\/players\/bcp-1/);
-});
-
-test("the Follow button only appears when onTrack is given, and reflects tracked state", () => {
-  const noButton = PlayerCard({ player: basePlayer });
-  assert.equal(find(noButton, (el) => el.type === "button"), undefined);
-
-  const calls: number[] = [];
-  const untracked = PlayerCard({ player: basePlayer, onTrack: () => calls.push(1) });
-  const followBtn = find(untracked, (el) => el.type === "button");
-  assert.equal(followBtn?.props.children, "Follow");
-  followBtn!.props.onClick();
-  assert.deepEqual(calls, [1]);
-
-  const tracked = PlayerCard({ player: basePlayer, onTrack: () => {}, tracked: true });
-  const followingBtn = find(tracked, (el) => el.type === "button");
-  assert.equal(followingBtn?.props.children, "Following ✓");
-});
-
-test("shows a tracked-count only when it's a truthy number, and only alongside the Follow button", () => {
-  const html = renderToStaticMarkup(
-    React.createElement(PlayerCard, { player: basePlayer, onTrack: () => {}, trackedCount: 3 })
-  );
-  assert.match(html, /3 tracking/);
-
-  const zeroHtml = renderToStaticMarkup(
-    React.createElement(PlayerCard, { player: basePlayer, onTrack: () => {}, trackedCount: 0 })
-  );
-  assert.ok(!zeroHtml.includes("tracking"));
-
-  const noTrackHtml = renderToStaticMarkup(
-    React.createElement(PlayerCard, { player: basePlayer, trackedCount: 3 })
-  );
-  assert.ok(!noTrackHtml.includes("tracking"));
 });

@@ -30,7 +30,7 @@ export type CurrentUser = {
   // "pending", "approved", or "rejected" (internal/user.Status*,
   // migration 0007). A valid session alone gets you this far (you can
   // always see your own /api/me), but every real feature — the BCP
-  // proxy, My Events, Stats, follows sync — needs "approved" on the
+  // proxy, My Events, Stats, recent-events sync — needs "approved" on the
   // backend too (see api.RequireApproved), so the frontend gates its
   // own content the same way rather than showing a broken page that
   // 403s on every fetch. See app/components/shared/accessStatusMessage.tsx,

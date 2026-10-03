@@ -111,8 +111,8 @@ function resolveFromPairing(pairing: MyPairing): ResolvedOpponent {
 
 /**
  * "One screen: current round, my table, my opponent" (roadmap #2) — the
- * signed-in account's own current-round pairing, found automatically (no
- * manual follow step) via their linked BCP profile. Read-only display of
+ * signed-in account's own current-round pairing, found automatically via
+ * their linked BCP profile. Read-only display of
  * an already-published BCP pairing, same scope rule as the rest of this
  * app.
  *

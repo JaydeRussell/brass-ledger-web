@@ -11,36 +11,31 @@ tournament.
 The page is split into tabs mirroring BCP's own event page:
 - **Overview**: event name, format, and round status, plus the event
   facts BCP's own Overview tab shows (dates, venue, organizer, circuits,
-  registration counts, and the event description), and a quick glance at
-  whoever you're following (see below).
+  registration counts, and the event description).
+- **Mine**: "Your round" — your current round, table and opponent
+  (including their ITC ranking), found automatically from your linked BCP
+  profile.
 - **Roster**: every team's roster (player names, factions, army list
   links) in a team event, or every player in a singles/individual event —
-  always all of them, no picking who to see. Whoever you're following (see
-  below) sorts to the front and gets a highlighted card, and shows their
+  always all of them, no picking who to see. Each card shows the player's
   already-published BCP ITC ranking (e.g. "ITC #15 · 1465 pts", linking to
-  their full history on BCP) once it's loaded. For events using 40k 11th
+  their full history on BCP) once it has been on screen briefly. For events using 40k 11th
   edition's Force Disposition mission system, each player's disposition
   (Purge, Recon, Priority, T&H, Disruption) shows as a color-coded tag.
-- **Pairings**: browse the full pairings board for any round (every
-  matchup, not just one you're following), plus a round-by-round summary
-  if you are following someone. Completed matchups show their final score,
+- **Pairings**: browse the full pairings board for any round, with your
+  own row highlighted. Completed matchups show their final score,
   exactly as BCP published it. In a team event, click any team-vs-team row
   to expand it into its individual boards (each player on one team against
   their counterpart on the other), fetched only once you actually expand
   that pairing, never for the whole round up front.
 - **Placings**: the event's standings, exactly as BCP has already
   computed and published them (rank plus whatever metrics that event
-  scores by — Wins, Battle Points, SoS, etc.).
+  scores by — Wins, Battle Points, SoS, etc.), with your own row
+  highlighted.
 
 **Search**: a search box narrows down Roster, Pairings, and Placings by
-name (Roster also matches faction) — a plain client-side filter over
+name or faction — a plain client-side filter over
 whatever's already loaded; it never fetches anything on its own.
-
-**Following**: hit "Follow" on any number of team or player cards in the
-Roster tab. A pill per followed team/player shows in the header on every
-tab, each with its own round-by-round pairings summary on the Pairings
-tab. This only ever displays pairing/placing data BCP has already
-published; it never computes or predicts anything.
 
 **Sign in**: "Sign in with Google" (via this app's own backend), reachable
 from the account section at the top of the header's hamburger menu. A new
@@ -58,11 +53,10 @@ fallback) unlocks:
   elsewhere in the app (`/players/[bcpUserId]`) — still requires being
   signed in like every other account page, just not linking your own
   profile, since that player's BCP id is already known from the link.
-- Following and recent events syncing across devices instead of staying
-  per-browser.
+- Recent events syncing across devices instead of staying per-browser.
 
 Every read-only feature above (Overview/Roster/Pairings/Placings,
-Following, Search) works the same whether you're signed in or not.
+Search) works the same whether you're signed in or not.
 
 **This app deliberately does not score, rank, or suggest pairings.**
 Challengers Cup's event pack bans "AI programs, algorithms, or

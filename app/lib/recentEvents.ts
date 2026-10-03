@@ -59,7 +59,7 @@ export function recordRecentEvent(
 /**
  * Decodes a fetch Response as JSON, throwing using the backend's own
  * `{error}` message on a non-ok response — same handling as
- * myEvents.ts's/follows.ts's handleJSONResponse.
+ * myEvents.ts's handleJSONResponse.
  */
 async function handleJSONResponse<T>(res: Response): Promise<T> {
   const text = await res.text();

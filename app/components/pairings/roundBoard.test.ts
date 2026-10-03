@@ -86,7 +86,7 @@ test("the refresh button is enabled while idle and disabled while loading", () =
   assert.match(loadingButton, /\sdisabled=""/);
 });
 
-test("lists every pairing, highlighting followed ones and showing scores", () => {
+test("lists every pairing, highlighting my own and showing scores", () => {
   const entries: BoardPairing[] = [
     {
       id: "b1",
@@ -111,7 +111,7 @@ test("lists every pairing, highlighting followed ones and showing scores", () =>
     },
   ];
   const html = renderToStaticMarkup(
-    React.createElement(RoundBoard, { ...baseProps, entries, followedIds: new Set(["s1"]) })
+    React.createElement(RoundBoard, { ...baseProps, entries, myId: "s1" })
   );
   assert.match(html, /Alice/);
   assert.match(html, /Bob/);
@@ -143,36 +143,25 @@ test("a team-event row (expandable into individual boards) carries aria-expanded
   assert.match(html, /role="button"/);
 });
 
-test("surfaces faction/disposition/list only for the followed side, not every row (roadmap #8)", () => {
+test("colours the score from my side on my row", () => {
   const entries: BoardPairing[] = [
     {
       id: "b1",
-      table: 1,
       side1Id: "s1",
       side1Name: "Alice",
-      side1UserId: "u-alice",
       side2Id: "s2",
       side2Name: "Bob",
-      side2UserId: "u-bob",
       published: true,
-      isDone: false,
+      isDone: true,
       isBye: false,
+      side1Score: 70,
+      side2Score: 30,
     },
   ];
-  const players: Player[] = [
-    { id: "p1", name: "Alice", faction: "Aeldari", bcpUserId: "u-alice" },
-    { id: "p2", name: "Bob", faction: "Necrons", bcpUserId: "u-bob" },
-  ];
-  const html = renderToStaticMarkup(
-    React.createElement(RoundBoard, {
-      ...baseProps,
-      entries,
-      followedIds: new Set(["s1"]),
-      players,
-    })
-  );
-  assert.match(html, /\(Aeldari\)/);
-  assert.ok(!html.includes("(Necrons)"));
+  const asAlice = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, entries, myId: "s1" }));
+  assert.match(asAlice, /text-success-400[^>]*>70–30/);
+  const asBob = renderToStaticMarkup(React.createElement(RoundBoard, { ...baseProps, entries, myId: "s2" }));
+  assert.match(asBob, /text-danger-400[^>]*>70–30/);
 });
 
 test("shows a 'Jump to mine' control only when myId matches a row in this round (roadmap #9)", () => {
