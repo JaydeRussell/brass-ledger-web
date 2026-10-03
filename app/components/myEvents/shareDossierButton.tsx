@@ -67,11 +67,15 @@ export default function ShareDossierButton({ dossier, bcpUserId }: { dossier: Do
     }
   };
 
-  const handleSaveImage = () => {
+  const handleSaveImage = async () => {
     try {
-      downloadShareCardImage(dossier, `${dossier.name.replace(/\s+/g, "-").toLowerCase()}-brass-ledger.png`);
-      logClientEvent("info", "dossier: share image downloaded", { bcpUserId });
-      showToast("Share image downloaded.", "success");
+      const result = await downloadShareCardImage(
+        dossier,
+        `${dossier.name.replace(/\s+/g, "-").toLowerCase()}-brass-ledger.png`
+      );
+      if (result === "cancelled") return;
+      logClientEvent("info", `dossier: share image ${result}`, { bcpUserId });
+      if (result === "downloaded") showToast("Share image downloaded.", "success");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logClientEvent("warn", "dossier: generating share image failed", { error: message });

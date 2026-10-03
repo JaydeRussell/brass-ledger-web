@@ -113,19 +113,38 @@ export function renderShareCardCanvas(dossier: Dossier): HTMLCanvasElement {
   return canvas;
 }
 
-/** Renders the card and triggers a browser download of it as a PNG —
- * the same "no server round-trip" posture as renderShareCardCanvas
- * above. `canvas.toBlob` + a synthetic <a download> click is the
- * standard vanilla approach; no library needed. */
-export function downloadShareCardImage(dossier: Dossier, filename: string): void {
+export type ShareImageResult = "shared" | "downloaded" | "cancelled";
+
+/** Renders the card as a PNG and hands it to the device's share sheet
+ * where the browser can share files (phones: "Save Image", Messages,
+ * …), otherwise downloads it. A download link on a blob in the
+ * installed iPhone app opens the bare image with no way back, which the
+ * share sheet avoids. Resolves once the image has actually been shared
+ * or downloaded. */
+export async function downloadShareCardImage(dossier: Dossier, filename: string): Promise<ShareImageResult> {
   const canvas = renderShareCardCanvas(dossier);
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, "image/png");
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("couldn't render the image");
+
+  const file = new File([blob], filename, { type: "image/png" });
+  if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: `${dossier.name} — Brass Ledger` });
+      return "shared";
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return "cancelled";
+      // NotAllowedError (the tap's activation expired while rendering)
+      // and anything else fall through to a plain download.
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  // Revoking straight after click() can cancel the download in Safari;
+  // give it time to start.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return "downloaded";
 }

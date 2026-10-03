@@ -6,8 +6,8 @@ import { logClientEvent } from "../../lib/clientLog";
  * Mounted once in the root layout. Catches anything the browser itself
  * would otherwise only ever show in devtools — an uncaught exception, a
  * rejected promise nobody handled — and routes it through
- * logClientEvent so it ends up in this app's log file too, not just a
- * console someone happened to have open. Renders nothing.
+ * logClientEvent. Also reloads the page when a lazily loaded chunk fails
+ * because a deploy replaced it (see onPreloadError). Renders nothing.
  */
 export default function ClientErrorLogger() {
   useEffect(() => {
@@ -29,11 +29,31 @@ export default function ClientErrorLogger() {
       });
     };
 
+    // Vite fires this when a dynamically imported chunk can't be loaded,
+    // which after a deploy means the open page still names chunks the new
+    // build no longer has: the nav drawer, Quick search and the feedback
+    // panel would then silently never open. A reload fetches the current
+    // build. At most once per tab session, so a chunk that's genuinely
+    // broken can't cause a reload loop.
+    const onPreloadError = (event: Event) => {
+      logClientEvent("warn", "lazy chunk failed to load", {});
+      try {
+        if (sessionStorage.getItem("reloadedForStaleChunk")) return;
+        sessionStorage.setItem("reloadedForStaleChunk", "1");
+      } catch {
+        return;
+      }
+      event.preventDefault();
+      window.location.reload();
+    };
+
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onUnhandledRejection);
+    window.addEventListener("vite:preloadError", onPreloadError);
     return () => {
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onUnhandledRejection);
+      window.removeEventListener("vite:preloadError", onPreloadError);
     };
   }, []);
 

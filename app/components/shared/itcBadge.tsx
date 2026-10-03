@@ -1,7 +1,6 @@
 "use client";
 import { buildBcpItcProfileUrl, type ItcRanking } from "../../lib/bcp";
 import { itcGradientStyle } from "../../lib/scoreColor";
-import { useViewerItcRanking } from "../../lib/viewerItc";
 
 type ItcBadgeProps = {
   ranking: ItcRanking | null | undefined;
@@ -21,15 +20,12 @@ type ItcBadgeProps = {
  * (undefined while still loading, null once resolved as "no ranking in
  * this league").
  *
- * When the visitor viewing the page is themselves signed in with a BCP
- * profile linked and ranked in this same league (see useViewerItcRanking),
- * the gradient runs relative to *their* ranking instead of the fixed
- * absolute scale — this player reads as "stronger than you" or "weaker
- * than you" rather than just "strong or weak in general." Falls back to
- * the absolute scale automatically otherwise.
+ * The colour reflects this player's own published ranking on a fixed
+ * scale, never a comparison with whoever is viewing: colouring an
+ * opponent "stronger than you" is the kind of matchup judgment the
+ * project's scope rule rules out (see CLAUDE.md).
  */
 export default function ItcBadge({ ranking, bcpUserId, leagueId, title, size = "sm" }: ItcBadgeProps) {
-  const viewerRanking = useViewerItcRanking(leagueId);
   if (!ranking) return null;
 
   // On a narrow screen, a crowded pairing row (opponent name, table,
@@ -49,7 +45,7 @@ export default function ItcBadge({ ranking, bcpUserId, leagueId, title, size = "
       </span>
     </>
   );
-  const { backgroundColor, color } = itcGradientStyle(ranking, viewerRanking);
+  const { backgroundColor, color } = itcGradientStyle(ranking);
   const sizeClasses = size === "xs" ? "px-1.5 py-0.5 text-2xs" : "px-1.5 py-0.5 text-xs";
   const sharedClasses = `inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-white/10 font-medium roomy:min-h-7 ${sizeClasses}`;
 

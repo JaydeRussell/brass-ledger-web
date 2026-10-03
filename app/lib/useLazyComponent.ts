@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type ComponentType } from "react";
+import { logClientEvent } from "./clientLog";
 
 /**
  * Loads a component's module on demand and returns the component once
@@ -32,7 +33,16 @@ export function useLazyComponent<P extends object>(
     if (!shouldLoad || Loaded) return;
     // The extra arrow is React's "store a function value" form — without
     // it setState would treat the component as an updater.
-    void loader().then((m) => setLoaded(() => m.default));
+    loader().then(
+      (m) => setLoaded(() => m.default),
+      // Usually a chunk a deploy has replaced; ClientErrorLogger reloads
+      // the page for that. Logged rather than left as an unhandled
+      // rejection.
+      (err: unknown) =>
+        logClientEvent("warn", "lazy component failed to load", {
+          error: err instanceof Error ? err.message : String(err),
+        })
+    );
   }, [shouldLoad, Loaded, loader]);
 
   return Loaded;

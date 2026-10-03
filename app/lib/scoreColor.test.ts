@@ -125,44 +125,6 @@ test("placing differences matter far more near rank 1 than deep in the field", (
 // the same strength, "danger"-ward when it's stronger than the viewer,
 // and toward the weak end when it's weaker than the viewer — regardless
 // of where either one sits on the fixed absolute scale.
-test("itcGradientStyle colors relative to a given viewerRanking instead of the absolute scale", () => {
-  const viewer = { points: 1000, placing: 500 };
-  const sameAsViewer = itcGradientStyle(viewer, viewer).backgroundColor;
-  const strongerThanViewer = itcGradientStyle({ points: 1400, placing: 50 }, viewer).backgroundColor;
-  const weakerThanViewer = itcGradientStyle({ points: 500, placing: 5000 }, viewer).backgroundColor;
-
-  // A far-stronger opponent should sit closer to the absolute "elite" end
-  // of the scale than someone merely at parity with the viewer does.
-  const eliteAbsolute = itcGradientStyle({ points: 1500, placing: 1 }).backgroundColor;
-  assert.ok(
-    colorDistance(strongerThanViewer, eliteAbsolute) < colorDistance(sameAsViewer, eliteAbsolute),
-    "a much stronger opponent should read closer to the elite end than someone at parity with the viewer"
-  );
-
-  // A far-weaker opponent should sit closer to the absolute weakest end
-  // than someone at parity with the viewer does.
-  const weakestAbsolute = itcGradientStyle({ points: 0 }).backgroundColor;
-  assert.ok(
-    colorDistance(weakerThanViewer, weakestAbsolute) < colorDistance(sameAsViewer, weakestAbsolute),
-    "a much weaker opponent should read closer to the weakest end than someone at parity with the viewer"
-  );
-
-  // Parity with the viewer shouldn't itself land at either extreme.
-  assert.ok(
-    colorDistance(sameAsViewer, eliteAbsolute) > 10 && colorDistance(sameAsViewer, weakestAbsolute) > 10,
-    "someone at parity with the viewer shouldn't read as either extreme"
-  );
-});
-
-test("itcGradientStyle ignores a null/undefined viewerRanking and falls back to the absolute scale", () => {
-  const ranking = { points: 1000, placing: 500 };
-  const withNull = itcGradientStyle(ranking, null);
-  const withUndefined = itcGradientStyle(ranking, undefined);
-  const withOmitted = itcGradientStyle(ranking);
-  assert.deepEqual(withNull, withOmitted);
-  assert.deepEqual(withUndefined, withOmitted);
-});
-
 test("every point of the ITC badge gradient keeps its text at 4.5:1 or better", async () => {
   const { itcRampStyle, relativeLuminance, contrastRatio } = await import("./scoreColor.ts");
   const rgb = (c: string) => {
@@ -176,4 +138,10 @@ test("every point of the ITC badge gradient keeps its text at 4.5:1 or better", 
     worst = Math.min(worst, ratio);
   }
   assert.ok(worst >= 4.5, `worst contrast along the ramp is ${worst.toFixed(2)}:1`);
+});
+
+test("itcGradientStyle has no viewer-relative mode: one ranking always gets one colour", () => {
+  // Colouring an opponent relative to the viewer ("stronger than you") is
+  // the matchup judgment the scope rule rules out.
+  assert.equal(itcGradientStyle.length, 1);
 });

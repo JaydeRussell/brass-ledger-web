@@ -59,8 +59,7 @@ const ITC_GRADIENT_PLACING_FLOOR = 10000;
 
 /**
  * Maps one ranking to a 0 (weakest) .. 1 (strongest) "strength" — the
- * single number both itcGradientStyle and its viewer-relative remap (see
- * relativeToViewer below) actually work in. Prefers `placing` over
+ * single number itcGradientStyle works in. Prefers `placing` over
  * `points` whenever it's known, and needs its own nonlinear (log) curve
  * to do it: raw points cluster tightly in practice (a typical field
  * mostly sits within a few hundred points of each other), so a plain
@@ -82,24 +81,6 @@ function rankingStrength(ranking: { points: number; placing?: number }): number 
   return Math.min(1, Math.max(0, ranking.points / ITC_GRADIENT_MAX_POINTS));
 }
 
-/**
- * Reshapes a strength value (see rankingStrength above) around the
- * signed-in viewer's own strength instead of the fixed 0..1 scale:
- * `viewerStrength` becomes the ramp's exact midpoint, everything weaker
- * than the viewer fills the lower half, everything stronger fills the
- * upper half. That way a player only slightly stronger or weaker than
- * the viewer still shows a visibly different color regardless of how
- * strong the field around them is overall — "would probably beat me"
- * always leans toward the danger end and "I'd probably beat them" always
- * leans toward the neutral end, whether this is an elite pod or a
- * beginner one.
- */
-function relativeToViewer(strength: number, viewerStrength: number): number {
-  if (strength <= viewerStrength) {
-    return viewerStrength <= 0 ? 0.5 : 0.5 * (strength / viewerStrength);
-  }
-  return viewerStrength >= 1 ? 0.5 : 0.5 + (0.5 * (strength - viewerStrength)) / (1 - viewerStrength);
-}
 
 type OklchStop = { l: number; c: number; h: number };
 
@@ -181,23 +162,14 @@ function interpolateGradient(stops: OklchStop[], t: number): { r: number; g: num
  * A blue-through-green-and-yellow-and-orange-to-red background/text pair
  * for one ITC ranking (see GRADIENT_STOPS and rankingStrength above).
  *
- * Pass `viewerRanking` — the signed-in visitor's own ranking in this same
- * league, when one's known — to color `ranking` *relative to them*
- * instead of on the fixed absolute scale (see relativeToViewer above).
- * Omit it (or pass null/undefined — the "not signed in", "no linked BCP
- * profile", and "not this league" cases all collapse to the same thing)
- * to fall back to today's plain absolute scale.
- *
- * The text color flips from dark to light partway through so the label
- * stays readable as the background darkens.
+ * Always the fixed absolute scale: a property of the one player, never a
+ * comparison with the viewer. Text is black or white, whichever
+ * contrasts more (see readableTextOn).
  */
 export function itcGradientStyle(
-  ranking: { points: number; placing?: number },
-  viewerRanking?: { points: number; placing?: number } | null
+  ranking: { points: number; placing?: number }
 ): { backgroundColor: string; color: string } {
-  const strength = rankingStrength(ranking);
-  const t = viewerRanking ? relativeToViewer(strength, rankingStrength(viewerRanking)) : strength;
-  return itcRampStyle(t);
+  return itcRampStyle(rankingStrength(ranking));
 }
 
 /** The badge colours at position t (0–1) along the ITC gradient. */

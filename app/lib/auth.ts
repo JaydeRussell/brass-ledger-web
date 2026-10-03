@@ -106,16 +106,12 @@ const CurrentUserContext = createContext<CurrentUserState | null>(null);
 /**
  * Owns the single /api/me lookup for the whole page. Mounted once in
  * app/layout.tsx, outside every other provider that needs to know who's
- * signed in (ViewerItcProvider), so there is exactly one lookup per page
- * load rather than one per consumer.
+ * signed in, so there is exactly one lookup per page load rather than
+ * one per consumer.
  *
- * This used to be per-caller state — every consumer (the nav drawer, the
- * command palette, the feedback widget, ViewerItcProvider, and the routed
- * page) ran its own fetch-on-mount, so a single page load fired six
- * identical /api/me requests and twelve /api/log writes. Sharing also
- * removes the reason accountSection.tsx had to force a full page reload
- * after sign-out, and the reason linking a BCP profile left the drawer's
- * copy of `bcpUserId` stale.
+ * Sharing one state also means sign-out and BCP-profile linking update
+ * every consumer (the nav drawer, command palette, feedback widget and
+ * the routed page) at once.
  */
 export function CurrentUserProvider({
   children,
@@ -212,9 +208,8 @@ export function CurrentUserProvider({
 // "nobody's signed in, and we haven't checked yet" state every consumer
 // already handles as its own first render. Deliberately a fallback rather
 // than a throw (unlike useNav), because this project's DOM-free tests
-// render providers like ViewerItcProvider in isolation and assert exactly
-// this pre-check state — see app/lib/viewerItc.test.ts. A module-level
-// constant so its identity is stable across renders.
+// render consumers in isolation and assert exactly this pre-check state.
+// A module-level constant so its identity is stable across renders.
 const NO_PROVIDER_STATE: CurrentUserState = {
   user: null,
   checked: false,

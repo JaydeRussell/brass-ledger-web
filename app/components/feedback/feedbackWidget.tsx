@@ -4,7 +4,12 @@ import { useLazyComponent } from "../../lib/useLazyComponent";
 
 // Memoized so repeated opens share one promise.
 let panelModule: Promise<typeof import("./feedbackPanel")> | null = null;
-const loadPanel = () => (panelModule ??= import("./feedbackPanel"));
+const loadPanel = () =>
+  (panelModule ??= import("./feedbackPanel").catch((err: unknown) => {
+    // Forget the failed attempt so the next open tries again.
+    panelModule = null;
+    throw err;
+  }));
 
 /**
  * A floating "Feedback" pill (bottom-right, every page) that opens a

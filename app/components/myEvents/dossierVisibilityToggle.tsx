@@ -67,7 +67,10 @@ export default function DossierVisibilityToggle({
               .
             </>
           ) : (
-            "Hidden — only you can see this."
+            // Hiding turns off the public link; the results themselves come
+            // from BCP, where they stay public, and signed-in users can still
+            // look them up by player.
+            "Hidden — your public link is off. Your results are still public on Best Coast Pairings."
           )}
         </p>
         {error && (

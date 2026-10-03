@@ -112,8 +112,7 @@ test("signOut: POSTs with credentials included", async () => {
 // CurrentUserProvider does its /api/me lookup in an effect, and effects
 // never run under renderStatic (see testUtils.ts) — so these cover the
 // pre-check state every real page briefly renders, plus the deliberate
-// no-provider fallback that lets a provider like ViewerItcProvider be
-// rendered in isolation (see viewerItc.test.ts).
+// no-provider fallback that lets a consumer be rendered in isolation.
 function Probe() {
   const { user, checked, authError } = useCurrentUser();
   return React.createElement("span", null, `${user === null ? "null" : "user"}:${checked}:${authError}`);

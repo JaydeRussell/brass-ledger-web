@@ -28,9 +28,13 @@ jobs:
       - run: npm run lint
       - run: npm test
       # Sanity-checks the plain (non-Cloudflare) Next.js build still
-      # works — the actual deploy build below is vinext's, but this is
-      # the cheapest way to catch a regular Next.js regression too.
+      # works, which also typechecks.
       - run: npm run build
+      # The build production actually deploys (see deploy.yml). Without
+      # this, a vinext-only failure first shows up mid-deploy, after merge.
+      - run: npm run build:vinext
+        env:
+          NEXT_PUBLIC_BACKEND_URL: https://api.brass-ledger.app
       # Gated at "high" rather than every advisory: a moderate/low finding
       # in some transitive build-tool dependency (eslint's own toolchain,
       # tailwindcss's browserslist, etc.) shows up often in this ecosystem

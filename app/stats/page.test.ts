@@ -152,5 +152,5 @@ test("shows the dossier-visibility toggle, reflecting the account's current sett
   };
   const html = renderPage();
   assert.match(html, /Public dossier/);
-  assert.match(html, /Hidden — only you can see this/);
+  assert.match(html, /Hidden — your public link is off/);
 });
