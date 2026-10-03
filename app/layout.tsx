@@ -15,7 +15,6 @@ import { CurrentUserProvider } from "./lib/auth";
 import { resolveCurrentUserOnServer } from "./lib/serverAuth";
 import AccentThemeSync from "./components/shared/accentThemeSync";
 import PopupSignInBridge from "./components/shared/popupSignInBridge";
-import { ViewerItcProvider } from "./lib/viewerItc";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -114,18 +113,16 @@ export default async function RootLayout({
         <CurrentUserProvider initialUser={initialUser}>
           <AccentThemeSync />
           <ToastProvider>
-            <ViewerItcProvider>
-              <CommandPaletteProvider>
-                <NavProvider>
-                  <NavDrawer />
-                  {children}
-                  <Footer />
-                  <FeedbackWidget />
-                </NavProvider>
-                <CommandPalette />
-                <BottomTabBar />
-              </CommandPaletteProvider>
-            </ViewerItcProvider>
+            <CommandPaletteProvider>
+              <NavProvider>
+                <NavDrawer />
+                {children}
+                <Footer />
+                <FeedbackWidget />
+              </NavProvider>
+              <CommandPalette />
+              <BottomTabBar />
+            </CommandPaletteProvider>
             <ToastViewport />
           </ToastProvider>
         </CurrentUserProvider>

@@ -4,10 +4,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ItcBadge from "./itcBadge.tsx";
 
-// ItcBadge calls useViewerItcRanking() (a hook), so it's tested via real
-// SSR rather than direct-call — see app/lib/testUtils.ts. Every case
-// below exercises the "no viewer ranking known yet" default, since that
-// hook's own fetch effect doesn't run under SSR.
+// Tested via real SSR, same as the rest of this app's components — see
+// app/lib/testUtils.ts.
 
 test("renders nothing while a ranking hasn't resolved yet or is null", () => {
   assert.equal(renderToStaticMarkup(React.createElement(ItcBadge, { ranking: undefined, title: "t" })), "");
