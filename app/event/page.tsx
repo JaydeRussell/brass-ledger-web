@@ -232,7 +232,12 @@ function HomeContent() {
       },
       { push = false }: { push?: boolean } = {}
     ) => {
-      const params = new URLSearchParams(searchParams.toString());
+      // Read from the live URL rather than this render's searchParams: the
+      // debounced search write below runs up to 300ms later, and a tab
+      // clicked in between would otherwise be undone.
+      const params = new URLSearchParams(
+        typeof window === "undefined" ? searchParams.toString() : window.location.search
+      );
       if ("tab" in patch) {
         if (!patch.tab || patch.tab === "overview") params.delete("tab");
         else params.set("tab", patch.tab);
@@ -308,6 +313,12 @@ function HomeContent() {
       searchDebounceRef.current = setTimeout(() => updateQuery({ q }), 300);
     },
     [updateQuery]
+  );
+  React.useEffect(
+    () => () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    },
+    []
   );
 
   const [eventInfo, setEventInfo] = React.useState<EventInfo | null>(null);
