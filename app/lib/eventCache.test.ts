@@ -9,10 +9,17 @@ import type { CachedEventSnapshot } from "./eventCache.ts";
 // recentEvents.ts's fake didn't need but saveCachedEvent's eviction does.
 class FakeStorage {
   private store = new Map<string, string>();
+  // Most snapshots storage will hold before setItem throws, like a full
+  // localStorage. Infinity unless a test sets it.
+  snapshotQuota = Infinity;
   getItem(key: string): string | null {
     return this.store.has(key) ? this.store.get(key)! : null;
   }
   setItem(key: string, value: string): void {
+    const snapshots = [...this.store.keys()].filter((k) => k.startsWith("bcp-event-cache:") && k !== key).length;
+    if (key.startsWith("bcp-event-cache:") && snapshots >= this.snapshotQuota) {
+      throw new DOMException("quota", "QuotaExceededError");
+    }
     this.store.set(key, value);
   }
   removeItem(key: string): void {
@@ -20,6 +27,7 @@ class FakeStorage {
   }
   clear(): void {
     this.store.clear();
+    this.snapshotQuota = Infinity;
   }
 }
 
@@ -97,4 +105,22 @@ test("formatRelativeTime", () => {
   assert.equal(formatRelativeTime(now - 60 * 1000), "1 minute ago");
   assert.equal(formatRelativeTime(now - 2 * 60 * 60 * 1000), "2 hours ago");
   assert.equal(formatRelativeTime(now - 25 * 60 * 60 * 1000), "1 day ago");
+});
+
+test("a full storage evicts the oldest snapshots until the new one fits", () => {
+  fakeLocalStorage.clear();
+  for (const id of ["a", "b", "c"]) saveCachedEvent(id, snapshot({ id }));
+  fakeLocalStorage.snapshotQuota = 2;
+  saveCachedEvent("d", snapshot({ id: "d" }));
+  assert.equal(loadCachedEvent("d")?.eventInfo.id, "d");
+  assert.equal(loadCachedEvent("a"), null, "the oldest goes first");
+  assert.equal(loadCachedEvent("c")?.eventInfo.id, "c", "the newest stays");
+});
+
+test("a snapshot that can never fit drops the old copy rather than leave it indexed", () => {
+  fakeLocalStorage.clear();
+  saveCachedEvent("a", snapshot({ id: "a", name: "old" }));
+  fakeLocalStorage.snapshotQuota = 0;
+  saveCachedEvent("a", snapshot({ id: "a", name: "new" }));
+  assert.equal(loadCachedEvent("a"), null);
 });
