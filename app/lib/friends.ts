@@ -2,7 +2,7 @@
 // internal/api/friends.go in the brass-ledger-api repo): sending/
 // accepting/declining friend requests, the accepted-friends list, and a
 // friend's own events. Same credentials/error-decoding shape as
-// myStats.ts/follows.ts — duplicated here rather than shared, matching
+// myStats.ts — duplicated here rather than shared, matching
 // this app's established app/lib/*.ts convention.
 
 import type { MyEvents } from "./myEvents";

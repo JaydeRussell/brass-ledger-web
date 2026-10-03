@@ -65,7 +65,7 @@ ToolSearch("select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome
   from the moment they're first called on a tab, so calling them
   afterward misses everything that already happened.
 - A signed-in Google account, already linked to a real BCP profile, is
-  usable in this stack — most real features (My Events, follows, the
+  usable in this stack — most real features (My Events, "Your round", the
   mission-matchup panel, the feedback widget) need it to be meaningfully
   exercised.
 - Close any tab you opened once you're done (`tabs_close_mcp`) — don't

@@ -7,7 +7,7 @@
 // Like app/lib/myEvents.ts (and unlike bcp.ts's plain unauthenticated
 // reads), session state lives in an httpOnly cookie, so this request
 // needs credentials: "include" — same small getJSON duplicated here as
-// in myEvents.ts/follows.ts, for the same reason noted there.
+// in myEvents.ts, for the same reason noted there.
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 

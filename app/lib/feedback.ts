@@ -3,7 +3,7 @@
 // or suggestion submitted through the floating feedback widget
 // (app/components/feedback/feedbackWidget.tsx).
 //
-// Unlike auth.ts/follows.ts/myEvents.ts, this route needs no session —
+// Unlike auth.ts/myEvents.ts, this route needs no session —
 // anyone can submit, signed in or not. `credentials: "include"` is still
 // sent, though: if the browser happens to have a session cookie, the
 // backend attaches that account's name/email to the admin alert for
@@ -24,7 +24,7 @@ export type FeedbackSubmission = {
 
 /** Submits a bug report or suggestion. Throws using the backend's own
  * `{error}` message on a non-ok response, same handling as this
- * project's other backend clients (see e.g. follows.ts). */
+ * project's other backend clients (see e.g. recentEvents.ts). */
 export async function submitFeedback(submission: FeedbackSubmission): Promise<void> {
   const res = await fetch(`${BACKEND_API_BASE}/api/feedback`, {
     method: "POST",

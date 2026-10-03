@@ -16,11 +16,10 @@ type TabBarProps = {
 /**
  * Originally a straight mirror of BCP's own event-page tabs (Overview /
  * Roster / Pairings / Placings), so the app felt familiar to anyone
- * who'd used bestcoastpairings.com directly. Overview grew crowded once
- * "Your round," "Your team," and the followed-teams/players list all
- * piled up there, so that personalized content split out into its own
- * Mine tab (always shown) and Team tab (shown only when relevant) —
- * Overview itself is back to just the event facts BCP's own tab shows.
+ * who'd used bestcoastpairings.com directly. Personalized content lives
+ * in its own Mine tab ("Your round", always shown) and Team tab (shown
+ * only when relevant), keeping Overview to the event facts BCP's own tab
+ * shows.
  *
  * Built on ui/tabs.tsx's Radix-backed Tabs primitive (real roving-tabindex
  * keyboard nav — arrow keys move between tabs, Home/End jump to the

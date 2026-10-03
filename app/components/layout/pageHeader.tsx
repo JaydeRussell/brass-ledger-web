@@ -12,7 +12,7 @@ type PageHeaderProps = {
   // behavior of dropping its tagline on narrow screens once the header
   // also has to make room for `actions`.
   hideSubtitleOnMobile?: boolean;
-  // Right-aligned content (e.g. the home page's following pills + event
+  // Right-aligned content (e.g. the event page's refresh button and
   // settings gear). Once present, the header switches from a single
   // `items-center` row to a wrapping `justify-between` layout, since
   // title + actions no longer reliably fit one line on a phone.

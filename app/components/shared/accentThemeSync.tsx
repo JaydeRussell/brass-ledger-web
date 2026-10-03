@@ -32,7 +32,7 @@ import { logClientEvent } from "../../lib/clientLog";
  * choice differs from (or should be seeded from) the local one.
  *
  * "server wins once signed in" is the same rule this app uses for
- * follows/recent-events, with one deliberate addition: if the account
+ * recent events, with one deliberate addition: if the account
  * has never actually set a preference (still at the backend's own
  * "brass" default) but this device already has a real, different local
  * choice, that local choice is pushed up instead of being silently

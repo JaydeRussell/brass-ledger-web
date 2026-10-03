@@ -16,7 +16,8 @@ type PlacingsTableProps = {
   entries: PlacingEntry[];
   loading: boolean;
   error: string | null;
-  followedIds?: Set<string>;
+  // My own row's id (same id space as entry.id), highlighted when present.
+  myId?: string;
   // Overrides the "nothing published yet" message below — used when
   // `entries` came back empty because a search filter matched nothing,
   // rather than because BCP has no placings published yet.
@@ -291,7 +292,7 @@ export default function PlacingsTable({
   entries,
   loading,
   error,
-  followedIds,
+  myId,
   emptyMessage,
   onRefresh,
   rosterByTeamId,
@@ -399,7 +400,7 @@ export default function PlacingsTable({
                     hiddenMetricNames={hiddenMetricNames}
                     recordMetricName={recordMetricName}
                     roundScores={roundScoresById?.get(entry.id)}
-                    highlighted={followedIds?.has(entry.id) ?? false}
+                    highlighted={myId !== undefined && entry.id === myId}
                     roster={rosterByTeamId?.get(entry.id)}
                     badge={badges.get(entry.id)}
                   />

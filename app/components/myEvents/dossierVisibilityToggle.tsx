@@ -22,7 +22,7 @@ type DossierVisibilityToggleProps = {
  *
  * Deliberately awaits the backend confirmation before flipping the
  * switch's own displayed state (rather than optimistic-update-then-
- * reconcile, the pattern follows.ts's sync uses) — this is a privacy
+ * reconcile) — this is a privacy
  * setting, not a "did my click register" convenience, so a failure
  * should leave the visible state exactly as it was rather than briefly
  * showing "public" when the save didn't actually take.

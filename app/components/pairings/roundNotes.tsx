@@ -18,13 +18,10 @@ type Status = "idle" | "loading" | "saving" | "saved" | "error";
  * "Your round" card — the one place in this app that's already about
  * *your* specific round, not a general pairings/roster browse. Synced to
  * the signed-in account (internal/api/sync.go's round-note routes), same
- * cross-device pattern as follows/recent-events, but deliberately
- * signed-in-only: unlike follows/recentEvents (which migrated an
- * existing localStorage feature to also sync), there's no prior
- * guest-mode version of this to keep parity with, and adding one now
- * would double the state-merging logic for a feature whose whole value
- * proposition (notes that follow you across devices) a signed-out guest
- * can't use anyway. Renders nothing for a signed-out or not-yet-approved
+ * cross-device pattern as recent events, but signed-in-only: a guest-mode
+ * version would double the state-merging logic for a feature whose whole
+ * value (notes that follow you across devices) a signed-out guest can't
+ * use anyway. Renders nothing for a signed-out or not-yet-approved
  * visitor.
  *
  * Collapsed by default (a `useState` toggle, not a hookless `<details>`

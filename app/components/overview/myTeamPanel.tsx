@@ -171,10 +171,8 @@ function TeammateRow({ entry, players, isSelf }: { entry: TeammateEntry; players
  * round-by-round record (the same score strip Placings shows — see
  * roundScoreStrip.tsx), and current round's opponent/table at a glance,
  * expandable to every earlier round's own opponent/table. Deliberately
- * spare otherwise — a first pass showed everything MyPairings shows per
- * round (faction, list link, both sides' ITC), which reads fine for one
- * followed player but turns into a wall of text across a dozen
- * teammates; this keeps only what you actually skim for (who, where,
+ * spare otherwise — per-round faction, list link and both sides' ITC
+ * turn into a wall of text across a dozen teammates; this keeps only what you actually skim for (who, where,
  * how it's gone overall), leaving the rest a click away on each name.
  * Purely a display of already-published BCP data, same scope as
  * MyPairings/Placings — nothing here is computed.
