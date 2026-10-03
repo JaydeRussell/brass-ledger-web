@@ -1268,6 +1268,7 @@ function HomeContent() {
                 teams={teams}
                 itcLeagueId={itcLeagueId}
                 itcRankings={itcRankings}
+                onRequestItc={requestItcRanking}
                 selectedA={compareTeamA}
                 selectedB={compareTeamB}
                 onSelectA={(team) => updateQuery({ teamA: team })}
@@ -1278,6 +1279,7 @@ function HomeContent() {
                 players={sortPlayers(players, "name")}
                 itcLeagueId={itcLeagueId}
                 itcRankings={itcRankings}
+                onRequestItc={requestItcRanking}
                 selectedA={comparePlayerA}
                 selectedB={comparePlayerB}
                 onSelectA={(id) => updateQuery({ playerA: id })}
