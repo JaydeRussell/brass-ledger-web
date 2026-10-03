@@ -76,9 +76,9 @@ const ACCENT_INIT_SCRIPT = `(function(){try{var a=localStorage.getItem("accentTh
 // that module here breaks the build) for the "Reduce motion" preference.
 const REDUCE_MOTION_INIT_SCRIPT = `(function(){try{if(localStorage.getItem("reduceMotion")==="1")document.documentElement.setAttribute("data-reduce-motion","true");}catch(e){}})();`;
 
-// Same constraint again, for the text size and higher-contrast
+// Same constraint again, for the text size, density and higher-contrast
 // preferences — a copy of lib/displayPrefs.ts's DISPLAY_PREFS_INIT_SCRIPT.
-const DISPLAY_PREFS_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=localStorage.getItem("textSize");if(s==="sm"||s==="lg"||s==="xl")d.setAttribute("data-text-size",s);if(localStorage.getItem("highContrast")==="1")d.setAttribute("data-contrast","more");}catch(e){}})();`;
+const DISPLAY_PREFS_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=localStorage.getItem("textSize");if(s==="sm"||s==="lg"||s==="xl")d.setAttribute("data-text-size",s);var n=localStorage.getItem("density");if(n==="compact"||n==="comfortable")d.setAttribute("data-density",n);if(localStorage.getItem("highContrast")==="1")d.setAttribute("data-contrast","more");}catch(e){}})();`;
 
 export default async function RootLayout({
   children,
@@ -99,7 +99,7 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: ACCENT_INIT_SCRIPT }} />
         {/* Same reasoning, for the "Reduce motion" preference — see lib/motionPrefs.ts. */}
         <script dangerouslySetInnerHTML={{ __html: REDUCE_MOTION_INIT_SCRIPT }} />
-        {/* Same reasoning, for text size and higher contrast — see lib/displayPrefs.ts. */}
+        {/* Same reasoning, for text size, density and higher contrast — see lib/displayPrefs.ts. */}
         <script dangerouslySetInnerHTML={{ __html: DISPLAY_PREFS_INIT_SCRIPT }} />
         {/* Scales the root font size with the device's own text size (Chrome 146+). */}
         <meta name="text-scale" content="scale" />

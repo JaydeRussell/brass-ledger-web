@@ -1,4 +1,4 @@
-// In-app text size and higher-contrast preferences. Same shape as
+// In-app text size, density and higher-contrast preferences. Same shape as
 // lib/motionPrefs.ts: a data-* attribute on <html>, kept in localStorage
 // per device (the size you want on a phone isn't the one you want on a
 // laptop) and applied by an inline <head> script before first paint.
@@ -17,11 +17,26 @@ export const TEXT_SIZES: { value: TextSize; label: string; scale: number }[] = [
   { value: "xl", label: "Larger", scale: 1.3 },
 ];
 
+export type Density = "compact" | "default" | "comfortable";
+
+// Multiplies every spacing and control size. Compact stops at 0.875 so the
+// smallest controls (28px) stay above the 24px minimum tap target.
+export const DENSITIES: { value: Density; label: string; scale: number }[] = [
+  { value: "compact", label: "Compact", scale: 0.875 },
+  { value: "default", label: "Default", scale: 1 },
+  { value: "comfortable", label: "Roomy", scale: 1.125 },
+];
+
 const TEXT_SIZE_KEY = "textSize";
+const DENSITY_KEY = "density";
 const CONTRAST_KEY = "highContrast";
 
 export function isTextSize(value: string | null): value is TextSize {
   return TEXT_SIZES.some((s) => s.value === value);
+}
+
+export function isDensity(value: string | null): value is Density {
+  return DENSITIES.some((d) => d.value === value);
 }
 
 function read(key: string): string | null {
@@ -49,6 +64,13 @@ export function applyTextSize(size: TextSize) {
   write(TEXT_SIZE_KEY, size);
 }
 
+export function applyDensity(density: Density) {
+  if (typeof document === "undefined") return;
+  if (density === "default") document.documentElement.removeAttribute("data-density");
+  else document.documentElement.setAttribute("data-density", density);
+  write(DENSITY_KEY, density);
+}
+
 export function applyHighContrast(on: boolean) {
   if (typeof document === "undefined") return;
   if (on) document.documentElement.setAttribute("data-contrast", "more");
@@ -58,7 +80,7 @@ export function applyHighContrast(on: boolean) {
 
 /** Run synchronously in <head> (see layout.tsx, which keeps its own copy:
  * a Server Component can't import this hook module). */
-export const DISPLAY_PREFS_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=localStorage.getItem("${TEXT_SIZE_KEY}");if(s==="sm"||s==="lg"||s==="xl")d.setAttribute("data-text-size",s);if(localStorage.getItem("${CONTRAST_KEY}")==="1")d.setAttribute("data-contrast","more");}catch(e){}})();`;
+export const DISPLAY_PREFS_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=localStorage.getItem("${TEXT_SIZE_KEY}");if(s==="sm"||s==="lg"||s==="xl")d.setAttribute("data-text-size",s);var n=localStorage.getItem("${DENSITY_KEY}");if(n==="compact"||n==="comfortable")d.setAttribute("data-density",n);if(localStorage.getItem("${CONTRAST_KEY}")==="1")d.setAttribute("data-contrast","more");}catch(e){}})();`;
 
 /** Current preferences plus setters that apply them immediately. Start at
  * the defaults (what a server render sees) and sync to the stored values
@@ -66,16 +88,21 @@ export const DISPLAY_PREFS_INIT_SCRIPT = `(function(){try{var d=document.documen
 export function useDisplayPrefs(): {
   textSize: TextSize;
   setTextSize: (size: TextSize) => void;
+  density: Density;
+  setDensity: (density: Density) => void;
   highContrast: boolean;
   setHighContrast: (on: boolean) => void;
 } {
   const [textSize, setTextSizeState] = useState<TextSize>("md");
+  const [density, setDensityState] = useState<Density>("default");
   const [highContrast, setHighContrastState] = useState(false);
 
   useEffect(() => {
     Promise.resolve().then(() => {
       const stored = read(TEXT_SIZE_KEY);
       setTextSizeState(isTextSize(stored) ? stored : "md");
+      const storedDensity = read(DENSITY_KEY);
+      setDensityState(isDensity(storedDensity) ? storedDensity : "default");
       setHighContrastState(read(CONTRAST_KEY) === "1");
     });
   }, []);
@@ -85,6 +112,11 @@ export function useDisplayPrefs(): {
     setTextSize: (size) => {
       setTextSizeState(size);
       applyTextSize(size);
+    },
+    density,
+    setDensity: (d) => {
+      setDensityState(d);
+      applyDensity(d);
     },
     highContrast,
     setHighContrast: (on) => {

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { DISPLAY_PREFS_INIT_SCRIPT, TEXT_SIZES, isTextSize } from "./displayPrefs.ts";
+import { DENSITIES, DISPLAY_PREFS_INIT_SCRIPT, TEXT_SIZES, isDensity, isTextSize } from "./displayPrefs.ts";
 
 test("layout.tsx's inline script is an exact copy of DISPLAY_PREFS_INIT_SCRIPT", () => {
   const layout = readFileSync(new URL("../layout.tsx", import.meta.url), "utf8");
@@ -28,4 +28,17 @@ test("recognises only the known text sizes", () => {
   assert.ok(isTextSize("lg"));
   assert.ok(!isTextSize("huge"));
   assert.ok(!isTextSize(null));
+});
+
+test("the init script and globals.css cover every non-default density, matching DENSITIES", () => {
+  const css = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
+  for (const d of DENSITIES.filter((x) => x.value !== "default")) {
+    assert.ok(DISPLAY_PREFS_INIT_SCRIPT.includes(`n==="${d.value}"`));
+    assert.match(css, new RegExp(`data-density="${d.value}"\\]\\s*\\{\\s*--density:\\s*${d.scale};`));
+  }
+});
+
+test("recognises only the known densities", () => {
+  assert.ok(isDensity("compact"));
+  assert.ok(!isDensity("tiny"));
 });

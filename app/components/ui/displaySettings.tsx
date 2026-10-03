@@ -1,13 +1,12 @@
 "use client";
-import { TEXT_SIZES, useDisplayPrefs } from "../../lib/displayPrefs";
+import { DENSITIES, TEXT_SIZES, useDisplayPrefs } from "../../lib/displayPrefs";
 
 /**
- * Text size (four steps, each shown at its own size) and a Higher
- * contrast switch, for the nav drawer's settings area next to the accent
- * theme and Reduce motion.
+ * Text size (four steps, each shown at its own size), Density and a
+ * Higher contrast switch, for the nav drawer's Display section.
  */
 export default function DisplaySettings() {
-  const { textSize, setTextSize, highContrast, setHighContrast } = useDisplayPrefs();
+  const { textSize, setTextSize, density, setDensity, highContrast, setHighContrast } = useDisplayPrefs();
 
   return (
     <div className="flex flex-col gap-2 px-1">
@@ -36,6 +35,33 @@ export default function DisplaySettings() {
               style={{ fontSize: `${Math.round(12 * size.scale)}px` }}
             >
               A
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span id="density-label" className="text-xs text-text-secondary">
+          Density
+        </span>
+        <div
+          role="radiogroup"
+          aria-labelledby="density-label"
+          className="flex overflow-hidden rounded-md border border-surface-border"
+        >
+          {DENSITIES.map((d) => (
+            <button
+              key={d.value}
+              type="button"
+              role="radio"
+              aria-checked={density === d.value}
+              onClick={() => setDensity(d.value)}
+              className={`px-2 py-1 text-2xs font-medium ${
+                density === d.value
+                  ? "bg-brass-500/15 text-brass-400"
+                  : "text-text-secondary hover:bg-surface-2"
+              }`}
+            >
+              {d.label}
             </button>
           ))}
         </div>

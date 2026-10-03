@@ -218,11 +218,12 @@
 
 /* Text sizes, scaled by the in-app Text size setting (--text-scale) on
    top of the root font size, which follows the device's own text size.
-   Spacing scales only with the device size, not the in-app setting.
+   Spacing (which in Tailwind also sets control sizes) scales with the
+   device size and the in-app Density setting, not with Text size.
    --text-3xs/--text-2xs replace the fixed 10px/11px labels so they scale
    too. Line heights stay Tailwind's ratios. */
 @theme {
-  --spacing: calc(0.25rem * var(--os-text-normalize));
+  --spacing: calc(0.25rem * var(--os-text-normalize) * var(--density));
   --text-3xs: calc(0.625rem * var(--text-scale));
   --text-3xs--line-height: calc(1 / 0.625);
   --text-2xs: calc(0.6875rem * var(--text-scale));
@@ -241,6 +242,7 @@
      16px everything was designed at. */
   --os-text-normalize: 1;
   --app-text-scale: 1;
+  --density: 1;
   --text-scale: calc(var(--app-text-scale) * var(--os-text-normalize));
 }
 :root[data-text-size="sm"] {
@@ -251,6 +253,12 @@
 }
 :root[data-text-size="xl"] {
   --app-text-scale: 1.3;
+}
+:root[data-density="compact"] {
+  --density: 0.875;
+}
+:root[data-density="comfortable"] {
+  --density: 1.125;
 }
 
 /* iOS Safari and home-screen apps: follow Dynamic Type (Settings >
