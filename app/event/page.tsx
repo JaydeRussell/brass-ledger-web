@@ -67,7 +67,7 @@ const ITC_LOOKUP_CONCURRENCY = 3;
 // from BCP. It does not score, rank, or suggest pairings. Challengers Cup's
 // event pack explicitly bans "AI programs, algorithms, or methodology...
 // for the pairings process" — that's broader than just AI, so no
-// matchup-scoring or pairing-suggestion feature should be added back into
+// matchup-scoring or pairing-suggestion feature should be added to
 // this app, even without any AI involved. "My pairings" and "Placings"
 // only ever display decisions/results BCP has already published, never
 // anything this app computed. This holds at a team level too, not just
@@ -76,9 +76,9 @@ const ITC_LOOKUP_CONCURRENCY = 3;
 // team-aggregate computed comparison could feed that in-progress human
 // decision. Plainly showing two already-published numbers side by side
 // (no framing, no "favored" label, no color tied to which is higher)
-// stays fine — see the backend's internal/bcp/types.go for the full
-// reasoning, settled 2026-09-12 after a "favored team" indicator was
-// proposed and declined (see this repo's ROADMAP.md).
+// stays fine. A "favored team" indicator is out for the same reason: it
+// is a computed judgment about a matchup. See the backend's
+// internal/bcp/types.go for the full reasoning.
 
 const EVENT_ID_STORAGE_KEY = "bcp-event-id";
 

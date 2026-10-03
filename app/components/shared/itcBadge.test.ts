@@ -43,7 +43,7 @@ test("renders a link to the BCP profile when bcpUserId is given, scoped to the l
   assert.match(html, /title="View X&#x27;s history"/);
 });
 
-test("carries both a placing-only compact label and the full label, toggled responsively (roadmap #8)", () => {
+test("carries both a placing-only compact label and the full label, toggled responsively", () => {
   const html = renderToStaticMarkup(
     React.createElement(ItcBadge, { ranking: { points: 1465.4, placing: 15 }, title: "t" })
   );

@@ -29,20 +29,12 @@ export function buildShareText(dossier: Dossier, url: string): string {
  * Copies a plain-text summary of this dossier (see buildShareText) plus
  * its own shareable URL to the clipboard — the "shareable result" this
  * app can offer without becoming its own OG-image-generation service.
- * next/og's ImageResponse was considered for a branded card image
- * instead (see the earlier concept mockup), but generating one server-
- * side means this app's Next.js server calling brass-ledger-api itself
- * for the first time — every other request today goes straight from the
- * browser, with no server-side fetching anywhere — which in this
- * Docker Compose stack means a different, container-network hostname
- * than the browser-facing NEXT_PUBLIC_BACKEND_URL this app's clients
- * already use (see app/lib/*.ts). That's a deploy-config decision
- * (whether/how a server-reachable backend URL is wired up in
- * production), not something to introduce silently as part of this
- * feature. The "Save image" button below sidesteps that entirely
- * instead — lib/shareCard.ts renders the same summary as a downloadable
- * PNG with the native Canvas API, client-side, from data already fetched
- * to render this page.
+ * The "Save image" button renders the same summary as a downloadable
+ * PNG client-side (lib/shareCard.ts, native Canvas API) from data already
+ * fetched for this page. Image generation stays in the browser because
+ * every request goes straight from the browser to brass-ledger-api; a
+ * server-rendered image would need the Next.js server to reach the API
+ * on its own, a separate deploy-config decision.
  */
 export default function ShareDossierButton({ dossier, bcpUserId }: { dossier: Dossier; bcpUserId: string }) {
   const [copied, setCopied] = useState(false);

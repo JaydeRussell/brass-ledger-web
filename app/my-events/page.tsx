@@ -78,7 +78,7 @@ function MyEventsContent() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Same URL-query-string tab pattern as the main page (see app/page.tsx)
+  // Same URL-query-string tab pattern as the event page (app/event/page.tsx)
   // — defaults to "ongoing" rather than "past", since the events you're
   // most likely to want to check on are the ones happening right now.
   const activeTab: EventsTabKey = isTabKey(searchParams.get("tab"))
@@ -272,8 +272,8 @@ function MyEventsContent() {
   );
 }
 
-// Same Suspense-boundary requirement as app/page.tsx, for the same
-// reason: useSearchParams needs one above it under Next's app router.
+// Same Suspense-boundary requirement as app/event/page.tsx, for the
+// same reason: useSearchParams needs one above it under Next's app router.
 export default function MyEventsPage() {
   return (
     <Suspense fallback={null}>

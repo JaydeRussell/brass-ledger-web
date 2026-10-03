@@ -11,7 +11,13 @@ import { Tabs, type TabItem } from "../../components/ui/tabs";
 import PageHeader from "../../components/layout/pageHeader";
 import PageMain from "../../components/layout/pageMain";
 import { useRequireAdmin } from "../../lib/useRequireAdmin";
-import { fetchAdminFeedback, resolveFeedback, reopenFeedback, type AdminFeedback } from "../../lib/adminFeedback";
+import {
+  fetchAdminFeedback,
+  notifyFeedbackCountChanged,
+  reopenFeedback,
+  resolveFeedback,
+  type AdminFeedback,
+} from "../../lib/adminFeedback";
 
 type StatusTabKey = "open" | "resolved" | "all";
 const STATUS_TABS: StatusTabKey[] = ["open", "resolved", "all"];
@@ -73,14 +79,17 @@ export default function AdminFeedbackPage() {
   // Same optimistic-patch-then-revert-on-failure shape as adminUsers'
   // mutateRow.
   async function mutateRow(id: number, patch: Partial<AdminFeedback>, request: () => Promise<void>) {
-    const previous = feedback;
+    const original = feedback?.find((f) => f.id === id);
     setFeedback((prev) => (prev ? prev.map((f) => (f.id === id ? { ...f, ...patch } : f)) : prev));
     setRowState(id, { saving: true, error: null });
     try {
       await request();
       setRowState(id, { saving: false, error: null });
+      notifyFeedbackCountChanged();
     } catch (err) {
-      setFeedback(previous);
+      // Revert only this row, so a concurrent change to another row
+      // isn't undone with it.
+      if (original) setFeedback((prev) => (prev ? prev.map((f) => (f.id === id ? original : f)) : prev));
       setRowState(id, { saving: false, error: err instanceof Error ? err.message : String(err) });
     }
   }

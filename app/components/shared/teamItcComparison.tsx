@@ -22,9 +22,9 @@ function averageItc(players: Player[], itcByUserId: Record<string, ItcRanking | 
  * ITC already shown elsewhere (ItcBadge) just averaged across a team.
  * Deliberately no framing, bar, "favored"/"underdog" label, or color
  * tied to which number is higher — showing two facts, not a computed
- * judgment about the matchup. See CLAUDE.md's scope rule and
- * ROADMAP.md's "Declined" section (a "favored team" indicator) for why
- * that line matters even at team-aggregate level.
+ * judgment about the matchup. CLAUDE.md's scope rule applies at team
+ * level too: a team-aggregate verdict could feed the captains' live
+ * board-assignment decision, which this app must never inform.
  */
 export default function TeamItcComparison({
   side1Name,

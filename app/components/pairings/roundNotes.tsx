@@ -38,8 +38,12 @@ export default function RoundNotes({ eventId, round }: RoundNotesProps) {
 
   const signedInApproved = Boolean(user && user.status === "approved");
 
+  // Loaded once per round, not on every expand: that way the toggle can
+  // say "Show notes" when one exists, and collapsing and re-expanding
+  // doesn't overwrite unsaved edits with the saved copy.
   React.useEffect(() => {
-    if (!expanded || !signedInApproved) return;
+    // Round 0 means "Your round" hasn't resolved the current round yet.
+    if (!signedInApproved || round < 1) return;
     let cancelled = false;
     setStatus("loading");
     fetchRoundNote(eventId, round)
@@ -62,7 +66,7 @@ export default function RoundNotes({ eventId, round }: RoundNotesProps) {
     // Deliberately re-fetches if `round` changes while expanded (e.g. the
     // signed-in account's own round advances) — eventId is effectively
     // constant per page, included anyway for correctness.
-  }, [expanded, signedInApproved, eventId, round]);
+  }, [signedInApproved, eventId, round]);
 
   if (!signedInApproved) return null;
 
