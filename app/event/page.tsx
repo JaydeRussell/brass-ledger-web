@@ -536,11 +536,11 @@ function HomeContent() {
         setDataAsOf(Date.now());
         saveCachedEvent(eventId, { eventInfo: info, players: playerList, cachedAt: Date.now() });
         setRecentEvents((prev) =>
-          recordRecentEvent(prev, {
-            id: info.id,
-            name: info.name,
-            teamEvent: info.teamEvent,
-          })
+          recordRecentEvent(
+            prev,
+            { id: info.id, name: info.name, teamEvent: info.teamEvent },
+            !user
+          )
         );
         if (user) {
           // Write-through: the local list above already updated

@@ -40,19 +40,22 @@ function saveRecentEvents(events: RecentEvent[]) {
 
 /**
  * Records that an event was just viewed, moving it to the front of the
- * list (deduped by id) and persisting the result. Returns the updated list
- * so the caller can put it straight into state.
+ * list (deduped by id). Returns the updated list so the caller can put it
+ * straight into state. Saved to localStorage only for a guest
+ * (`saveLocally`); a signed-in account's list lives on the server, and a
+ * local copy would show it to whoever uses the device after sign-out.
  */
 export function recordRecentEvent(
   current: RecentEvent[],
-  event: { id: string; name: string; teamEvent: boolean }
+  event: { id: string; name: string; teamEvent: boolean },
+  saveLocally = true
 ): RecentEvent[] {
   const withoutThisOne = current.filter((e) => e.id !== event.id);
   const next = [
     { ...event, lastViewedAt: Date.now() },
     ...withoutThisOne,
   ].slice(0, MAX_RECENT_EVENTS);
-  saveRecentEvents(next);
+  if (saveLocally) saveRecentEvents(next);
   return next;
 }
 
