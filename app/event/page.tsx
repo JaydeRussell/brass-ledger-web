@@ -1315,7 +1315,7 @@ function HomeContent() {
                   </p>
                 )}
               </div>
-            ) : isTeamEvent ? (
+            ) : error && players.length === 0 ? null : isTeamEvent ? (
               sortedTeamNames.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
                   No rosters published for this event yet.
