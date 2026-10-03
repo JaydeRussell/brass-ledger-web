@@ -30,6 +30,7 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Your Round asks for your opponent's stats once instead of twice.",
       "The Reduce motion switch says when your device is already reducing motion.",
       "When an event fails to load, the roster no longer claims nothing has been published.",
+      "Tapping a placings column like Record sorts the best results to the top first.",
     ],
   },
   {
