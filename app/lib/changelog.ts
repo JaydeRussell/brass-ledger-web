@@ -23,6 +23,15 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.23.9",
+    date: "2026-10-03",
+    title: "Fewer duplicate requests, honest motion setting",
+    highlights: [
+      "Your Round asks for your opponent's stats once instead of twice.",
+      "The Reduce motion switch says when your device is already reducing motion.",
+    ],
+  },
+  {
     version: "0.23.8",
     date: "2026-10-03",
     title: "ITC ranks during a blip",
