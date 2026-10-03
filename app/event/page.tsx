@@ -1269,11 +1269,22 @@ function HomeContent() {
   );
   const filteredPlayers = sortedPlayers.filter(playerMatches);
   const filteredFollowing = following.filter((entry) => matchesSearch(entry.label, searchQuery));
+  // A singles pairing side's id is the event player id, so its faction
+  // comes from the roster. Team sides have no single faction.
+  const playerById = new Map(sortedPlayers.map((p) => [String(p.id), p]));
+  const sideMatches = (name: string, id?: string) => {
+    const player = id ? playerById.get(id) : undefined;
+    return matchesSearch(name, searchQuery) || (player !== undefined && playerMatches(player));
+  };
   const filteredBoardEntries = boardEntries.filter(
-    (entry) =>
-      matchesSearch(entry.side1Name, searchQuery) || matchesSearch(entry.side2Name, searchQuery)
+    (entry) => sideMatches(entry.side1Name, entry.side1Id) || sideMatches(entry.side2Name, entry.side2Id)
   );
-  const filteredPlacings = placings.filter((entry) => matchesSearch(entry.name, searchQuery));
+  const filteredPlacings = placings.filter(
+    (entry) =>
+      matchesSearch(entry.name, searchQuery) ||
+      matchesSearch(entry.faction, searchQuery) ||
+      matchesSearch(entry.subFaction, searchQuery)
+  );
 
   return (
     <div className="flex-1 bg-surface-0">
@@ -1358,8 +1369,8 @@ function HomeContent() {
               activeTab === "roster"
                 ? "Search or follow teams, players, factions…"
                 : activeTab === "pairings"
-                  ? "Search teams or players…"
-                  : "Search standings…"
+                  ? "Search teams, players, factions…"
+                  : "Search standings or factions…"
             }
           />
         )}
@@ -1605,6 +1616,7 @@ function HomeContent() {
         {activeTab === "placings" && (
           <PlacingsTable
             entries={filteredPlacings}
+            badgeEntries={placings}
             loading={placingsLoading}
             error={placingsError}
             onRefresh={refreshPlacings}

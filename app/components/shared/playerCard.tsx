@@ -23,11 +23,9 @@ type PlayerCardProps = {
  * fallback list, now reused for the Roster tab's cards and expanded board
  * matchup rows too, rather than each place hand-rolling its own version.
  *
- * The name links to the player's published BCP army list when one
- * exists, falling back to their /players/[bcpUserId] stats page — a list
- * is the more useful click target when both are available, and BCP's own
- * account page doesn't link out to either, so this is the only "list"
- * link most players get.
+ * The name links to the player's /players/[bcpUserId] stats page. When
+ * BCP has a published army list, a separate "list" link sits beside it,
+ * so the list is visible rather than hidden behind the name.
  *
  * Callers own their own outer box (list-item background, card border,
  * grid placement, etc.) — this is just the content.
@@ -44,22 +42,22 @@ export default function PlayerCard({ player, ranking, itcLeagueId, size = "xs" }
     <div className="flex flex-col gap-1 text-xs">
       <div className="flex min-w-0 items-center gap-1.5">
         <span className="min-w-0 flex-1 truncate text-text-secondary">
-          {player.list ? (
-            <a
-              href={player.list}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="hover:underline"
-            >
-              {player.name}
-            </a>
-          ) : (
-            <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
-          )}
+          <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
           {player.homeClub && <span className="ml-1.5 text-text-tertiary">({player.homeClub})</span>}
         </span>
         <DispositionBadge disposition={player.disposition} />
+        {player.list && (
+          <a
+            href={player.list}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`${player.name}'s army list on BCP`}
+            className="shrink-0 font-medium text-brass-400 hover:underline"
+          >
+            list
+          </a>
+        )}
       </div>
       {hasStatsRow && (
         // Faction stays left-anchored, ITC is pushed to the far right via

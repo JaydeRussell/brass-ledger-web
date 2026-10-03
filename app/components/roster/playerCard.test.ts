@@ -64,7 +64,7 @@ test("the player's name links to their stats page only when a bcpUserId is known
   assert.match(withLink, /href="\/players\/bcp-1\?name=Jayde%20Russell"/);
 });
 
-test("the player's name links to their published list instead of their stats page, when one's available", () => {
+test("a published list gets its own \"list\" link, and the name still links to the stats page", () => {
   const noList = renderToStaticMarkup(
     React.createElement(PlayerCard, { player: { ...basePlayer, bcpUserId: "bcp-1" } })
   );
@@ -75,8 +75,8 @@ test("the player's name links to their published list instead of their stats pag
       player: { ...basePlayer, bcpUserId: "bcp-1", list: "https://example.com/list" },
     })
   );
-  assert.match(withList, /<a href="https:\/\/example\.com\/list"[^>]*>Jayde Russell<\/a>/);
-  assert.ok(!withList.includes("/players/bcp-1"));
+  assert.match(withList, /<a href="https:\/\/example\.com\/list"[^>]*>list<\/a>/);
+  assert.match(withList, /href="\/players\/bcp-1/);
 });
 
 test("the Follow button only appears when onTrack is given, and reflects tracked state", () => {
