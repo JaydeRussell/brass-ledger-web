@@ -95,9 +95,9 @@ export default function HeadToHead({ myBcpUserId, opponentBcpUserId, opponentNam
         <div>
           {result.encounters.length === 0 ? (
             <p className="text-xs text-text-tertiary">
-              {result.sharedEventsChecked === 0
+              {result.sharedEventsChecked === 0 && result.sharedEventsFailed === 0
                 ? `No shared events found with ${opponentName}.`
-                : `No previous meetings found (checked your ${result.sharedEventsChecked} most recent shared event${result.sharedEventsChecked === 1 ? "" : "s"}).`}
+                : `No previous meetings found (checked your ${result.sharedEventsChecked} most recent shared event${result.sharedEventsChecked === 1 ? "" : "s"}${result.sharedEventsFailed > 0 ? `; ${result.sharedEventsFailed} couldn't be loaded` : ""}).`}
             </p>
           ) : (
             <>
