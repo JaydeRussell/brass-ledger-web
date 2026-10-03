@@ -97,7 +97,7 @@
     lowContrast: { distinct: seen.size, sample: [...seen.values()].slice(0, 12) },
     imgNoAlt: [...document.images].filter((i) => !i.hasAttribute("alt")).map((i) => i.src.slice(-40)),
     unlabeled: interactive
-      .filter((el) => !(el.innerText || "").trim() && !el.getAttribute("aria-label") && !el.getAttribute("aria-labelledby") && !el.title && !(el.labels && el.labels.length))
+      .filter((el) => !(el.textContent || "").trim() && !el.getAttribute("aria-label") && !el.getAttribute("aria-labelledby") && !el.title && !(el.labels && el.labels.length))
       .map(label)
       .slice(0, 10),
   };

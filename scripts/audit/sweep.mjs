@@ -101,7 +101,7 @@ for (const engine of engines) {
       const t0 = Date.now();
       let navError = null;
       try {
-        await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 30000 });
+        await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 15000 });
       } catch (e) {
         navError = String(e).slice(0, 120);
       }
@@ -112,6 +112,7 @@ for (const engine of engines) {
       } catch (e) {
         report = { error: String(e).slice(0, 160) };
       }
+      process.stderr.write(`${engine} ${width} ${route} ${ms}ms errors=${errors.length} failed=${failed.length}\n`);
       results.push({ engine, width, prefs, route, finalPath: new URL(page.url()).pathname, ms, requests, apiRequests, errors, failed: [...new Set(failed)], navError, ...report });
       await page.close();
     }
