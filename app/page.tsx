@@ -367,6 +367,13 @@ function HomeContent() {
   // false and a successful retry back to true, which loads the cards.
   const canLoad = !checked || user?.status === "approved";
   const { hidden: hiddenCards, hide: hideCard, showAll: showAllCards } = useHiddenDashboardCards();
+  // Only cards that would render if shown: Your record needs a linked
+  // profile and Jump back in needs a recent event.
+  const hiddenCount = [
+    hiddenCards.has("friends"),
+    hiddenCards.has("record") && !!bcpUserId,
+    hiddenCards.has("jumpBackIn") && recentEvents.length > 0,
+  ].filter(Boolean).length;
 
   // Friends and recent events are scoped by the session cookie, not by
   // anything in `user`, so they start on mount (gated by canLoad) rather
@@ -483,13 +490,13 @@ function HomeContent() {
               <JumpBackInCard events={recentEvents} onHide={() => hideCard("jumpBackIn")} />
             )}
 
-            {hiddenCards.size > 0 && (
+            {hiddenCount > 0 && (
               <button
                 type="button"
                 onClick={showAllCards}
                 className="self-start text-xs font-medium text-text-tertiary hover:text-text-secondary hover:underline"
               >
-                {hiddenCards.size} card{hiddenCards.size === 1 ? "" : "s"} hidden — Show all
+                {hiddenCount} card{hiddenCount === 1 ? "" : "s"} hidden — Show all
               </button>
             )}
           </div>
