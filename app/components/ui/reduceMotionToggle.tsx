@@ -1,5 +1,23 @@
 "use client";
+import { useSyncExternalStore } from "react";
 import { useReduceMotion } from "../../lib/motionPrefs";
+
+const OS_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeToOsSetting(onChange: () => void) {
+  const query = window.matchMedia?.(OS_QUERY);
+  query?.addEventListener("change", onChange);
+  return () => query?.removeEventListener("change", onChange);
+}
+
+/** Whether the device itself asks for reduced motion. */
+function useOsReducedMotion(): boolean {
+  return useSyncExternalStore(
+    subscribeToOsSetting,
+    () => window.matchMedia?.(OS_QUERY).matches === true,
+    () => false
+  );
+}
 
 /**
  * An explicit "Reduce motion" switch — see lib/motionPrefs.ts's own doc
@@ -12,10 +30,18 @@ import { useReduceMotion } from "../../lib/motionPrefs";
  */
 export default function ReduceMotionToggle() {
   const { reduceMotion, setReduceMotion } = useReduceMotion();
+  // The device setting applies whatever this switch says, so say so
+  // rather than show "off" while motion is reduced anyway.
+  const osReduced = useOsReducedMotion();
 
   return (
     <div className="flex items-center justify-between gap-3 px-1">
-      <span className="text-xs text-text-secondary">Reduce motion</span>
+      <span className="text-xs text-text-secondary">
+        Reduce motion
+        {osReduced && !reduceMotion && (
+          <span className="block text-2xs text-text-tertiary">On in your device settings</span>
+        )}
+      </span>
       <button
         type="button"
         role="switch"
