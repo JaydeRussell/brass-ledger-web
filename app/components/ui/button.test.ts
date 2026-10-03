@@ -16,7 +16,7 @@ test("each variant maps to distinct token-backed classes", () => {
   const danger = renderStatic(React.createElement(Button, { variant: "danger" }, "Delete"));
   const ghost = renderStatic(React.createElement(Button, { variant: "ghost" }, "Cancel"));
   assert.match(primary, /bg-brass-500/);
-  assert.match(danger, /bg-danger-500/);
+  assert.match(danger, /bg-danger-600/);
   assert.match(ghost, /text-text-secondary/);
 });
 
