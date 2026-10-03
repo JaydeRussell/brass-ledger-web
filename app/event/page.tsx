@@ -1310,8 +1310,7 @@ function HomeContent() {
                 </div>
                 {slowLoad && (
                   <p aria-live="polite" className="mt-3 text-center text-xs text-text-tertiary">
-                    Taking longer than usual — this is a first look at this event, so it&apos;s
-                    asking Best Coast Pairings directly.
+                    Taking longer than usual — still waiting on Best Coast Pairings.
                   </p>
                 )}
               </div>

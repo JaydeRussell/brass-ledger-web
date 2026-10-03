@@ -395,7 +395,7 @@ export default function PlacingsTable({
             </div>
             {slowLoad && (
               <p className="mt-2 text-xs text-text-tertiary">
-                Taking longer than usual — first look at this event.
+                Taking longer than usual — still waiting on Best Coast Pairings.
               </p>
             )}
           </div>
