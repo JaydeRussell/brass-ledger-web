@@ -80,11 +80,8 @@ export default function RefreshButton({
 
   return (
     <div className="flex items-center gap-2">
-      {lastSyncedAt != null && (
-        <span className="hidden text-xs text-text-tertiary sm:inline">
-          Synced {formatRelativeTime(lastSyncedAt)}
-        </span>
-      )}
+      {lastSyncedAt != null && <SyncedLabel at={lastSyncedAt} />}
+
       <div className="relative">
         <Button
           variant="secondary"
@@ -113,4 +110,16 @@ export default function RefreshButton({
       </div>
     </div>
   );
+}
+
+/** "Synced 5 minutes ago", re-rendered every 30s so a page left open
+ * mid-round doesn't keep saying "just now". A display timer only: it
+ * never fetches anything. */
+function SyncedLabel({ at }: { at: number }) {
+  const [, setTick] = React.useState(0);
+  React.useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return <span className="hidden text-xs text-text-tertiary sm:inline">Synced {formatRelativeTime(at)}</span>;
 }
