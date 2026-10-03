@@ -302,9 +302,16 @@ function HomeContent() {
   // through `updateQuery` (a `router.replace` navigation) on every single
   // keystroke was the actual bottleneck, not the filtering itself. The
   // URL's own `q` still gets the value, just debounced, purely so a
-  // search survives a refresh or gets shared as a link — it's not read
-  // back from anywhere once seeded here.
+  // search survives a refresh, a shared link, or back/forward (below).
   const [searchQuery, setSearchQueryState] = React.useState(() => searchParams.get("q") ?? "");
+  // Back/forward changes `q` without anyone typing; follow it. The page's
+  // own debounced writes land on the value already in the box.
+  const urlQuery = searchParams.get("q") ?? "";
+  const [syncedUrlQuery, setSyncedUrlQuery] = React.useState(urlQuery);
+  if (urlQuery !== syncedUrlQuery) {
+    setSyncedUrlQuery(urlQuery);
+    if (urlQuery !== searchQuery) setSearchQueryState(urlQuery);
+  }
   const searchDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const setSearchQuery = React.useCallback(
     (q: string) => {
