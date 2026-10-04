@@ -397,3 +397,49 @@ test("singles event, only one side's disposition known: falls back to player sta
   );
   assert.match(html, /Loading player stats/);
 });
+
+test("singles event, opponent has no disposition on BCP: offers a picker and keeps the stats until one is chosen", () => {
+  const pairing: MyPairing = {
+    round: 6,
+    table: 23,
+    published: true,
+    isDone: false,
+    opponentName: "Cam",
+    opponentUserId: "u-cam",
+  };
+  const players: Player[] = [
+    { id: "p1", name: "Me", faction: "World Eaters", disposition: "Purge the Foe", bcpUserId: "u-me" },
+    { id: "p2", name: "Cam", faction: "Adeptus Custodes", bcpUserId: "u-cam" },
+  ];
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false,
+      error: null,
+      eventId: "evt-1",
+      round: 6,
+      pairing,
+      board: null,
+      myBcpUserId: "u-me",
+      players,
+      isTeamEvent: false,
+    })
+  );
+  assert.match(html, /Cam hasn(&#x27;|')t set a Force Disposition on Best Coast Pairings/);
+  assert.match(html, /Theirs/);
+  assert.ok(!html.includes(">Yours<"), "my own disposition is known, so only theirs is asked for");
+  assert.match(html, /Loading player stats/);
+});
+
+test("with onRefresh, every state shows a refresh button, and a refresh keeps the pairing on screen", () => {
+  const pairing: MyPairing = { round: 6, table: 23, published: true, isDone: false, opponentName: "Cam", opponentUserId: "u-cam" };
+  const base = { error: null, eventId: "evt-1", round: 6, board: null, myBcpUserId: "u-me", players: [], isTeamEvent: false, onRefresh: () => {} };
+  const refreshing = renderToStaticMarkup(
+    React.createElement(MyRoundCard, { ...base, loading: true, refreshing: true, pairing })
+  );
+  assert.match(refreshing, /Table 23/, "the pairing stays visible while refreshing");
+  assert.ok(!refreshing.includes("Checking your round"));
+  assert.match(refreshing, /your round/i);
+  const waiting = renderToStaticMarkup(React.createElement(MyRoundCard, { ...base, loading: false, pairing: null }));
+  assert.match(waiting, /No pairing published for round 6 yet/);
+  assert.match(waiting, /aria-label="[^"]*your round/i);
+});

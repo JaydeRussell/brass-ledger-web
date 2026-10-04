@@ -455,10 +455,11 @@ function teamPairingToMine(
 export async function fetchMyIndividualPairings(
   eventId: string,
   playerId: string,
-  upToRound: number
+  upToRound: number,
+  refresh = false
 ): Promise<MyPairing[]> {
   const results: MyPairing[] = [];
-  for (const record of await fetchPairingsUpToRound(eventId, upToRound, "Pairing")) {
+  for (const record of await fetchPairingsUpToRound(eventId, upToRound, "Pairing", refresh)) {
     const mine = individualPairingToMine(record, playerId);
     if (mine) results.push(mine);
   }
@@ -472,10 +473,11 @@ export async function fetchMyIndividualPairings(
 export async function fetchMyTeamPairings(
   eventId: string,
   teamPlayerId: string,
-  upToRound: number
+  upToRound: number,
+  refresh = false
 ): Promise<MyPairing[]> {
   const results: MyPairing[] = [];
-  for (const record of await fetchPairingsUpToRound(eventId, upToRound, "TeamPairing")) {
+  for (const record of await fetchPairingsUpToRound(eventId, upToRound, "TeamPairing", refresh)) {
     const mine = teamPairingToMine(record, teamPlayerId);
     if (mine) results.push(mine);
   }

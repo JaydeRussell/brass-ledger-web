@@ -6,7 +6,7 @@ import ItcBadge from "../shared/itcBadge";
 import PlayerFactionDetails from "../shared/playerFactionDetails";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
-import MissionMatchupPanel from "./missionMatchupPanel";
+import RoundMissions from "./roundMissions";
 import TeamRosterFallback from "./teamRosterFallback";
 import RoundNotes from "./roundNotes";
 import HeadToHead from "./headToHead";
@@ -14,6 +14,7 @@ import { isDisposition } from "../../lib/dispositions";
 import TeamItcComparison from "../shared/teamItcComparison";
 import Skeleton from "../shared/skeleton";
 import Card from "../ui/card";
+import RefreshButton from "../shared/refreshButton";
 import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
@@ -55,12 +56,10 @@ type MyRoundCardProps = {
   // for Roster/Pairings (see app/event/page.tsx's rosterByTeamId).
   rosterByTeamId?: Map<string, Player[]>;
   // Whether this event is a team event — set by the caller from
-  // eventInfo.teamEvent. Decides whether a resolved opponent gets the
-  // singles-only MissionMatchupPanel (when both sides' Force Dispositions
-  // are known) or PlayerStatsPanel — team events always get
-  // PlayerStatsPanel, since Force-Disposition primary missions are a
-  // singles mission-pack mechanic, not something this app infers for
-  // team formats.
+  // eventInfo.teamEvent. Singles pairings get RoundMissions (the missions,
+  // with a picker for a Force Disposition BCP doesn't have); team events
+  // always get PlayerStatsPanel, since Force-Disposition primary missions
+  // are a singles mission-pack mechanic.
   isTeamEvent: boolean;
   // Already-fetched by the caller for other tabs' ITC badges — passed
   // through to TeamRosterFallback's roster rows below rather than
@@ -71,6 +70,10 @@ type MyRoundCardProps = {
   // whenever this is a team pairing, regardless of whether individual
   // boards are resolved yet.
   itcByUserId?: Record<string, ItcRanking | null>;
+  // Your round's own refresh: re-checks the event and this round's pairing.
+  onRefresh?: () => void;
+  refreshing?: boolean;
+  lastSyncedAt?: number | null;
 };
 
 type ResolvedOpponent = {
@@ -136,13 +139,27 @@ export default function MyRoundCard({
   rosterByTeamId,
   itcLeagueId,
   itcByUserId,
+  onRefresh,
+  refreshing = false,
+  lastSyncedAt,
 }: MyRoundCardProps) {
   const slowLoad = useDelayedFlag(loading);
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="font-semibold text-text-primary">Your round</p>
+      <div className="flex items-center gap-2">
+        {round > 0 && <span className="text-xs text-text-tertiary">Round {round}</span>}
+        {onRefresh && (
+          <RefreshButton onRefresh={onRefresh} loading={refreshing} label="your round" lastSyncedAt={lastSyncedAt} />
+        )}
+      </div>
+    </div>
+  );
 
   if (error) {
     return (
       <Card className="p-4 shadow-sm">
-        <p className="font-semibold text-text-primary">Your round</p>
+        {header}
         <ErrorAlert size="sm" className="mt-2">
           Couldn&apos;t load your round: {error}
         </ErrorAlert>
@@ -150,10 +167,12 @@ export default function MyRoundCard({
     );
   }
 
-  if (loading) {
+  // A refresh keeps the current pairing on screen; the skeleton is only
+  // for the first load.
+  if (loading && !pairing) {
     return (
       <Card className="p-4 shadow-sm" aria-live="polite">
-        <p className="font-semibold text-text-primary">Your round</p>
+        {header}
         <span className="sr-only">Checking your round…</span>
         <div className="mt-2 flex flex-col gap-1.5">
           <Skeleton className="h-4 w-40" />
@@ -169,7 +188,7 @@ export default function MyRoundCard({
   if (!pairing) {
     return (
       <Card className="p-4 shadow-sm">
-        <p className="font-semibold text-text-primary">Your round</p>
+        {header}
         <p className="mt-1 text-sm text-text-secondary">
           No pairing published for round {round} yet.
         </p>
@@ -202,14 +221,10 @@ export default function MyRoundCard({
     : undefined;
   const myDisposition = isDisposition(myPlayer?.disposition) ? myPlayer?.disposition : undefined;
   const opponentDisposition = isDisposition(opponentPlayer?.disposition) ? opponentPlayer?.disposition : undefined;
-  const showMissionMatchup = !isTeamEvent && myDisposition !== undefined && opponentDisposition !== undefined;
 
   return (
     <Card className="p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-semibold text-text-primary">Your round</p>
-        <span className="text-xs text-text-tertiary">Round {round}</span>
-      </div>
+      {header}
 
       <div className="mt-2 flex items-center gap-3 text-sm">
         <span className="shrink-0 text-text-tertiary">
@@ -265,16 +280,22 @@ export default function MyRoundCard({
 
       {resolved.opponentBcpUserId && (
         <div className="mt-3 border-t border-surface-border pt-3">
-          {showMissionMatchup && myDisposition && opponentDisposition ? (
-            <MissionMatchupPanel myDisposition={myDisposition} opponentDisposition={opponentDisposition} />
-          ) : (
+          {/* Keyed so a new opponent starts from empty state rather than
+              showing the previous player's stats, error or picked disposition. */}
+          {isTeamEvent ? (
             <PlayerStatsPanel
-              // Keyed so a new opponent starts from empty state rather than
-              // showing the previous player's stats or error.
               key={resolved.opponentBcpUserId}
               mode="player"
               bcpUserId={resolved.opponentBcpUserId}
               playerName={resolved.opponentName}
+            />
+          ) : (
+            <RoundMissions
+              key={resolved.opponentBcpUserId}
+              myDisposition={myDisposition}
+              opponentDisposition={opponentDisposition}
+              opponentBcpUserId={resolved.opponentBcpUserId}
+              opponentName={resolved.opponentName}
             />
           )}
         </div>

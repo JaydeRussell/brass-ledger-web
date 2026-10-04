@@ -124,7 +124,7 @@ function NextUpCard({ events, failed }: { events: MyEvents | null; failed: boole
           (interactive content inside interactive content) that Button
           itself doesn't guard against. */}
       <Link
-        href={`/event?event=${encodeURIComponent(event.eventId)}`}
+        href={`/event?event=${encodeURIComponent(event.eventId)}${live ? "&tab=mine" : ""}`}
         className="mt-3 inline-flex rounded-md border border-surface-border bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-text-primary shadow-sm hover:bg-surface-1"
       >
         {live ? "Continue to your round →" : "View event →"}
