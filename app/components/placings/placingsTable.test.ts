@@ -17,7 +17,7 @@ test("shows an error message and nothing else when errored", () => {
     React.createElement(PlacingsTable, { entries: [], loading: false, error: "network down", onRefresh: noop })
   );
   assert.match(html, /Couldn&#x27;t load placings: network down/);
-  assert.ok(!html.includes("<table"));
+  assert.ok(!html.includes("<ul"));
 });
 
 test("shows a loading message when loading and not errored", () => {
@@ -45,14 +45,14 @@ test("shows the default empty message, or a custom one for a filtered-out search
   assert.match(customHtml, /No matches for zzz\./);
 });
 
-test("renders a metrics table with a record column, in placing order", () => {
+test("renders a list of rows with each row's record, in placing order", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries, loading: false, error: null, onRefresh: noop })
   );
-  assert.match(html, /<table/);
-  assert.match(html, />Record</);
-  assert.match(html, /Team One/);
-  assert.match(html, /Team Two/);
+  assert.match(html, /<ul/);
+  assert.match(html, />Record: </);
+  assert.match(html, />01</);
+  assert.ok(html.indexOf("Team One") < html.indexOf("Team Two"));
 });
 
 test("a row's name links to its player-stats page only when it carries a bcpUserId (individual events only, per PlacingEntry's doc comment)", () => {
@@ -72,7 +72,7 @@ test("a row's name links to its player-stats page only when it carries a bcpUser
   assert.ok(!teamHtml.includes("/players/"));
 });
 
-test("leads with a win/loss-style metric regardless of BCP's own column order, and labels it Record", () => {
+test("leads with a win/loss-style metric regardless of BCP's own order, and labels it Record", () => {
   const reordered: PlacingEntry[] = [
     {
       id: "t1",
@@ -88,20 +88,12 @@ test("leads with a win/loss-style metric regardless of BCP's own column order, a
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries: reordered, loading: false, error: null, onRefresh: noop })
   );
-  const headerRow = html.split("</thead>")[0];
-  assert.match(headerRow, />Record</);
-  assert.ok(!headerRow.includes("Battle Points"));
-  assert.ok(!headerRow.includes("Match Points"));
-
-  // The identified record metric's own value (Match Points: 4), not
-  // Battle Points' 287, is what shows in the collapsed row.
-  const rows = html.split("<tr").slice(1);
-  const row = rows.find((r) => r.includes("Team One"));
-  assert.match(row ?? "", />4</);
-  assert.ok(!row?.includes(">287<"));
+  const row = html.split("<li").find((r) => r.includes("Team One")) ?? "";
+  assert.match(row, />Record: <\/span><span[^>]*>4</);
+  assert.ok(!row.includes(">287<"));
 });
 
-test("leaves column order and label alone when no metric looks like a win/loss record", () => {
+test("without a record-shaped metric, leads with BCP's first metric under its own name", () => {
   const noRecord: PlacingEntry[] = [
     {
       id: "t1",
@@ -116,13 +108,13 @@ test("leaves column order and label alone when no metric looks like a win/loss r
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries: noRecord, loading: false, error: null, onRefresh: noop })
   );
-  const headerRow = html.split("</thead>")[0];
-  assert.match(headerRow, />Battle Points</);
-  assert.ok(!headerRow.includes("Strength of Schedule"));
-  assert.ok(!headerRow.includes("Record"));
+  const row = html.split("<li").find((r) => r.includes("Team One")) ?? "";
+  assert.match(row, />Battle Points: <\/span><span[^>]*>287</);
+  assert.ok(!row.includes("Record"));
+  assert.ok(!row.includes("Strength of Schedule"));
 });
 
-test("only the record column shows on a collapsed row, labeled Record; opponent win rate and everything else move behind the expand toggle", () => {
+test("a collapsed row shows only the record; opponent win rate and everything else sit behind the expand toggle", () => {
   const manyMetrics: PlacingEntry[] = [
     {
       id: "p1",
@@ -139,22 +131,12 @@ test("only the record column shows on a collapsed row, labeled Record; opponent 
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries: manyMetrics, loading: false, error: null, onRefresh: noop })
   );
-  const headerRow = html.split("</thead>")[0];
-  assert.match(headerRow, />Record</);
-  assert.ok(!headerRow.includes("Wins"));
-  assert.ok(!headerRow.includes("Oppt. Game Win %"));
-  assert.ok(!headerRow.includes("Path to Victory"));
-  assert.ok(!headerRow.includes("Battle Points"));
-
-  // Hidden metrics (including opponent win rate) aren't in the initial
-  // (collapsed) markup at all, and the row itself carries the expand
-  // affordance.
-  assert.ok(!html.includes("Oppt. Game Win %"));
-  assert.ok(!html.includes("Path to Victory"));
-  assert.ok(!html.includes("227"));
-  const rows = html.split("<tr").slice(1);
-  const row = rows.find((r) => r.includes("Alexandria Whitmore"));
-  assert.match(row ?? "", /aria-expanded="false"/);
+  const row = html.split("<li").find((r) => r.includes("Alexandria Whitmore")) ?? "";
+  assert.match(row, />Record: </);
+  assert.ok(!row.includes("Oppt. Game Win %"));
+  assert.ok(!row.includes("Path to Victory"));
+  assert.ok(!row.includes("227"));
+  assert.match(row, /aria-expanded="false"/);
 });
 
 test("shows a round-by-round score strip in the record column when round scores are available", () => {
@@ -191,7 +173,7 @@ test("shows a round-by-round score strip in the record column when round scores 
   assert.ok(!html.includes("text-danger-400"));
 });
 
-test("a \"best in faction\" badge renders in its own column between Name and Record, not inline with the name", () => {
+test("a \"best in faction\" badge sits on the faction line, not inside the name", () => {
   const withFactions: PlacingEntry[] = [
     { id: "p1", name: "Anna Adams", placing: 1, metrics: [{ name: "Wins", value: 3 }], faction: "Necrons" },
     { id: "p2", name: "Ben Baker", placing: 2, metrics: [{ name: "Wins", value: 2 }], faction: "Space Marines" },
@@ -199,16 +181,12 @@ test("a \"best in faction\" badge renders in its own column between Name and Rec
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries: withFactions, loading: false, error: null, onRefresh: noop })
   );
-  const rows = html.split("<tr").slice(1);
-  const row = rows.find((r) => r.includes("Anna Adams"));
-  const cells = (row ?? "").split("<td");
-  // cells[0] precedes the first <td (the <tr ...> opening tag itself);
-  // cells[1..] are the row's actual <td>s in column order: #, Name,
-  // badge, Record.
-  const nameCell = cells[2] ?? "";
-  const badgeCell = cells[3] ?? "";
-  assert.ok(!nameCell.includes("Best"), "the name cell itself shouldn't contain the badge text");
-  assert.match(badgeCell, /Best Necrons/);
+  const row = html.split("<li").find((r) => r.includes("Anna Adams")) ?? "";
+  const nameSpan = row.match(/<span class="font-medium text-text-primary">.*?<\/span>/)?.[0] ?? "";
+  assert.ok(nameSpan.includes("Anna Adams"));
+  assert.ok(!nameSpan.includes("Best"));
+  assert.match(row, />Necrons</);
+  assert.match(row, /Best Necrons/);
 });
 
 test("badges are judged across badgeEntries, not the search-filtered entries", () => {
@@ -239,11 +217,11 @@ test("falls back to the plain metric value when no round scores are available fo
       roundScoresById: new Map(),
     })
   );
-  assert.match(html, />3</);
-  assert.match(html, />2</);
+  assert.match(html, />Record: <\/span><span[^>]*>3</);
+  assert.match(html, />Record: <\/span><span[^>]*>2</);
 });
 
-test("a team row with a roster available shows an expand affordance; a singles row doesn't", () => {
+test("a team row with a roster shows an expand toggle; a row with nothing hidden doesn't", () => {
   const rosterByTeamId = new Map<string, Player[]>([
     ["t1", [{ id: "p1", name: "Nicholas Kudriavetz", faction: "Orks", bcpUserId: "u1" }]],
   ]);
@@ -256,7 +234,7 @@ test("a team row with a roster available shows an expand affordance; a singles r
       rosterByTeamId,
     })
   );
-  const rows = html.split("<tr").slice(1);
+  const rows = html.split("<li").slice(1);
   const team1Row = rows.find((r) => r.includes("Team One"));
   const team2Row = rows.find((r) => r.includes("Team Two"));
   assert.match(team1Row ?? "", /aria-expanded="false"/);
@@ -276,7 +254,7 @@ test("highlights my own row", () => {
     })
   );
   // Team Two's row should carry the highlight class; Team One's shouldn't.
-  const rows = html.split("<tr").slice(1);
+  const rows = html.split("<li").slice(1);
   const team1Row = rows.find((r) => r.includes("Team One"));
   const team2Row = rows.find((r) => r.includes("Team Two"));
   assert.ok(!team1Row?.includes("bg-brass-500/10"));
@@ -305,13 +283,9 @@ test("the refresh button is enabled while idle and disabled while loading", () =
   assert.match(loadingButton, /\sdisabled=""/);
 });
 
-// sortEntries is the pure logic behind the Name/Record column-sort
-// buttons — tested directly since the click that actually toggles
-// PlacingsTable's own sortKey/sortDir state can't be simulated without a
-// real DOM (see this file's other tests' own notes on that limitation).
-// The header buttons themselves — that they render, are keyboard-focusable
-// real <button>s, and are wired to onSort — are covered by the structural
-// test below; the resulting reorder-on-click is verified live.
+// sortEntries is the pure logic behind the Sort by select — tested
+// directly since changing the select's state can't be simulated without a
+// real DOM.
 const unsorted: PlacingEntry[] = [
   { id: "a", name: "Zeta", placing: 3, metrics: [{ name: "Wins", value: 1 }] },
   { id: "b", name: "Alpha", placing: 1, metrics: [{ name: "Wins", value: 3 }] },
@@ -339,21 +313,17 @@ test("sortEntries: doesn't mutate the array it was given", () => {
   assert.deepEqual(unsorted, original);
 });
 
-test("Name and Record headers render as real, focusable buttons (keyboard-operable), and Name is sticky", () => {
+test("offers Placing, Name and each metric as sort options", () => {
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries, loading: false, error: null, onRefresh: noop })
   );
-  assert.match(html, /<button[^>]*>Name<span/);
-  assert.match(html, /<button[^>]*>Record<span/);
-  // The Name header cell carries the sticky-left classes; its column
-  // doesn't scroll out of view along with the metric columns.
-  const headerRow = html.slice(html.indexOf("<thead"), html.indexOf("</thead>"));
-  const nameCell = headerRow.split("<th").find((c) => c.includes(">Name"));
-  assert.ok(nameCell?.includes("sticky"));
-  assert.ok(nameCell?.includes("left-0"));
+  assert.match(html, /<select/);
+  assert.match(html, /<option value="placing" selected="">Placing<\/option>/);
+  assert.match(html, /<option value="name">Name<\/option>/);
+  assert.match(html, /<option value="Wins">Wins<\/option>/);
 });
 
-test("an expandable row is keyboard-operable (role=button, tabIndex, aria-expanded)", () => {
+test("an expandable row's toggle is a real button carrying aria-expanded", () => {
   const expandableEntries: PlacingEntry[] = [
     {
       id: "t1",
@@ -368,10 +338,34 @@ test("an expandable row is keyboard-operable (role=button, tabIndex, aria-expand
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries: expandableEntries, loading: false, error: null, onRefresh: noop })
   );
-  const row = html.slice(html.indexOf("<tbody"));
-  assert.match(row, /role="button"/);
-  assert.match(row, /tabIndex="?0"?|tabindex="0"/);
-  assert.match(row, /aria-expanded="false"/);
+  assert.match(html, /<button type="button" aria-expanded="false" aria-label="Show details for Team One"/);
+});
+
+test("a singles row shows its army list link and disposition from the roster", () => {
+  const singles: PlacingEntry[] = [
+    { id: "p1", name: "Anna Adams", placing: 1, metrics: [{ name: "Wins", value: 3 }], faction: "Necrons" },
+    { id: "p2", name: "Ben Baker", placing: 2, metrics: [{ name: "Wins", value: 2 }], faction: "Orks" },
+  ];
+  const playerById = new Map<string, Player>([
+    [
+      "p1",
+      {
+        id: "p1",
+        name: "Anna Adams",
+        faction: "Necrons",
+        disposition: "Take and Hold",
+        list: "https://www.bestcoastpairings.com/list/abc",
+      },
+    ],
+  ]);
+  const html = renderToStaticMarkup(
+    React.createElement(PlacingsTable, { entries: singles, loading: false, error: null, onRefresh: noop, playerById })
+  );
+  const anna = html.split("<li").find((r) => r.includes("Anna Adams")) ?? "";
+  const ben = html.split("<li").find((r) => r.includes("Ben Baker")) ?? "";
+  assert.match(anna, /href="https:\/\/www\.bestcoastpairings\.com\/list\/abc"/);
+  assert.match(anna, /T&amp;H/);
+  assert.ok(!ben.includes("Army list on BCP"));
 });
 
 test("compact density has a star standing in for the Best badges, with their text as its label", () => {
@@ -381,7 +375,7 @@ test("compact density has a star standing in for the Best badges, with their tex
   const html = renderToStaticMarkup(
     React.createElement(PlacingsTable, { entries: withFactions, loading: false, error: null, onRefresh: noop })
   );
-  assert.match(html, /<span class="compact:hidden">/);
+  assert.match(html, /<span class="[^"]*\bcompact:hidden">/);
   assert.match(html, /<span class="hidden compact:inline"><button[^>]*aria-label="Best Xenos, Best Necrons"[^>]*>★/);
 });
 
@@ -397,4 +391,12 @@ test("metricNamesOf: union across entries in first-seen order", async () => {
   const { metricNamesOf } = await import("./placingsTable.tsx");
   const entry = (names: string[]) => ({ metrics: names.map((name) => ({ name, value: 0 })) }) as never;
   assert.deepEqual(metricNamesOf([entry(["Wins"]), entry(["Wins", "Battle Points"])]), ["Wins", "Battle Points"]);
+});
+
+test("formatMetric: rounds float noise to two decimals and keeps whole numbers whole", async () => {
+  const { formatMetric } = await import("./placingsTable.tsx");
+  assert.equal(formatMetric(446.44679999999994), "446.45");
+  assert.equal(formatMetric(6), "6");
+  assert.equal(formatMetric(55.5), "55.5");
+  assert.equal(formatMetric(undefined), "—");
 });

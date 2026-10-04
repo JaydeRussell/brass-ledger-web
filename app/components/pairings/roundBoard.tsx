@@ -9,6 +9,8 @@ import {
 } from "../../lib/bcp";
 import { resolveRosterPlayer } from "../../lib/players";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
+import ArmyListLink from "../shared/armyListLink";
+import DispositionBadge from "../shared/dispositionBadge";
 import PlayerCard from "../shared/playerCard";
 import PlayerStatsLink from "../shared/playerStatsLink";
 import RefreshButton from "../shared/refreshButton";
@@ -88,12 +90,36 @@ type RoundBoardProps = {
  * player's ITC ranking) are only ever fetched for a pairing once it's
  * actually expanded, never for the whole round up front.
  */
-// Roomy density shows each singles player's faction beside their name,
-// from the roster. Team sides have no single faction, so show nothing.
-function RoomyFaction({ bcpUserId, players }: { bcpUserId?: string; players?: Player[] }) {
-  const faction = bcpUserId ? players?.find((p) => p.bcpUserId === bcpUserId)?.faction : undefined;
-  if (!faction || faction === "Unknown") return null;
-  return <span className="hidden text-xs text-text-tertiary roomy:inline">({faction})</span>;
+// One side of a singles pairing, stacked like a Placings row: name, then
+// faction and disposition from the roster, then the army list link. Team
+// sides have no single faction or list, so team rows don't use this.
+function SinglesSide({
+  name,
+  bcpUserId,
+  players,
+  mine,
+}: {
+  name: string;
+  bcpUserId?: string;
+  players?: Player[];
+  mine: boolean;
+}) {
+  const player = bcpUserId ? players?.find((p) => p.bcpUserId === bcpUserId) : undefined;
+  const faction = player?.faction && player.faction !== "Unknown" ? player.faction : undefined;
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className={`text-text-primary ${mine ? "font-semibold" : "font-medium"}`}>
+        <PlayerStatsLink name={name} bcpUserId={bcpUserId} />
+      </span>
+      {faction && <span className="text-xs text-text-secondary">{faction}</span>}
+      {(player?.disposition || player?.list) && (
+        <span className="flex flex-wrap items-center gap-1">
+          <DispositionBadge disposition={player.disposition} />
+          {player.list && <ArmyListLink href={player.list} playerName={name} />}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function RoundBoard({
@@ -279,7 +305,7 @@ export default function RoundBoard({
         </div>
       </div>
 
-      <div className="max-h-80 overflow-y-auto p-3">
+      <div className="max-h-[70vh] overflow-y-auto p-3">
         {error && <ErrorAlert size="sm">Couldn&apos;t load round {round}: {error}</ErrorAlert>}
 
         {!error && loading && (
@@ -358,17 +384,18 @@ export default function RoundBoard({
                     <span className="w-12 shrink-0 text-xs font-medium text-text-tertiary">
                       {entry.table ? `Tbl ${entry.table}` : ""}
                     </span>
-                    <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-primary">
-                      <span className={side1Mine ? "font-semibold" : undefined}>
-                        <PlayerStatsLink name={entry.side1Name} bcpUserId={entry.side1UserId} />
+                    {teamEvent && (
+                      <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-text-primary">
+                        <span className={side1Mine ? "font-semibold" : undefined}>
+                          <PlayerStatsLink name={entry.side1Name} bcpUserId={entry.side1UserId} />
+                        </span>
+                        <span className="text-text-tertiary">vs</span>
+                        <span className={side2Mine ? "font-semibold" : undefined}>
+                          <PlayerStatsLink name={entry.side2Name} bcpUserId={entry.side2UserId} />
+                        </span>
                       </span>
-                      <RoomyFaction bcpUserId={entry.side1UserId} players={players} />
-                      <span className="text-text-tertiary">vs</span>
-                      <span className={side2Mine ? "font-semibold" : undefined}>
-                        <PlayerStatsLink name={entry.side2Name} bcpUserId={entry.side2UserId} />
-                      </span>
-                      <RoomyFaction bcpUserId={entry.side2UserId} players={players} />
-                    </span>
+                    )}
+                    {!teamEvent && <span className="flex-1" />}
                     {!entry.published ? (
                       <span className="shrink-0 text-xs text-text-tertiary">
                         unpublished
@@ -404,6 +431,24 @@ export default function RoundBoard({
                       </span>
                     )}
                   </div>
+
+                  {!teamEvent && (
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-x-2 px-2 pb-2.5">
+                      <SinglesSide
+                        name={entry.side1Name}
+                        bcpUserId={entry.side1UserId}
+                        players={players}
+                        mine={side1Mine}
+                      />
+                      <span className="pt-0.5 text-xs text-text-tertiary">vs</span>
+                      <SinglesSide
+                        name={entry.side2Name}
+                        bcpUserId={entry.side2UserId}
+                        players={players}
+                        mine={side2Mine}
+                      />
+                    </div>
+                  )}
 
                   {isExpanded && (
                     <div className="flex flex-col gap-1 border-t border-surface-border px-2 pb-2 pt-1.5">
