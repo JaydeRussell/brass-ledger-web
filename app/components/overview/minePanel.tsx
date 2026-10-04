@@ -26,6 +26,9 @@ export type MyRoundSummary = {
   rosterByTeamId?: Map<string, Player[]>;
   itcLeagueId?: string | null;
   itcByUserId?: Record<string, ItcRanking | null>;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+  lastSyncedAt?: number | null;
 };
 
 type MinePanelProps = {
@@ -63,6 +66,9 @@ export default function MinePanel({ myRound, emptyMessage }: MinePanelProps) {
       rosterByTeamId={myRound.rosterByTeamId}
       itcLeagueId={myRound.itcLeagueId}
       itcByUserId={myRound.itcByUserId}
+      onRefresh={myRound.onRefresh}
+      refreshing={myRound.refreshing}
+      lastSyncedAt={myRound.lastSyncedAt}
     />
   );
 }

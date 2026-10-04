@@ -349,6 +349,9 @@ function HomeContent() {
   // refresh and should bypass the caches; read and cleared by the effect.
   const eventRefreshRequestedRef = React.useRef(false);
   const [refreshingEvent, setRefreshingEvent] = React.useState(false);
+  const [mineRefreshKey, setMineRefreshKey] = React.useState(0);
+  const mineRefreshRequestedRef = React.useRef(false);
+  const [myPairingSyncedAt, setMyPairingSyncedAt] = React.useState<number | null>(null);
   // BCP's current flagship ITC ranking league id, used to link each player
   // card to their already-published BCP ranking profile — see
   // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. Null until it
@@ -620,6 +623,14 @@ function HomeContent() {
   // RefreshButton's own doc comment for why this is a button rather than a
   // timer, and refreshEventData's sibling refreshPlacings below for the
   // same pattern scoped to one tab instead of the whole page.
+  // Your round's refresh: the event too (a new round may have posted),
+  // and this round's pairing past the caches.
+  const refreshMine = () => {
+    mineRefreshRequestedRef.current = true;
+    setMineRefreshKey((k) => k + 1);
+    refreshEventData();
+  };
+
   const refreshEventData = () => {
     eventRefreshRequestedRef.current = true;
     setEventRefreshKey((k) => k + 1);
@@ -705,7 +716,8 @@ function HomeContent() {
 
   // My own current-round pairing. `boardRound` (set once event data loads
   // — see the earlier effect) is already "the latest publishable round,"
-  // exactly what this needs.
+  // exactly what this needs. Your round's own refresh button bumps
+  // mineRefreshKey and sets the flag, which this run consumes.
   React.useEffect(() => {
     if (!myPlayer || !eventInfo || !boardRound) {
       setMyPairingState({ pairing: null, loading: false, error: null });
@@ -714,11 +726,13 @@ function HomeContent() {
 
     let cancelled = false;
     setMyPairingState((prev) => ({ ...prev, loading: true, error: null }));
+    const refresh = mineRefreshRequestedRef.current;
+    mineRefreshRequestedRef.current = false;
 
     const request =
       eventInfo.teamEvent && myPlayer.teamPlayerId
-        ? fetchMyTeamPairings(eventId, myPlayer.teamPlayerId, boardRound)
-        : fetchMyIndividualPairings(eventId, String(myPlayer.id), boardRound);
+        ? fetchMyTeamPairings(eventId, myPlayer.teamPlayerId, boardRound, refresh)
+        : fetchMyIndividualPairings(eventId, String(myPlayer.id), boardRound, refresh);
 
     request
       .then((results) => {
@@ -728,6 +742,7 @@ function HomeContent() {
         // generated it yet, which shouldn't fall back to an older round.
         const mine = results.find((p) => p.round === boardRound) ?? null;
         setMyPairingState({ pairing: mine, loading: false, error: null });
+        setMyPairingSyncedAt(Date.now());
       })
       .catch((err) => {
         if (cancelled) return;
@@ -741,7 +756,7 @@ function HomeContent() {
     return () => {
       cancelled = true;
     };
-  }, [myPlayer, eventInfo, eventId, boardRound]);
+  }, [myPlayer, eventInfo, eventId, boardRound, mineRefreshKey]);
 
   // My own individual board within a team event's team-vs-team pairing —
   // only once myPairingState resolves to one with a teamPairingId (a team
@@ -1220,6 +1235,9 @@ function HomeContent() {
                     rosterByTeamId,
                     itcLeagueId,
                     itcByUserId: itcRankings,
+                    onRefresh: refreshMine,
+                    refreshing: myPairingState.loading || refreshingEvent,
+                    lastSyncedAt: myPairingSyncedAt,
                   }
                 : null
             }
