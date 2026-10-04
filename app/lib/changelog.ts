@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.25.0",
+    date: "2026-10-04",
+    title: "Placings and pairings that fit your phone",
+    highlights: [
+      "Placings are stacked rows instead of a wide table, so nothing scrolls sideways on a phone. Each row shows the player's faction, Force Disposition and round-by-round scores.",
+      "Each player's army list is one tap away from Placings, and from the round pairings on singles events.",
+      "Singles pairings show both players side by side, each with their faction, disposition and list.",
+      "Tap a placings row for the rest of its stats. Averaged tiebreakers are rounded to two decimals.",
+      "Placings sort from a Sort by menu.",
+    ],
+  },
+  {
     version: "0.24.0",
     date: "2026-10-03",
     title: "Your round, from the tournament floor",

@@ -1416,6 +1416,7 @@ function HomeContent() {
             onRefresh={refreshPlacings}
             myId={myRowId}
             rosterByTeamId={rosterByTeamId}
+            playerById={isTeamEvent ? undefined : playerById}
             roundScoresById={placingRoundScores}
             lastSyncedAt={placingsDataAsOf}
             emptyMessage={
