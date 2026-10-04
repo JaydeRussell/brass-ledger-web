@@ -23,6 +23,16 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.24.0",
+    date: "2026-10-03",
+    title: "Your round, from the tournament floor",
+    highlights: [
+      "If your opponent never set a Force Disposition on Best Coast Pairings, Your round now says so and lets you pick it, then shows the round's missions as usual.",
+      "Your round has its own refresh button, which checks for a newly posted round and fetches your latest pairing.",
+      "\"Continue to your round\" on the Home page now opens your round instead of the event overview.",
+    ],
+  },
+  {
     version: "0.23.9",
     date: "2026-10-03",
     title: "Fewer duplicate requests, honest motion setting",
