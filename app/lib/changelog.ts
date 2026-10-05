@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.25.1",
+    date: "2026-10-04",
+    title: "Search keeps what you type",
+    highlights: [
+      "Typing in the Roster, Pairings or Placings search no longer drops or repeats letters when you pause mid-word.",
+    ],
+  },
+  {
     version: "0.25.0",
     date: "2026-10-04",
     title: "Placings and pairings that fit your phone",
