@@ -218,6 +218,8 @@ function HomeContent() {
   // Replaces the current history entry by default, so typing a search or
   // toggling compare never piles up back-button entries. `push` adds one
   // instead — used for tab switches, so back returns to the previous tab.
+  // `shallow` writes the URL with history.replaceState, skipping the
+  // router's server round trip; only for state the page already holds.
   const updateQuery = React.useCallback(
     (
       patch: {
@@ -230,7 +232,7 @@ function HomeContent() {
         playerB?: string | null;
         sort?: RosterSortKey;
       },
-      { push = false }: { push?: boolean } = {}
+      { push = false, shallow = false }: { push?: boolean; shallow?: boolean } = {}
     ) => {
       // Read from the live URL rather than this render's searchParams: the
       // debounced search write below runs up to 300ms later, and a tab
@@ -290,7 +292,8 @@ function HomeContent() {
       params.delete("event");
       const query = params.toString();
       const href = query ? `${pathname}?${query}` : pathname;
-      if (push) router.push(href, { scroll: false });
+      if (shallow) window.history.replaceState(null, "", href);
+      else if (push) router.push(href, { scroll: false });
       else router.replace(href, { scroll: false });
     },
     [pathname, router, searchParams]
@@ -305,19 +308,25 @@ function HomeContent() {
   // search survives a refresh, a shared link, or back/forward (below).
   const [searchQuery, setSearchQueryState] = React.useState(() => searchParams.get("q") ?? "");
   // Back/forward changes `q` without anyone typing; follow it. The page's
-  // own debounced writes land on the value already in the box.
+  // own writes are skipped: by the time one lands the box may hold more
+  // than was written, and resetting it would eat those keystrokes.
   const urlQuery = searchParams.get("q") ?? "";
   const [syncedUrlQuery, setSyncedUrlQuery] = React.useState(urlQuery);
+  const ownUrlQueryRef = React.useRef<string | null>(null);
   if (urlQuery !== syncedUrlQuery) {
     setSyncedUrlQuery(urlQuery);
-    if (urlQuery !== searchQuery) setSearchQueryState(urlQuery);
+    if (urlQuery === ownUrlQueryRef.current) ownUrlQueryRef.current = null;
+    else if (urlQuery !== searchQuery) setSearchQueryState(urlQuery);
   }
   const searchDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const setSearchQuery = React.useCallback(
     (q: string) => {
       setSearchQueryState(q);
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-      searchDebounceRef.current = setTimeout(() => updateQuery({ q }), 300);
+      searchDebounceRef.current = setTimeout(() => {
+        ownUrlQueryRef.current = q;
+        updateQuery({ q }, { shallow: true });
+      }, 300);
     },
     [updateQuery]
   );
