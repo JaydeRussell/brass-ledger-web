@@ -1,5 +1,5 @@
 "use client";
-import React, { useId, useState } from "react";
+import React, { useId, useRef, useState } from "react";
 
 import Button from "../ui/button";
 import { coarsen, lookupPlace, SEARCH_RADII_MILES, type Place } from "../../lib/follow";
@@ -33,8 +33,14 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
   const [placeDraft, setPlaceDraft] = useState(location?.kind === "place" ? location.name : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by every mode change and lookup. A location that arrives for an
+  // older one is dropped, so a slow answer can't set a location after the
+  // person has switched to Anywhere.
+  const request = useRef(0);
 
   const choose = (next: Mode) => {
+    request.current += 1;
+    setBusy(false);
     setMode(next);
     setError(null);
     if (next === "anywhere") onLocationChange(null);
@@ -47,13 +53,16 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
       setError("This browser can't share its location. Type a place instead.");
       return;
     }
+    const mine = ++request.current;
     setBusy(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (mine !== request.current) return;
         setBusy(false);
         onLocationChange({ kind: "near", lat: coarsen(pos.coords.latitude), lon: coarsen(pos.coords.longitude) });
       },
       (err) => {
+        if (mine !== request.current) return;
         setBusy(false);
         onLocationChange(null);
         setError(
@@ -69,10 +78,12 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
 
   const findPlace = async () => {
     if (placeDraft.trim().length < 2) return;
+    const mine = ++request.current;
     setBusy(true);
     setError(null);
     try {
       const [first, ...others] = await lookupPlace(placeDraft);
+      if (mine !== request.current) return;
       if (!first) {
         onLocationChange(null);
         setError("No place matches that. Try a city and country, like “Lindsay, Canada”.");
@@ -80,9 +91,9 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
       }
       onLocationChange({ kind: "place", ...first, others });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't look that place up.");
+      if (mine === request.current) setError(err instanceof Error ? err.message : "Couldn't look that place up.");
     } finally {
-      setBusy(false);
+      if (mine === request.current) setBusy(false);
     }
   };
 
