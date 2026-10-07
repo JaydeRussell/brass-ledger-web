@@ -457,3 +457,23 @@ test("a finished event says the player wasn't paired in the last round, not 'yet
   assert.match(html, /Not paired in round 10, the event(&#x27;|')s last round/);
   assert.doesNotMatch(html, / yet\./);
 });
+
+test("a team pairing's team ITC comparison names the opposing team, not the board opponent", async () => {
+  const React = (await import("react")).default;
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { default: MyRoundCard } = await import("./myRoundCard.tsx");
+  const me = { id: "p1", name: "Joakim", faction: "Orks", bcpUserId: "u-me", teamPlayerId: "tp-mine" };
+  const opp = { id: "p2", name: "Markus Hederberg", faction: "Space Marines", bcpUserId: "u-opp", teamPlayerId: "tp-theirs" };
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false, error: null, eventId: "evt-1", round: 5, signedIn: false,
+      pairing: { round: 5, table: 4, opponentName: "Team Tyrant", opponentTeamPlayerId: "tp-theirs", published: true, isDone: true },
+      board: { table: 4, player1Name: "Joakim", player1UserId: "u-me", player2Name: "Markus Hederberg", player2UserId: "u-opp", published: true, isDone: true, player1Score: 15, player2Score: 5 },
+      myBcpUserId: "u-me", myTeamPlayerId: "tp-mine", players: [me, opp], isTeamEvent: true,
+      rosterByTeamId: new Map([["tp-mine", [me]], ["tp-theirs", [opp]]]),
+      itcByUserId: { "u-me": { points: 500 }, "u-opp": { points: 200 } },
+    } as never)
+  );
+  assert.match(html, /vs <a[^>]*>Markus Hederberg/, "the board line still names the opponent player");
+  assert.match(html, /Team Tyrant/, "the team comparison names the opposing team");
+});

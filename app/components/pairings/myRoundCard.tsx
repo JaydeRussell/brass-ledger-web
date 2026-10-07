@@ -291,7 +291,7 @@ export default function MyRoundCard({
           <TeamItcComparison
             side1Name={teamName}
             side1Players={myRoster ?? []}
-            side2Name={resolved.opponentName}
+            side2Name={pairing.opponentName}
             side2Players={opponentRoster ?? []}
             itcByUserId={itcByUserId}
           />
@@ -327,7 +327,7 @@ export default function MyRoundCard({
           <TeamRosterFallback
             side1Name={teamName}
             side1Players={myRoster ?? []}
-            side2Name={resolved.opponentName}
+            side2Name={pairing.opponentName}
             side2Players={opponentRoster ?? []}
             itcByUserId={itcByUserId}
             itcLeagueId={itcLeagueId}
