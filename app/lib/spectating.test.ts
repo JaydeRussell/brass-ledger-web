@@ -71,3 +71,9 @@ test("possessive: uses the first name", () => {
   assert.equal(possessive("James Smith"), "James'");
   assert.equal(possessive("  Cher "), "Cher's");
 });
+
+test("canJoin: not for an event whose dates passed without it starting", () => {
+  const now = new Date("2026-10-06T12:00:00");
+  assert.equal(canJoin({ started: false, ended: false, startDate: "2026-10-02" }, undefined, now), false);
+  assert.equal(canJoin({ started: false, ended: false, startDate: "2026-10-10" }, undefined, now), true);
+});

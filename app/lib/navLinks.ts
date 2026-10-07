@@ -15,6 +15,7 @@
 export const NAV_LINKS: readonly { href: string; label: string }[] = [
   { href: "/", label: "Home" },
   { href: "/my-events", label: "My Events" },
+  { href: "/search", label: "Find Events" },
   { href: "/friends", label: "Friends" },
   { href: "/calendar", label: "Calendar" },
   { href: "/stats", label: "Player Stats" },

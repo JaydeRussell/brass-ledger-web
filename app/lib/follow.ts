@@ -123,12 +123,45 @@ export type EventSearchResult = {
   ended: boolean;
 };
 
+export type EventStatus = "Underway" | "Upcoming" | "Finished" | "Not started";
+
+/** The last moment of the event's final day, or null if BCP gave no usable date. */
+function lastDay(event: Pick<EventSearchResult, "startDate" | "endDate">): Date | null {
+  const raw = event.endDate || event.startDate;
+  if (!raw) return null;
+  const day = new Date(raw.slice(0, 10) + "T23:59:59");
+  return Number.isNaN(day.getTime()) ? null : day;
+}
+
+/**
+ * Where an event stands. "Not started" is one whose dates have passed
+ * without BCP ever marking it started, usually because it never ran.
+ */
+export function eventStatus(
+  event: Pick<EventSearchResult, "started" | "ended" | "startDate" | "endDate">,
+  now: Date = new Date()
+): EventStatus {
+  if (event.ended) return "Finished";
+  if (event.started) return "Underway";
+  const last = lastDay(event);
+  return last && last < now ? "Not started" : "Upcoming";
+}
+
 /** The shortest search worth sending. */
 export const EVENT_SEARCH_MIN_LENGTH = 3;
 
-/** 40k events from a week ago to two months ahead whose name contains `query`. */
-export function searchEvents(query: string): Promise<EventSearchResult[]> {
-  return request<EventSearchResult[]>(`/api/event-search?q=${encodeURIComponent(query.trim())}`);
+export type EventSearchPage = { results: EventSearchResult[]; nextCursor?: string };
+
+/**
+ * One page of 40k events whose name contains `query`, from two days ago to
+ * two months ahead, in date order. Pass a page's `nextCursor` for the next.
+ */
+export async function searchEvents(query: string, cursor?: string): Promise<EventSearchPage> {
+  const params = new URLSearchParams({ q: query.trim() });
+  if (cursor) params.set("cursor", cursor);
+  const body = await request<EventSearchPage | EventSearchResult[]>(`/api/event-search?${params.toString()}`);
+  // A backend without paging answers with a bare list.
+  return Array.isArray(body) ? { results: body } : body;
 }
 
 /** BCP's event page, where registration happens. */

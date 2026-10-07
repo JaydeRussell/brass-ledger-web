@@ -1,10 +1,9 @@
 "use client";
 import React, { useId, useState } from "react";
+import Link from "next/link";
 import type { RecentEvent } from "../../lib/recentEvents";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdownMenu";
 import Button from "../ui/button";
-import { formatDateRange } from "../../lib/eventDates";
-import { EVENT_SEARCH_MIN_LENGTH, searchEvents, type EventSearchResult } from "../../lib/follow";
 
 type EventSettingsProps = {
   eventName?: string;
@@ -38,26 +37,6 @@ export default function EventSettings({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const inputId = useId();
-  // Name search runs only on the Search button, so each query is one
-  // deliberate request to BCP.
-  const [results, setResults] = useState<EventSearchResult[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const canSearch = draft.trim().length >= EVENT_SEARCH_MIN_LENGTH && !searching;
-
-  const search = async () => {
-    if (!canSearch) return;
-    setSearching(true);
-    setSearchError(null);
-    try {
-      setResults(await searchEvents(draft));
-    } catch (err) {
-      setResults(null);
-      setSearchError(err instanceof Error ? err.message : "Search failed.");
-    } finally {
-      setSearching(false);
-    }
-  };
 
   const submit = (idOverride?: string) => {
     const parsed = parseEventId(idOverride ?? draft);
@@ -84,11 +63,7 @@ export default function EventSettings({
         // same text also drives the recent-events dropdown below, and a
         // non-empty starting value (matching nothing else) would filter
         // every recent event out the moment the panel opens.
-        if (next) {
-          setDraft("");
-          setResults(null);
-          setSearchError(null);
-        }
+        if (next) setDraft("");
       }}
     >
       <DropdownMenuTrigger asChild>
@@ -102,18 +77,24 @@ export default function EventSettings({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-80 p-3">
-        <label htmlFor={inputId} className="block text-xs font-medium text-text-secondary">
-          BCP event URL or ID, or an event name to search
-        </label>
-        <div className="relative mt-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <label htmlFor={inputId} className="text-xs font-medium text-text-secondary">
+            BCP event URL or ID
+          </label>
+          <Link
+            href="/search"
+            onClick={() => setOpen(false)}
+            className="text-xs font-medium text-brass-400 hover:underline"
+          >
+            Find by name →
+          </Link>
+        </div>
+        <div className="mt-1">
           <input
             id={inputId}
             autoFocus
             value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setResults(null);
-            }}
+            onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
               // DropdownMenu.Content listens for arrow-key/type-ahead item
@@ -127,12 +108,12 @@ export default function EventSettings({
             className="w-full rounded-md border border-surface-border bg-surface-0 px-2 py-2 text-sm text-text-primary outline-none focus:border-brass-500"
           />
 
-          {/* A dropdown of recently-viewed events, narrowed by whatever's
-              typed above — lets you pick one instead of finding and
-              pasting its URL again. Floats over the buttons below it,
-              like any other dropdown, rather than pushing them down. */}
-          {results === null && filteredRecent.length > 0 && (
-            <ul className="absolute inset-x-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-surface-border bg-surface-1 py-1 shadow-lg">
+          {/* Recently-viewed events, narrowed by whatever's typed above —
+              lets you pick one instead of finding and pasting its URL
+              again. Part of the panel's flow rather than floating, so it
+              never covers the buttons below it. */}
+          {filteredRecent.length > 0 && (
+            <ul className="mt-1 max-h-48 overflow-y-auto rounded-md border border-surface-border bg-surface-1 py-1">
               {filteredRecent.map((event) => (
                 <li key={event.id}>
                   <button
@@ -148,45 +129,9 @@ export default function EventSettings({
           )}
         </div>
 
-        {results !== null && (
-          <div className="mt-2">
-            {results.length === 0 ? (
-              <p className="text-xs text-text-secondary">
-                No 40k events from the past week or next two months match that name.
-              </p>
-            ) : (
-              <ul className="max-h-64 overflow-y-auto rounded-md border border-surface-border py-1">
-                {results.map((event) => {
-                  const dates = formatDateRange(event.startDate, event.endDate);
-                  return (
-                    <li key={event.id}>
-                      <button
-                        type="button"
-                        onClick={() => submit(event.id)}
-                        className="block w-full px-2 py-1.5 text-left hover:bg-surface-2"
-                      >
-                        <span className="block truncate text-sm text-text-primary">{event.name}</span>
-                        <span className="block truncate text-xs text-text-tertiary">
-                          {[dates, event.location, event.playerCount != null ? `${event.playerCount} players` : undefined]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        )}
-        {searchError && <p className="mt-2 text-xs text-danger-400">{searchError}</p>}
-
         <div className="mt-2 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
-          </Button>
-          <Button variant="secondary" onClick={search} disabled={!canSearch}>
-            {searching ? "Searching…" : "Search BCP"}
           </Button>
           <Button variant="primary" onClick={() => submit()}>
             Switch event
