@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.28.0",
+    date: "2026-10-06",
+    title: "Find events near you",
+    highlights: [
+      "Find Events searches by location: near you, or near a place you type, within 25, 50, 100 or 250 miles. The event name is now optional.",
+      "Pick a date range, or leave it blank for the next two months.",
+      "Results show how far away each event is, and for singles events how many places are left, like \"28 of 40 registered · 12 left\".",
+      "Your location stays out of the page's address. Near me rounds it to about 10 km before it's sent to Best Coast Pairings, and a typed place is looked up with OpenStreetMap. Neither is stored.",
+    ],
+  },
+  {
     version: "0.27.1",
     date: "2026-10-06",
     title: "Team tab before round one",

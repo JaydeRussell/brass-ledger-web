@@ -52,18 +52,24 @@ test("saveSpectating posts the link token or the picked player", async () => {
   assert.deepEqual(JSON.parse(String(calls[1].init?.body)), { eventId: "evt-1", playerId: "p2" });
 });
 
-test("searchEvents encodes the query, passes the cursor, and accepts an unpaged list", async () => {
+test("searchEvents sends each filter, passes the cursor, and accepts an unpaged list", async () => {
   const calls = installFetch(() => ({ status: 200, body: { results: [], nextCursor: "c2" } }));
-  const page = await searchEvents("  Lone Star & Co ");
+  const page = await searchEvents({ q: "  Lone Star & Co " });
   assert.match(calls[0].url, /\/api\/event-search\?q=Lone\+Star\+%26\+Co$/);
   assert.equal(page.nextCursor, "c2");
-  await searchEvents("open", "c2");
-  assert.match(calls[1].url, /q=open&cursor=c2$/);
+  await searchEvents({ near: { lat: 39.7, lon: -105, radiusMiles: 100 }, from: "2026-10-10", to: "2026-10-12" }, "c2");
+  assert.match(calls[1].url, /\?lat=39\.7&lon=-105&radius=100&from=2026-10-10&to=2026-10-12&cursor=c2$/);
 
   installFetch(() => ({ status: 200, body: [{ id: "e1", name: "Open", teamEvent: false, started: false, ended: false }] }));
-  const legacy = await searchEvents("open");
+  const legacy = await searchEvents({ q: "open" });
   assert.equal(legacy.results.length, 1);
   assert.equal(legacy.nextCursor, undefined);
+});
+
+test("coarsen rounds coordinates to about 10 km", async () => {
+  const { coarsen } = await import("./follow.ts");
+  assert.equal(coarsen(39.7392), 39.7);
+  assert.equal(coarsen(-104.9903), -105);
 });
 
 test("eventStatus: upcoming, underway or finished", async () => {
@@ -80,4 +86,20 @@ test("eventStatus: a past event BCP never started is Not started, not Upcoming",
   assert.equal(eventStatus({ started: false, ended: false, startDate: "2026-10-06" }, now), "Upcoming", "today still counts");
   assert.equal(eventStatus({ started: false, ended: false, startDate: "2026-10-05", endDate: "2026-10-07" }, now), "Upcoming");
   assert.equal(eventStatus({ started: false, ended: false }, now), "Upcoming", "no dates");
+});
+
+test("registrationText: places left, full, unlimited, or hidden", async () => {
+  const { registrationText } = await import("./follow.ts");
+  assert.equal(registrationText({ playerCount: 28, capacity: 40 }), "28 of 40 registered · 12 left");
+  assert.equal(registrationText({ playerCount: 40, capacity: 40 }), "Full · 40 of 40");
+  assert.equal(registrationText({ playerCount: 42, capacity: 40 }), "Full · 42 of 40");
+  assert.equal(registrationText({ playerCount: 85 }), "85 registered");
+  assert.equal(registrationText({}), undefined);
+});
+
+test("distanceText: approximate from the device, exact from a typed place", async () => {
+  const { distanceText } = await import("./follow.ts");
+  assert.equal(distanceText(11), "About 11 mi (18 km) away");
+  assert.equal(distanceText(11, "Denver, Colorado, United States"), "11 mi (18 km) from Denver");
+  assert.equal(distanceText(0, "Lindsay"), "0 mi (0 km) from Lindsay");
 });
