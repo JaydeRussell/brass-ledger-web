@@ -108,11 +108,14 @@ function TeammateRow({
   entry,
   players,
   isSelf,
+  spectating,
   started,
 }: {
   entry: TeammateEntry;
   players?: Player[];
   isSelf: boolean;
+  // The marked row is a followed player's, not the viewer's.
+  spectating: boolean;
   started: boolean;
 }) {
   const { player, pairings, loading, error, placing } = entry;
@@ -126,7 +129,7 @@ function TeammateRow({
     <>
       {placing !== undefined && <Badge tone="neutral" className="mr-1.5">{`#${placing}`}</Badge>}
       <PlayerStatsLink name={player.name} bcpUserId={player.bcpUserId} />
-      {isSelf && <span className="ml-1.5 font-normal text-text-tertiary">(you)</span>}
+      {isSelf && <span className="ml-1.5 font-normal text-text-tertiary">{spectating ? "(following)" : "(you)"}</span>}
     </>
   );
 
@@ -226,6 +229,7 @@ export default function MyTeamPanel({ teammates, players, myPlayerId, subjectNam
             entry={entry}
             players={players}
             isSelf={myPlayerId !== undefined && entry.player.id === myPlayerId}
+            spectating={subjectName !== undefined}
             started={started}
           />
         ))}

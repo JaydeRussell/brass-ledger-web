@@ -186,3 +186,15 @@ test("shows just the names, not loading, before the first round", () => {
   assert.doesNotMatch(html, /Not published yet/);
   assert.doesNotMatch(html, /animate-pulse/);
 });
+
+test("a spectator's view marks the followed player, not \"(you)\"", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(MyTeamPanel, {
+      teammates: [{ player: player(), pairings: [], loading: false, error: null }],
+      myPlayerId: "p1",
+      subjectName: "Teammate One",
+    })
+  );
+  assert.match(html, /\(following\)/);
+  assert.doesNotMatch(html, /\(you\)/);
+});
