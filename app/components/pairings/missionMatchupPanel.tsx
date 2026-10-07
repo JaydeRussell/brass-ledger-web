@@ -9,6 +9,8 @@ import MissionScoringDetails from "../shared/missionScoringDetails";
 type MissionMatchupPanelProps = {
   myDisposition: Disposition;
   opponentDisposition: Disposition;
+  // "Your mission", or the followed player's when a spectator is viewing.
+  myLabel?: string;
 };
 
 /** One mission's full VP-scoring breakdown, collapsed by default — a
@@ -39,7 +41,11 @@ function MissionRules({ label, missionId }: { label: string; missionId: MissionI
  * gating (singles events only, both dispositions known) that decides when
  * this renders instead of PlayerStatsPanel.
  */
-export default function MissionMatchupPanel({ myDisposition, opponentDisposition }: MissionMatchupPanelProps) {
+export default function MissionMatchupPanel({
+  myDisposition,
+  opponentDisposition,
+  myLabel = "Your mission",
+}: MissionMatchupPanelProps) {
   const myMission = getPrimaryMission(myDisposition, opponentDisposition);
   const opponentMission = getPrimaryMission(opponentDisposition, myDisposition);
   const layouts = deploymentMapImages(myDisposition, opponentDisposition);
@@ -49,7 +55,7 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1 text-sm">
         <p>
-          <span className="text-text-tertiary">Your mission: </span>
+          <span className="text-text-tertiary">{myLabel}: </span>
           <span className="font-semibold text-text-primary">{myMission}</span>
         </p>
         <p>
@@ -59,7 +65,7 @@ export default function MissionMatchupPanel({ myDisposition, opponentDisposition
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <MissionRules label="Your mission" missionId={myMission} />
+        <MissionRules label={myLabel} missionId={myMission} />
         <MissionRules label="Their mission" missionId={opponentMission} />
       </div>
 

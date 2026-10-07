@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
+import { possessive } from "../../lib/spectating";
 import type { MyPairing } from "../../lib/bcp";
 import { classifyScore, SCORE_OUTCOME_CLASSES } from "../../lib/scoreColor";
 import Badge from "../ui/badge";
@@ -32,6 +33,8 @@ type MyTeamPanelProps = {
   // "(you)" — myTeammates always includes them alongside actual
   // teammates (see app/event/page.tsx).
   myPlayerId?: string | number;
+  // The followed player's name, when a spectator is viewing their team.
+  subjectName?: string;
 };
 
 function latestPublished(pairings: MyPairing[]): MyPairing | undefined {
@@ -177,7 +180,7 @@ function TeammateRow({ entry, players, isSelf }: { entry: TeammateEntry; players
  * Purely a display of already-published BCP data, same scope as
  * MyPairings/Placings — nothing here is computed.
  */
-export default function MyTeamPanel({ teammates, players, myPlayerId }: MyTeamPanelProps) {
+export default function MyTeamPanel({ teammates, players, myPlayerId, subjectName }: MyTeamPanelProps) {
   if (teammates.length === 0) return null;
 
   const sorted = [...teammates].sort((a, b) => {
@@ -197,7 +200,7 @@ export default function MyTeamPanel({ teammates, players, myPlayerId }: MyTeamPa
   return (
     <Card className="overflow-hidden shadow-sm">
       <div className="border-b border-surface-border bg-surface-2 px-4 py-3">
-        <p className="font-semibold text-text-primary">Your team</p>
+        <p className="font-semibold text-text-primary">{subjectName ? `${possessive(subjectName)} team` : "Your team"}</p>
         <p className="text-sm text-text-secondary">{teammates[0].player.homeClub} players at this event</p>
       </div>
       <ul className="flex flex-col gap-2 p-3">

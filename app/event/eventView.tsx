@@ -1,0 +1,1578 @@
+"use client";
+import React, { useEffect, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+import TeamRoster from "../components/roster/roster";
+import TeamCompare from "../components/roster/teamCompare";
+import PlayerCompare from "../components/roster/playerCompare";
+import PlayerCard from "../components/roster/playerCard";
+import EventSettings from "../components/settings/eventSettings";
+import RoundBoard from "../components/pairings/roundBoard";
+import PlacingsTable from "../components/placings/placingsTable";
+import OverviewPanel from "../components/overview/overviewPanel";
+import MinePanel from "../components/overview/minePanel";
+import MyTeamPanel from "../components/overview/myTeamPanel";
+import TabBar, { type TabKey } from "../components/tabs/tabBar";
+import SearchBar from "../components/search/searchBar";
+import AccessStatusMessage from "../components/shared/accessStatusMessage";
+import RefreshButton from "../components/shared/refreshButton";
+import Button from "../components/ui/button";
+import Card from "../components/ui/card";
+import ErrorAlert from "../components/ui/errorAlert";
+import PageHeader from "../components/layout/pageHeader";
+import PageMain from "../components/layout/pageMain";
+import ShareFollowLink from "../components/follow/shareFollowLink";
+import FollowPlayerPicker from "../components/follow/followPlayerPicker";
+import JoinEventCard from "../components/follow/joinEventCard";
+import SpectatingBar from "../components/follow/spectatingBar";
+import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
+import {
+  fetchBcpEventInfo,
+  fetchBcpPlayers,
+  fetchBcpPlacings,
+  fetchCurrentItcLeagueId,
+  fetchItcRanking,
+  fetchMyIndividualPairings,
+  fetchMyTeamPairings,
+  fetchPlacingRoundScores,
+  fetchTeamPairingBoards,
+  fetchRoundBoard,
+  setFollowToken,
+  type BoardPairing,
+  type EventInfo,
+  type ItcRanking,
+  type MyPairing,
+  type PlacingEntry,
+  type TeamBoardMatchup,
+} from "../lib/bcp";
+import {
+  loadRecentEvents,
+  recordRecentEvent,
+  fetchRecentEventsFromServer,
+  recordRecentEventOnServer,
+  type RecentEvent,
+} from "../lib/recentEvents";
+import { loadCachedEvent, saveCachedEvent, formatRelativeTime } from "../lib/eventCache";
+import { useCurrentUser } from "../lib/auth";
+import { logClientEvent } from "../lib/clientLog";
+import { useDelayedFlag } from "../lib/useDelayedFlag";
+import { createRequestQueue } from "../lib/requestQueue";
+import { ROSTER_SORT_OPTIONS, isRosterSortKey, sortPlayers, type RosterSortKey } from "../lib/rosterSort";
+import { fetchSpectatingFor, removeSpectating, saveSpectating } from "../lib/follow";
+import { canJoin, mineEmptyMessage, resolvePerspective } from "../lib/spectating";
+
+// The default BCP event to open on first visit. Use the settings (gear)
+// button in the header to switch to a different event — the choice is
+// remembered locally after that.
+const DEFAULT_EVENT_ID = "uC7tqqdPYLtT"; // The Challengers Cup 2026
+
+// How many ITC ranking lookups run at once. Each is one BCP request.
+const ITC_LOOKUP_CONCURRENCY = 3;
+
+// NOTE ON SCOPE: this app intentionally only displays data (rosters, event
+// info, already-published pairings, and already-computed placings) pulled
+// from BCP. It does not score, rank, or suggest pairings. Challengers Cup's
+// event pack explicitly bans "AI programs, algorithms, or methodology...
+// for the pairings process" — that's broader than just AI, so no
+// matchup-scoring or pairing-suggestion feature should be added to
+// this app, even without any AI involved. "My pairings" and "Placings"
+// only ever display decisions/results BCP has already published, never
+// anything this app computed. This holds at a team level too, not just
+// per-board: team events run a live captain-driven board-assignment step
+// (Defender/Attacker) after BCP publishes the team pairing, so even a
+// team-aggregate computed comparison could feed that in-progress human
+// decision. Plainly showing two already-published numbers side by side
+// (no framing, no "favored" label, no color tied to which is higher)
+// stays fine. A "favored team" indicator is out for the same reason: it
+// is a computed judgment about a matchup. See the backend's
+// internal/bcp/types.go for the full reasoning.
+
+const EVENT_ID_STORAGE_KEY = "bcp-event-id";
+
+/** An event opened through a follow link: fixed event and player, no sign-in needed. */
+export type FollowLinkView = { token: string; eventId: string; playerId: string };
+
+type EventViewProps = { follow?: FollowLinkView };
+
+type TeammatePairings = {
+  label: string;
+  pairings: MyPairing[];
+  loading: boolean;
+  error: string | null;
+};
+
+function readLocalStorage<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+// Clears follow lists left in localStorage by earlier versions of the app.
+function clearLegacyFollowStorage() {
+  try {
+    const keys = Object.keys(window.localStorage).filter((k) => k.startsWith("bcp-following:"));
+    keys.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    // best-effort only
+  }
+}
+
+function writeLocalStorage<T>(key: string, value: T) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // best-effort only (e.g. private browsing can throw) — not worth surfacing
+  }
+}
+
+const TAB_KEYS: TabKey[] = ["overview", "mine", "team", "roster", "pairings", "placings"];
+function isTabKey(value: string | null): value is TabKey {
+  return value !== null && (TAB_KEYS as string[]).includes(value);
+}
+
+// A plain, case-insensitive substring match — the only kind of "search"
+// this app does. An empty query matches everything.
+function matchesSearch(text: string | undefined, query: string): boolean {
+  if (!query) return true;
+  if (!text) return false;
+  return text.toLowerCase().includes(query.toLowerCase());
+}
+
+function groupByTeam(players: Player[]): Map<string, Player[]> {
+  const teams = new Map<string, Player[]>();
+  for (const player of players) {
+    if (!player.team) continue;
+    const existing = teams.get(player.team);
+    if (existing) {
+      existing.push(player);
+    } else {
+      teams.set(player.team, [player]);
+    }
+  }
+  return teams;
+}
+
+function CardSkeleton() {
+  return (
+    <Card className="animate-pulse overflow-hidden shadow-sm">
+      <div className="border-b border-surface-border bg-surface-2 px-4 py-3">
+        <div className="h-4 w-1/3 rounded-sm bg-surface-border" />
+      </div>
+      <div className="space-y-2 p-3">
+        <div className="h-12 rounded-md bg-surface-2" />
+        <div className="h-12 rounded-md bg-surface-2" />
+      </div>
+    </Card>
+  );
+}
+
+export default function EventView({ follow }: EventViewProps = {}) {
+  // These start from fixed, SSR-safe defaults rather than reading
+  // localStorage in a lazy useState initializer. That read can't happen on
+  // the server (no `window`), so a lazy initializer would make the
+  // client's very first render — which React diffs against the
+  // server-rendered HTML during hydration — come out different from what
+  // the server sent whenever a real event/recents value was
+  // actually stored. That mismatch is exactly what produces a "Hydration
+  // failed" error. The mount effect below (`hydrated`) swaps in the real,
+  // stored values right after hydration completes, once it's safe to
+  // render something the server couldn't have known about.
+  const [eventId, setEventId] = React.useState(DEFAULT_EVENT_ID);
+  const [hydrated, setHydrated] = React.useState(false);
+
+  // Recent events sync to the signed-in account's own backend storage
+  // instead of localStorage once `checked` is true and `user` is non-null
+  // (see app/lib/recentEvents.ts's *Server functions) — a signed-out
+  // visitor keeps them in localStorage. Waiting on `checked` (rather
+  // than treating "not yet known" as signed-out) avoids a flash where a
+  // signed-in visitor's guest-mode localStorage briefly shows before the
+  // real, synced list replaces it.
+  const { user, checked: authChecked, authError: authCheckFailed } = useCurrentUser();
+  // Re-runs the event fetch when a lookup that failed (or a pending
+  // account) later comes back approved.
+  const approved = user?.status === "approved";
+  useRedirectToLoginIfSignedOut(user, authChecked, !follow);
+
+  // A follow link's token goes with every event-data request while this
+  // page shows it, which is what lets a signed-out visitor load the event.
+  // Set before hydration, which every fetch waits on.
+  const followToken = follow?.token;
+  const followEventId = follow?.eventId;
+  useEffect(() => {
+    if (!followToken) return;
+    setFollowToken(followToken, followEventId ?? null);
+    return () => setFollowToken(null);
+  }, [followToken, followEventId]);
+
+  // The player whose side of the event this page can show instead of the
+  // viewer's own: the link's player, the one a signed-in viewer saved to
+  // Spectating, or one they just picked. Someone also playing in the event
+  // sees their own view unless they switch.
+  const [followedPlayerId, setFollowedPlayerId] = React.useState<string | null>(follow?.playerId ?? null);
+  const [viewAsFollowed, setViewAsFollowed] = React.useState(false);
+
+  // The active tab and the search filter both live in the URL's query
+  // string (`?tab=...&q=...`) instead of plain component state. Unlike
+  // localStorage, the URL's query string is available identically on the
+  // server and the client for the very first render, so this doesn't need
+  // the same hydration-guard dance as eventId/recentEvents above
+  // — there's nothing to "swap in" after mount. This is also what makes
+  // the current tab (and whatever's typed into the search box) survive a
+  // refresh and be shareable as a link.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const activeTab: TabKey = isTabKey(searchParams.get("tab")) ? (searchParams.get("tab") as TabKey) : "overview";
+  // Head-to-head team compare (Roster tab only) — a mode within the tab,
+  // not a tab of its own, so it doesn't disturb TabBar's deliberate mirror
+  // of BCP's own Overview/Roster/Pairings/Placings layout. Kept in the URL
+  // like tab/q above so a specific comparison is a shareable link.
+  const compareMode = searchParams.get("compare") === "1";
+  const compareTeamAParam = searchParams.get("teamA");
+  const compareTeamBParam = searchParams.get("teamB");
+  const comparePlayerAParam = searchParams.get("playerA");
+  const comparePlayerBParam = searchParams.get("playerB");
+  const sortParam = searchParams.get("sort");
+  const rosterSort: RosterSortKey = isRosterSortKey(sortParam) ? sortParam : "name";
+
+  // Applies one or more query-param changes at once (never omit a field
+  // that's changing in the same call — see the two call sites below that
+  // change both tab and q together — since each call replaces the whole
+  // query string built from the current URL, so two separate calls in the
+  // same tick would race and the second would clobber the first's change).
+  // Replaces the current history entry by default, so typing a search or
+  // toggling compare never piles up back-button entries. `push` adds one
+  // instead — used for tab switches, so back returns to the previous tab.
+  // `shallow` writes the URL with history.replaceState, skipping the
+  // router's server round trip; only for state the page already holds.
+  const updateQuery = React.useCallback(
+    (
+      patch: {
+        tab?: TabKey;
+        q?: string;
+        compare?: boolean;
+        teamA?: string | null;
+        teamB?: string | null;
+        playerA?: string | null;
+        playerB?: string | null;
+        sort?: RosterSortKey;
+      },
+      { push = false, shallow = false }: { push?: boolean; shallow?: boolean } = {}
+    ) => {
+      // Read from the live URL rather than this render's searchParams: the
+      // debounced search write below runs up to 300ms later, and a tab
+      // clicked in between would otherwise be undone.
+      const params = new URLSearchParams(
+        typeof window === "undefined" ? searchParams.toString() : window.location.search
+      );
+      if ("tab" in patch) {
+        if (!patch.tab || patch.tab === "overview") params.delete("tab");
+        else params.set("tab", patch.tab);
+      }
+      if ("q" in patch) {
+        if (!patch.q) params.delete("q");
+        else params.set("q", patch.q);
+      }
+      if ("compare" in patch) {
+        if (!patch.compare) {
+          // Turning compare off drops whichever teams were picked too,
+          // rather than leaving them to resurface stale the next time
+          // compare mode is turned back on.
+          params.delete("compare");
+          params.delete("teamA");
+          params.delete("teamB");
+          params.delete("playerA");
+          params.delete("playerB");
+        } else {
+          params.set("compare", "1");
+        }
+      }
+      if ("teamA" in patch) {
+        if (!patch.teamA) params.delete("teamA");
+        else params.set("teamA", patch.teamA);
+      }
+      if ("teamB" in patch) {
+        if (!patch.teamB) params.delete("teamB");
+        else params.set("teamB", patch.teamB);
+      }
+      if ("playerA" in patch) {
+        if (!patch.playerA) params.delete("playerA");
+        else params.set("playerA", patch.playerA);
+      }
+      if ("playerB" in patch) {
+        if (!patch.playerB) params.delete("playerB");
+        else params.set("playerB", patch.playerB);
+      }
+      if ("sort" in patch) {
+        if (!patch.sort || patch.sort === "name") params.delete("sort");
+        else params.set("sort", patch.sort);
+      }
+      // `event` (see the hydration effect below, which is what actually
+      // reads and consumes it — search for "?event=") is a one-shot
+      // "open this event" link target, not persistent URL state. It's
+      // already stripped right after hydration reads it, but every
+      // query update strips it too, belt-and-suspenders, so it can never
+      // resurface in the address bar via some other path building off a
+      // stale searchParams snapshot.
+      params.delete("event");
+      const query = params.toString();
+      const href = query ? `${pathname}?${query}` : pathname;
+      if (shallow) window.history.replaceState(null, "", href);
+      else if (push) router.push(href, { scroll: false });
+      else router.replace(href, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  // The search box's displayed/filtered-on value lives in plain local
+  // state, not the URL, so every keystroke filters instantly — filtering
+  // an already-loaded roster/pairings/placings list is cheap, but routing
+  // through `updateQuery` (a `router.replace` navigation) on every single
+  // keystroke was the actual bottleneck, not the filtering itself. The
+  // URL's own `q` still gets the value, just debounced, purely so a
+  // search survives a refresh, a shared link, or back/forward (below).
+  const [searchQuery, setSearchQueryState] = React.useState(() => searchParams.get("q") ?? "");
+  // Back/forward changes `q` without anyone typing; follow it. The page's
+  // own writes are skipped: by the time one lands the box may hold more
+  // than was written, and resetting it would eat those keystrokes.
+  const urlQuery = searchParams.get("q") ?? "";
+  const [syncedUrlQuery, setSyncedUrlQuery] = React.useState(urlQuery);
+  const ownUrlQueryRef = React.useRef<string | null>(null);
+  if (urlQuery !== syncedUrlQuery) {
+    setSyncedUrlQuery(urlQuery);
+    if (urlQuery === ownUrlQueryRef.current) ownUrlQueryRef.current = null;
+    else if (urlQuery !== searchQuery) setSearchQueryState(urlQuery);
+  }
+  const searchDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setSearchQuery = React.useCallback(
+    (q: string) => {
+      setSearchQueryState(q);
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = setTimeout(() => {
+        ownUrlQueryRef.current = q;
+        updateQuery({ q }, { shallow: true });
+      }, 300);
+    },
+    [updateQuery]
+  );
+  React.useEffect(
+    () => () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    },
+    []
+  );
+
+  const [eventInfo, setEventInfo] = React.useState<EventInfo | null>(null);
+  const [players, setPlayers] = React.useState<Player[]>([]);
+  // When the currently-shown eventInfo/players were last known good —
+  // "just now" for a fresh fetch, or a cached snapshot's own cachedAt for
+  // a fallback shown after a failed refetch (see eventCache.ts). Null
+  // only when there's truly nothing to show yet.
+  const [dataAsOf, setDataAsOf] = React.useState<number | null>(null);
+  // Bumped by the page header's own RefreshButton (see refreshEventData
+  // below) to re-run the eventInfo/players fetch effect on demand — same
+  // "bump a key to force a manual re-run" shape as boardRefreshKey/
+  // placingsRefreshKey below, just for the data that underlies every tab
+  // (not one tab's own sub-fetch). refreshingEvent only disables that
+  // button/shows its cooldown bar; it deliberately doesn't touch `loading`
+  // (which gates the page's first-paint skeletons) so a manual refresh
+  // updates the already-visible content in place instead of flashing back
+  // to a loading state.
+  const [eventRefreshKey, setEventRefreshKey] = React.useState(0);
+  // Set by refreshEventData so the load effect knows this run is a manual
+  // refresh and should bypass the caches; read and cleared by the effect.
+  const eventRefreshRequestedRef = React.useRef(false);
+  const [refreshingEvent, setRefreshingEvent] = React.useState(false);
+  const [mineRefreshKey, setMineRefreshKey] = React.useState(0);
+  const mineRefreshRequestedRef = React.useRef(false);
+  const [myPairingSyncedAt, setMyPairingSyncedAt] = React.useState<number | null>(null);
+  // BCP's current flagship ITC ranking league id, used to link each player
+  // card to their already-published BCP ranking profile — see
+  // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. Null until it
+  // resolves; player cards fall back to an unscoped profile link until then.
+  const [itcLeagueId, setItcLeagueId] = React.useState<string | null>(null);
+  // ITC ranking (score + rank), keyed by BCP global user id. Populated for
+  // "Your round" (the lookup effect below) and for each roster card once
+  // it has been on screen.
+  const [itcRankings, setItcRankings] = React.useState<Record<string, ItcRanking | null>>({});
+  // User ids already requested, so nothing is fetched twice. A failed
+  // lookup is removed so a later attempt can retry it.
+  const requestedItcIdsRef = React.useRef<Set<string>>(new Set());
+  // Each lookup is one BCP request (BCP has no batch form), so they run a
+  // few at a time rather than all at once when a roster scrolls into view.
+  const [itcQueue] = React.useState(() =>
+    createRequestQueue<{ bcpUserId: string; leagueId: string }>(
+      ({ bcpUserId, leagueId }) =>
+        fetchItcRanking(bcpUserId, leagueId).then(
+          (ranking) => setItcRankings((prev) => ({ ...prev, [bcpUserId]: ranking })),
+          () => {
+            requestedItcIdsRef.current.delete(bcpUserId);
+          }
+        ),
+      ITC_LOOKUP_CONCURRENCY
+    )
+  );
+  const [loading, setLoading] = React.useState(true);
+  // A cached snapshot (eventCache.ts) is shown while the fetch is in flight,
+  // and also when no fetch can start because /api/me couldn't be reached.
+  const rosterPending = loading && players.length === 0;
+  const slowLoad = useDelayedFlag(rosterPending);
+  const [error, setError] = React.useState<string | null>(null);
+  const [recentEvents, setRecentEvents] = React.useState<RecentEvent[]>([]);
+  // Note: the shared Roster/Pairings/Placings search box's value
+  // (`searchQuery`) is its own local state, debounced into the URL's `q`
+  // param rather than driven by it — see above.
+
+  // Round-by-round pairings for each of myTeammates (auto-detected via
+  // shared home club), keyed by String(id).
+  const [teammatePairings, setTeammatePairings] = React.useState<
+    Record<string, TeammatePairings>
+  >({});
+
+  // The signed-in account's own current-round pairing, found via the
+  // linked BCP profile. See myRoundCard.tsx.
+  const [myPairingState, setMyPairingState] = React.useState<{
+    pairing: MyPairing | null;
+    loading: boolean;
+    error: string | null;
+  }>({ pairing: null, loading: false, error: null });
+  // My own individual board within a team event's team-vs-team pairing,
+  // once BCP has published individual boards for it — see the effect
+  // below and myRoundCard.tsx's doc comment.
+  const [myBoard, setMyBoard] = React.useState<TeamBoardMatchup | null>(null);
+
+  // `boardRound` is null until the event's data loads and picks a sensible
+  // starting round (the latest one published) — see the first effect below.
+  const [boardRound, setBoardRound] = React.useState<number | null>(null);
+  const [boardEntries, setBoardEntries] = React.useState<BoardPairing[]>([]);
+  const [boardLoading, setBoardLoading] = React.useState(false);
+  // Which "eventId:round" boardEntries belongs to, set when a fetch
+  // settles. Until it matches the current event and round, the board is
+  // still loading — which also covers opening the tab by link, refresh or
+  // back, where no click set boardLoading.
+  const [boardLoadedFor, setBoardLoadedFor] = React.useState<string | null>(null);
+  const [boardError, setBoardError] = React.useState<string | null>(null);
+  // When `boardEntries` was last successfully fetched — same "as of"
+  // purpose as the top-level dataAsOf, scoped to this one round's board.
+  // Fed to RoundBoard's RefreshButton via its lastSyncedAt prop.
+  const [boardDataAsOf, setBoardDataAsOf] = React.useState<number | null>(null);
+  // Bumped by RoundBoard's "check for updates" button to re-run the fetch
+  // effect below for the *same* round — changing boardRound alone wouldn't
+  // retrigger it. No timer ever bumps this; see CLAUDE.md's no-polling rule.
+  const [boardRefreshKey, setBoardRefreshKey] = React.useState(0);
+  // Set (synchronously, right before bumping boardRefreshKey) by
+  // refreshBoard below, and read/reset by the fetch effect — the effect
+  // itself can't otherwise tell "this run is because of a manual refresh"
+  // apart from "this run is because the round/event changed," and only
+  // the former should ask the backend to bypass its own cache.
+  const boardRefreshRequestedRef = React.useRef(false);
+
+  const [placings, setPlacings] = React.useState<PlacingEntry[]>([]);
+  const [placingsLoading, setPlacingsLoading] = React.useState(false);
+  // Same as boardLoadedFor, for placings (keyed by event id).
+  const [placingsLoadedFor, setPlacingsLoadedFor] = React.useState<string | null>(null);
+  const [placingsError, setPlacingsError] = React.useState<string | null>(null);
+  // Same purpose as boardDataAsOf, for PlacingsTable's RefreshButton.
+  const [placingsDataAsOf, setPlacingsDataAsOf] = React.useState<number | null>(null);
+  // Same purpose as boardRefreshKey, for PlacingsTable's refresh button.
+  const [placingsRefreshKey, setPlacingsRefreshKey] = React.useState(0);
+  const placingsRefreshRequestedRef = React.useRef(false);
+  // The score strip's own copy, since the placings effect consumes the one above.
+  const roundScoresRefreshRequestedRef = React.useRef(false);
+  // Round-by-round score strip for each placing row — a pure enrichment
+  // of already-fetched round pairings (see fetchPlacingRoundScores' doc
+  // comment), so a load/refresh failure here just leaves this empty and
+  // PlacingsTable falls back to BCP's own aggregate metric instead of
+  // surfacing an error of its own.
+  const [placingRoundScores, setPlacingRoundScores] = React.useState<Map<string, MyPairing[]>>(new Map());
+
+  // Client-only hydration from localStorage, run exactly once right after
+  // mount — see the comment on `eventId`'s initial state above for why
+  // this can't happen in a lazy useState initializer instead. Everything
+  // read here (which event, recently-viewed events)
+  // depends on the browser's localStorage and simply doesn't exist yet on
+  // the server, so it can only be applied once we're safely past the
+  // hydration check.
+  useEffect(() => {
+    // Waits for the sign-in check too — see the comment on `user` above —
+    // so this only runs once whether to sync from the server or from
+    // localStorage is actually known.
+    if (!authChecked) return;
+
+    // Runs in a resolved-promise callback so the hydration setState calls
+    // happen after the effect body rather than during it.
+    Promise.resolve().then(async () => {
+      // A `?event=<id>` in the URL (see app/components/myEvents/
+      // eventList.tsx's "View event page" link, which is how the My
+      // Events page sends someone here) wins over whatever event was
+      // last open in this browser — it's an explicit "open this one"
+      // request. Persisted to localStorage the same way switching events
+      // via the settings gear is, so it's the one that comes back on a
+      // plain revisit too. Either way the param itself is one-shot, not
+      // meant to linger in the address bar — stripped back out below,
+      // once hydration (which needs its value) is done with it.
+      clearLegacyFollowStorage();
+      // A follow link fixes the event, and leaves this browser's own
+      // last-opened event and recent events alone.
+      if (follow) {
+        setEventId(follow.eventId);
+        const cachedFollowed = loadCachedEvent(follow.eventId);
+        if (cachedFollowed) {
+          setEventInfo(cachedFollowed.eventInfo);
+          setPlayers(cachedFollowed.players);
+          setDataAsOf(cachedFollowed.cachedAt);
+        }
+        setHydrated(true);
+        return;
+      }
+      const eventParam = searchParams.get("event");
+      const storedEventId = eventParam || readLocalStorage(EVENT_ID_STORAGE_KEY, DEFAULT_EVENT_ID);
+      setEventId(storedEventId);
+      if (eventParam) writeLocalStorage(EVENT_ID_STORAGE_KEY, eventParam);
+
+      // Show the last-known view for this event immediately, before the
+      // real fetch below even starts — the actual point of eventCache.ts.
+      // Overwritten by the load effect once a fresh fetch succeeds; left
+      // in place if that fetch fails (spotty venue wifi) instead of
+      // sitting on a blank page.
+      const cached = loadCachedEvent(storedEventId);
+      if (cached) {
+        setEventInfo(cached.eventInfo);
+        setPlayers(cached.players);
+        setDataAsOf(cached.cachedAt);
+      }
+
+      // Server-side sync needs an approved account on the backend
+      // (api.RequireApproved) — a pending/rejected account falls back to
+      // the same localStorage path as signed-out below, rather than firing
+      // a request that can only 403.
+      if (user && user.status === "approved") {
+        const recents = await fetchRecentEventsFromServer().catch((err: unknown) => {
+          logClientEvent("warn", "fetching synced recent events failed, starting empty", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return [] as RecentEvent[];
+        });
+        setRecentEvents(recents);
+      } else {
+        setRecentEvents(loadRecentEvents());
+      }
+      setHydrated(true);
+
+      if (eventParam) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("event");
+        const query = params.toString();
+        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      }
+    });
+    // Intentionally omits `user` from its own re-run condition beyond
+    // `authChecked` flipping true once — signing in/out mid-session
+    // doesn't re-hydrate this initial load; see handleChangeEvent below
+    // for where `user` is read on every subsequent event change. Also
+    // omits searchParams/router/pathname — this only ever needs to read
+    // whatever `?event=` the page happened to load with once, at mount;
+    // it's not meant to react to later URL changes (that's what
+    // handleChangeEvent's own updateQuery call is for).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked]);
+
+  // Load this event's data whenever the selected event changes. Waits for
+  // the hydration effect above so it never fetches the fixed default event
+  // only to immediately re-fetch the real stored one. The state *reset*
+  // (loading/error/players) happens in the event handler that changes
+  // `eventId` (see handleChangeEvent below) rather than here; this effect
+  // only marks the refresh as in flight and applies the results.
+  useEffect(() => {
+    if (!hydrated) return;
+    // Every BCP route needs an approved session or this event's follow
+    // token, so without either the fetch is skipped rather than left to
+    // 401/403. `approved` is a dependency, so a lookup that failed and
+    // later succeeds (or an account approved mid-visit) still loads;
+    // `user` itself is read from the closure, including for the
+    // best-effort recent-event sync below.
+    if (!follow && (!user || user.status !== "approved")) return;
+    let cancelled = false;
+    setRefreshingEvent(true);
+
+    const refresh = eventRefreshRequestedRef.current;
+    eventRefreshRequestedRef.current = false;
+    Promise.all([fetchBcpEventInfo(eventId, refresh), fetchBcpPlayers(eventId, refresh)])
+      .then(([info, playerList]) => {
+        if (cancelled) return;
+        setEventInfo(info);
+        setPlayers(playerList);
+        setDataAsOf(Date.now());
+        saveCachedEvent(eventId, { eventInfo: info, players: playerList, cachedAt: Date.now() });
+        // Recent events are the viewer's own browsing, not a followed event.
+        if (!follow) {
+          setRecentEvents((prev) =>
+            recordRecentEvent(
+              prev,
+              { id: info.id, name: info.name, teamEvent: info.teamEvent },
+              !user
+            )
+          );
+          if (user) {
+            // Write-through: the local list above already updated
+            // optimistically, this just persists the same fact to the
+            // signed-in account so it's there on another device too. Not
+            // awaited — a signed-in visitor doesn't need to wait on this to
+            // keep browsing, and a failure here is a sync nice-to-have, not
+            // something to surface as a page error.
+            recordRecentEventOnServer({ id: info.id, name: info.name, teamEvent: info.teamEvent }).catch(
+              (err: unknown) => {
+                logClientEvent("warn", "syncing recent event failed", {
+                  error: err instanceof Error ? err.message : String(err),
+                });
+              }
+            );
+          }
+        }
+        const latestPublishableRound = info.ended ? info.numberOfRounds : info.currentRound;
+        setBoardRound(latestPublishableRound > 0 ? latestPublishableRound : null);
+
+        // Anchored on the event id itself, not gameSystemId — see
+        // fetchCurrentItcLeagueId's doc comment in lib/bcp.ts. The
+        // backend already gracefully resolves to a null leagueId for an
+        // event with no leagues at all, so no upfront guard is needed
+        // here the way a gameSystemId presence check once was.
+        fetchCurrentItcLeagueId(eventId)
+          .then((leagueId) => {
+            if (!cancelled) setItcLeagueId(leagueId ?? null);
+          })
+          .catch(() => {
+            // Non-critical — player cards just fall back to an unscoped
+            // BCP profile link if this never resolves.
+          });
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          // A generic fallback, not "Failed to load event data" — this
+          // always renders after an existing "Couldn't load event data:"
+          // prefix, so a fallback that repeats "load event data" read as
+          // a stutter (same fix applied to every other fallback string
+          // in this file that pairs with its own "Couldn't load X:"
+          // prefix elsewhere in the JSX below).
+          setError(err instanceof Error ? err.message : "an unknown error");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshingEvent(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `user` itself excluded, see comment above
+  }, [eventId, hydrated, eventRefreshKey, approved]);
+
+  // A direct user action (the page header's RefreshButton) — see
+  // RefreshButton's own doc comment for why this is a button rather than a
+  // timer, and refreshEventData's sibling refreshPlacings below for the
+  // same pattern scoped to one tab instead of the whole page.
+  // Your round's refresh: the event too (a new round may have posted),
+  // and this round's pairing past the caches.
+  const refreshMine = () => {
+    mineRefreshRequestedRef.current = true;
+    setMineRefreshKey((k) => k + 1);
+    refreshEventData();
+  };
+
+  const refreshEventData = () => {
+    eventRefreshRequestedRef.current = true;
+    setEventRefreshKey((k) => k + 1);
+  };
+
+  // Whose round and team this page shows: the viewer's own roster row
+  // (matched on their linked BCP profile, as RosterPicker does), or the
+  // followed player's. Everything below that says "my" means this subject.
+  const perspective = React.useMemo(
+    () => resolvePerspective(players, user?.bcpUserId, followedPlayerId, viewAsFollowed),
+    [players, user?.bcpUserId, followedPlayerId, viewAsFollowed]
+  );
+  const { ownPlayer, followedPlayer, spectating } = perspective;
+  const myPlayer = perspective.subject;
+  const myBcpUserId = myPlayer?.bcpUserId;
+
+  // A signed-in viewer's saved spectated player for this event, if any.
+  useEffect(() => {
+    if (follow || !hydrated || !approved) return;
+    let cancelled = false;
+    fetchSpectatingFor(eventId)
+      .then((playerId) => {
+        if (!cancelled) setFollowedPlayerId(playerId);
+      })
+      .catch((err: unknown) => {
+        logClientEvent("warn", "fetching spectated player failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [follow, hydrated, approved, eventId]);
+
+  // Opening a follow link while signed in saves it to the Spectating tab.
+  // The backend ignores the viewer's own link and events they're playing in.
+  useEffect(() => {
+    if (!followToken || !approved) return;
+    saveSpectating({ token: followToken }).catch((err: unknown) => {
+      logClientEvent("warn", "saving followed event failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }, [followToken, approved]);
+
+  const followPlayer = async (playerId: string) => {
+    await saveSpectating({ eventId, playerId });
+    setFollowedPlayerId(playerId);
+    setViewAsFollowed(false);
+  };
+
+  const stopFollowing = () => {
+    const previous = followedPlayerId;
+    setFollowedPlayerId(null);
+    setViewAsFollowed(false);
+    removeSpectating(eventId).catch((err: unknown) => {
+      setFollowedPlayerId(previous);
+      setError(err instanceof Error ? err.message : "couldn't stop following");
+    });
+  };
+
+  // "My team" — myself plus every other player sharing my own BCP-
+  // registered club (types/player.d.ts's homeClub, always populated
+  // per-registrant regardless of event format — see internal/bcp/
+  // players.go's HomeClub mapping), singles events only. Some singles
+  // GTs let a group self-declare a shared club specifically so BCP's
+  // own pairing algorithm avoids pairing them in early rounds; this
+  // surfaces that same already-published grouping. Gated on myPlayer
+  // alone (not eventInfo.started, unlike myRoundInfo below) since the
+  // roster — and so who your teammates are — is known before the event
+  // starts. Empty (not just yourself) when nobody else shares your
+  // club — a "team" of one isn't a team.
+  const myTeammates = React.useMemo(() => {
+    if (eventInfo?.teamEvent || !myPlayer?.homeClub) return [];
+    const clubmates = players.filter((p) => p.homeClub === myPlayer.homeClub && p.id !== myPlayer.id);
+    return clubmates.length > 0 ? [myPlayer, ...clubmates] : [];
+  }, [players, myPlayer, eventInfo?.teamEvent]);
+
+  // Round-by-round pairings for myTeammates. Purely a read of
+  // already-published BCP data.
+  useEffect(() => {
+    if (!eventInfo || myTeammates.length === 0) return;
+    const upToRound = eventInfo.ended ? eventInfo.numberOfRounds : eventInfo.currentRound;
+    if (upToRound <= 0) return;
+
+    let cancelled = false;
+
+    myTeammates.forEach((teammate) => {
+      const key = String(teammate.id);
+      // Seeds a loading entry so the panel shows it as loading until the
+      // fetch below resolves.
+      setTeammatePairings((prev) => ({
+        ...prev,
+        [key]: prev[key] ?? { label: teammate.name, pairings: [], loading: true, error: null },
+      }));
+
+      fetchMyIndividualPairings(eventId, key, upToRound)
+        .then((result) => {
+          if (cancelled) return;
+          setTeammatePairings((prev) => ({
+            ...prev,
+            [key]: { label: teammate.name, pairings: result, loading: false, error: null },
+          }));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setTeammatePairings((prev) => ({
+            ...prev,
+            [key]: {
+              label: teammate.name,
+              pairings: prev[key]?.pairings ?? [],
+              loading: false,
+              error: err instanceof Error ? err.message : "an unknown error",
+            },
+          }));
+        });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myTeammates, eventInfo, eventId]);
+
+  // Non-null exactly when the "Your round" card is shown.
+  const myRoundInfo =
+    myPlayer && eventInfo?.started
+      ? { bcpUserId: myBcpUserId, teamPlayerId: myPlayer.teamPlayerId, playerId: String(myPlayer.id) }
+      : null;
+
+  // My own current-round pairing. `boardRound` (set once event data loads
+  // — see the earlier effect) is already "the latest publishable round,"
+  // exactly what this needs. Your round's own refresh button bumps
+  // mineRefreshKey and sets the flag, which this run consumes.
+  React.useEffect(() => {
+    if (!myPlayer || !eventInfo || !boardRound) {
+      setMyPairingState({ pairing: null, loading: false, error: null });
+      return;
+    }
+
+    let cancelled = false;
+    setMyPairingState((prev) => ({ ...prev, loading: true, error: null }));
+    const refresh = mineRefreshRequestedRef.current;
+    mineRefreshRequestedRef.current = false;
+
+    const request =
+      eventInfo.teamEvent && myPlayer.teamPlayerId
+        ? fetchMyTeamPairings(eventId, myPlayer.teamPlayerId, boardRound, refresh)
+        : fetchMyIndividualPairings(eventId, String(myPlayer.id), boardRound, refresh);
+
+    request
+      .then((results) => {
+        if (cancelled) return;
+        // Match on round number rather than taking the array's last entry
+        // — a round can come back with no entry at all if BCP hasn't
+        // generated it yet, which shouldn't fall back to an older round.
+        const mine = results.find((p) => p.round === boardRound) ?? null;
+        setMyPairingState({ pairing: mine, loading: false, error: null });
+        setMyPairingSyncedAt(Date.now());
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setMyPairingState({
+          pairing: null,
+          loading: false,
+          error: err instanceof Error ? err.message : "an unknown error",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myPlayer, eventInfo, eventId, boardRound, mineRefreshKey]);
+
+  // My own individual board within a team event's team-vs-team pairing —
+  // only once myPairingState resolves to one with a teamPairingId (a team
+  // event; an individual-event pairing never has one), so "Your round"
+  // can show your actual table/opponent instead of just your team's. Falls back to null (team-level info only) if boards aren't
+  // published yet or the fetch fails.
+  React.useEffect(() => {
+    const pairing = myPairingState.pairing;
+    if (!pairing?.teamPairingId || !myBcpUserId) {
+      setMyBoard(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetchTeamPairingBoards(eventId, pairing.round, pairing.teamPairingId)
+      .then((matchups) => {
+        if (cancelled) return;
+        const mine =
+          matchups.find(
+            (m) => m.player1UserId === myBcpUserId || m.player2UserId === myBcpUserId
+          ) ?? null;
+        setMyBoard(mine);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMyBoard(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myPairingState.pairing, eventId, myBcpUserId]);
+
+  // Same roster, keyed by each tournament team's BCP teamPlayer id instead
+  // of its display name — what a team-vs-team pairing row's side1Id/side2Id
+  // (and MyPairing's opponentTeamPlayerId) actually reference. Used to fall
+  // back to "who's on each team" when a pairing's individual boards aren't
+  // published yet, and (below) to find both sides' rosters for the neutral
+  // avg-ITC comparison on "Your round".
+  const rosterByTeamId = useMemo(() => {
+    const map = new Map<string, Player[]>();
+    players.forEach((player) => {
+      if (!player.teamPlayerId) return;
+      const existing = map.get(player.teamPlayerId);
+      if (existing) existing.push(player);
+      else map.set(player.teamPlayerId, [player]);
+    });
+    return map;
+  }, [players]);
+
+  const requestItcRanking = React.useCallback(
+    (bcpUserId: string) => {
+      if (!itcLeagueId || requestedItcIdsRef.current.has(bcpUserId)) return;
+      requestedItcIdsRef.current.add(bcpUserId);
+      itcQueue.enqueue({ bcpUserId, leagueId: itcLeagueId });
+    },
+    [itcLeagueId, itcQueue]
+  );
+
+  // Looks up ITC ranking (score + rank) for "Your round": my opponent,
+  // and for a team event both teams' rosters for the avg-ITC comparison.
+  // Never includes myTeammates (see myTeamPanel.tsx — that view leaves
+  // ITC out to stay skimmable). Roster cards request their own once on
+  // screen.
+  useEffect(() => {
+    if (!itcLeagueId) return;
+
+    const wanted = new Set<string>();
+
+    const opponentUserId = myPairingState.pairing?.opponentUserId;
+    if (opponentUserId) wanted.add(opponentUserId);
+    if (myBoard && myBcpUserId) {
+      const boardOpponent =
+        myBoard.player1UserId === myBcpUserId ? myBoard.player2UserId : myBoard.player1UserId;
+      if (boardOpponent) wanted.add(boardOpponent);
+    }
+
+    if (eventInfo?.teamEvent && myPlayer?.teamPlayerId) {
+      (rosterByTeamId.get(myPlayer.teamPlayerId) ?? []).forEach((p) => {
+        if (p.bcpUserId) wanted.add(p.bcpUserId);
+      });
+      const opponentTeamPlayerId = myPairingState.pairing?.opponentTeamPlayerId;
+      if (opponentTeamPlayerId) {
+        (rosterByTeamId.get(opponentTeamPlayerId) ?? []).forEach((p) => {
+          if (p.bcpUserId) wanted.add(p.bcpUserId);
+        });
+      }
+    }
+
+    wanted.forEach(requestItcRanking);
+  }, [
+    requestItcRanking,
+    itcLeagueId,
+    rosterByTeamId,
+    eventInfo?.teamEvent,
+    myPlayer?.teamPlayerId,
+    myPairingState.pairing,
+    myBoard,
+    myBcpUserId,
+  ]);
+
+  // Fetches the full pairings board for whichever round is selected —
+  // every matchup BCP has published for that round. Sets state only from
+  // its async callbacks.
+  useEffect(() => {
+    if (!eventInfo || !boardRound || boardRound < 1) return;
+
+    let cancelled = false;
+    const refresh = boardRefreshRequestedRef.current;
+    boardRefreshRequestedRef.current = false;
+
+    fetchRoundBoard(eventId, boardRound, eventInfo.teamEvent, refresh)
+      .then((entries) => {
+        if (!cancelled) {
+          setBoardEntries(entries);
+          setBoardError(null);
+          setBoardDataAsOf(Date.now());
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setBoardError(err instanceof Error ? err.message : "an unknown error");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBoardLoading(false);
+          setBoardLoadedFor(`${eventId}:${boardRound}`);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, boardRound, eventInfo, boardRefreshKey]);
+
+  // Placings are only fetched once the Placings or Team tab is actually
+  // opened (Team needs each teammate's placing to sort by — see
+  // myTeamPanel.tsx) — per CLAUDE.md's "fetch only what's needed" rule,
+  // there's no reason to pull standings for events nobody's looking at.
+  // The underlying request is still cached/rate-limited, so flipping
+  // tabs back and forth doesn't cost extra network calls.
+  useEffect(() => {
+    if ((activeTab !== "placings" && activeTab !== "team") || !eventInfo) return;
+
+    let cancelled = false;
+    const refresh = placingsRefreshRequestedRef.current;
+    placingsRefreshRequestedRef.current = false;
+
+    fetchBcpPlacings(eventId, eventInfo.teamEvent, refresh)
+      .then((entries) => {
+        if (!cancelled) {
+          setPlacings(entries);
+          setPlacingsError(null);
+          setPlacingsDataAsOf(Date.now());
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setPlacingsError(err instanceof Error ? err.message : "an unknown error");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPlacingsLoading(false);
+          setPlacingsLoadedFor(eventId);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
+
+  // Round-by-round score strip for the Placings tab (see
+  // fetchPlacingRoundScores' doc comment) — same "only once the tab is
+  // open" gating as the placings fetch above, and rides the same manual
+  // refresh (placingsRefreshKey) rather than adding a second refresh
+  // control. Fails quietly: PlacingsTable already renders fine from
+  // `placings` alone, so a failure here just leaves the strip empty
+  // rather than surfacing a second error alongside placingsError.
+  useEffect(() => {
+    if (activeTab !== "placings" || !eventInfo) return;
+    const upToRound = eventInfo.ended ? eventInfo.numberOfRounds : eventInfo.currentRound;
+    if (upToRound <= 0) return;
+
+    let cancelled = false;
+    const refresh = roundScoresRefreshRequestedRef.current;
+    roundScoresRefreshRequestedRef.current = false;
+    fetchPlacingRoundScores(eventId, eventInfo.teamEvent, upToRound, refresh)
+      .then((scores) => {
+        if (!cancelled) setPlacingRoundScores(scores);
+      })
+      .catch((err: unknown) => {
+        logClientEvent("warn", "fetching placing round scores failed, falling back to plain record", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, eventId, eventInfo, placingsRefreshKey]);
+
+  const teams = useMemo(() => groupByTeam(players), [players]);
+
+  const handleChangeEvent = (id: string) => {
+    // Re-choosing the open event would reset the page and wait on a load
+    // effect that only re-runs when the id changes, so it would never
+    // finish. Treat it as a refresh instead.
+    if (id === eventId) {
+      refreshEventData();
+      return;
+    }
+    setEventId(id);
+    writeLocalStorage(EVENT_ID_STORAGE_KEY, id);
+    // These resets happen here, in the event handler, rather than in the
+    // data-loading effect above, so they land together with the new id.
+    // Tab and search filter reset together in one
+    // updateQuery call (see its comment above for why that has to be a
+    // single call rather than two).
+    updateQuery({ tab: "overview", q: "" });
+    // searchQuery itself is local state (see its declaration above) —
+    // updateQuery only touches the URL, so it needs resetting here too,
+    // and any pending debounced write cancelling so it can't fire after
+    // and stomp this reset back to whatever was being typed before.
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    setSearchQueryState("");
+    // Hydrate from this event's own last-known-good snapshot if one
+    // exists (e.g. switching back to an event viewed earlier this
+    // session) instead of blanking to null — see eventCache.ts. Falls
+    // back to null/[] when there's nothing cached for it yet.
+    const cached = loadCachedEvent(id);
+    setEventInfo(cached?.eventInfo ?? null);
+    setPlayers(cached?.players ?? []);
+    setDataAsOf(cached?.cachedAt ?? null);
+    setItcLeagueId(null);
+    setItcRankings({});
+    requestedItcIdsRef.current = new Set();
+    itcQueue.clear();
+    setLoading(true);
+    setError(null);
+    setTeammatePairings({});
+    setBoardRound(null);
+    setBoardEntries([]);
+    setBoardError(null);
+    setPlacings([]);
+    setPlacingsError(null);
+    setPlacingRoundScores(new Map());
+    setFollowedPlayerId(null);
+    setViewAsFollowed(false);
+  };
+  // A `?event=` arriving after mount (the command palette or a link opened
+  // while already on this page) switches to that event. The first one is
+  // consumed by the hydration effect above.
+  const eventParamAfterMount = searchParams.get("event");
+  useEffect(() => {
+    if (follow || !hydrated || !eventParamAfterMount) return;
+    Promise.resolve().then(() => {
+      if (eventParamAfterMount !== eventId) {
+        writeLocalStorage(EVENT_ID_STORAGE_KEY, eventParamAfterMount);
+        handleChangeEvent(eventParamAfterMount);
+      } else {
+        updateQuery({});
+      }
+    });
+    // Runs only when the param itself changes; handleChangeEvent reads the
+    // latest state each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventParamAfterMount, hydrated]);
+
+
+  const changeBoardRound = (round: number) => {
+    if (!eventInfo) return;
+    const maxRound = eventInfo.ended ? eventInfo.numberOfRounds : eventInfo.currentRound;
+    const clamped = Math.min(Math.max(round, 1), Math.max(maxRound, 1));
+    setBoardLoading(true);
+    setBoardRound(clamped);
+  };
+
+  // Manual "check for updates" for the currently viewed round — see
+  // RoundBoard's onRefresh doc comment for why this is a button rather
+  // than a timer. RefreshButton (rendered by RoundBoard) already guards
+  // against a rapidly mashed click on its own — see its doc comment —
+  // so this only needs to do the actual work of a single accepted click.
+  const refreshBoard = () => {
+    boardRefreshRequestedRef.current = true;
+    setBoardLoading(true);
+    setBoardRefreshKey((k) => k + 1);
+  };
+
+  // Same, for PlacingsTable's refresh button.
+  const refreshPlacings = () => {
+    placingsRefreshRequestedRef.current = true;
+    roundScoresRefreshRequestedRef.current = true;
+    setPlacingsLoading(true);
+    setPlacingsRefreshKey((k) => k + 1);
+  };
+
+  const changeTab = (tab: TabKey) => {
+    if (tab === activeTab) return;
+    updateQuery({ tab }, { push: true });
+    if (tab === "placings" && placings.length === 0) {
+      // A direct user action (clicking the tab) — the placings-loading
+      // effect only ever sets state from its own async callbacks, so the
+      // "starting to load" flag is set here instead.
+      setPlacingsLoading(true);
+    }
+  };
+
+  const isTeamEvent = eventInfo?.teamEvent ?? true;
+
+  // Labels the Mine and Team tabs with the followed player's name.
+  const subjectName = spectating ? followedPlayer?.name : undefined;
+  const showingFollowed = spectating || (followedPlayerId !== null && !ownPlayer);
+  const followedMissing =
+    followedPlayerId !== null && players.length > 0 && !players.some((p) => String(p.id) === followedPlayerId);
+  const joinable = canJoin(eventInfo, ownPlayer);
+
+  const sortedTeamNames = Array.from(teams.keys()).sort((a, b) => a.localeCompare(b));
+
+  // A team name picked before switching events (or before this event's
+  // roster finished loading) shouldn't linger in Compare mode pointing at
+  // a team that isn't actually in this roster — fall back to "unpicked"
+  // rather than showing an empty roster panel labeled with a stale name.
+  const compareTeamA = compareTeamAParam && sortedTeamNames.includes(compareTeamAParam) ? compareTeamAParam : null;
+  const compareTeamB = compareTeamBParam && sortedTeamNames.includes(compareTeamBParam) ? compareTeamBParam : null;
+  const sortedPlayers = sortPlayers(players, rosterSort);
+  // Same "fall back to unpicked rather than a stale reference" reasoning
+  // as compareTeamA/B above, for a singles event's player-compare mode.
+  const comparePlayerA =
+    comparePlayerAParam && sortedPlayers.some((p) => String(p.id) === comparePlayerAParam)
+      ? comparePlayerAParam
+      : null;
+  const comparePlayerB =
+    comparePlayerBParam && sortedPlayers.some((p) => String(p.id) === comparePlayerBParam)
+      ? comparePlayerBParam
+      : null;
+
+  const upToRound = eventInfo
+    ? eventInfo.ended
+      ? eventInfo.numberOfRounds
+      : eventInfo.currentRound
+    : 0;
+
+  // My own id in whichever id-space the current event uses (teamPlayerId
+  // for team events, player id for singles) — lets Pairings/Placings
+  // highlight my row.
+  const myRowId = myPlayer ? (isTeamEvent ? myPlayer.teamPlayerId : String(myPlayer.id)) : undefined;
+
+  // --- Search filtering ------------------------------------------------
+  // A plain client-side name filter shared by Roster, Pairings, and
+  // Placings — see the note on `searchQuery`'s state above. Never changes
+  // what's fetched, only what's shown from what's already loaded.
+  const playerMatches = (player: Player) =>
+    matchesSearch(player.name, searchQuery) ||
+    matchesSearch(player.faction, searchQuery) ||
+    matchesSearch(player.subFaction, searchQuery) ||
+    matchesSearch(player.homeClub, searchQuery);
+
+  const filteredTeamNames = sortedTeamNames.filter(
+    (team) => matchesSearch(team, searchQuery) || (teams.get(team) ?? []).some(playerMatches)
+  );
+  const filteredPlayers = sortedPlayers.filter(playerMatches);
+  // A singles pairing side's id is the event player id, so its faction
+  // comes from the roster. Team sides have no single faction.
+  const playerById = new Map(sortedPlayers.map((p) => [String(p.id), p]));
+  const sideMatches = (name: string, id?: string) => {
+    const player = id ? playerById.get(id) : undefined;
+    return matchesSearch(name, searchQuery) || (player !== undefined && playerMatches(player));
+  };
+  const filteredBoardEntries = boardEntries.filter(
+    (entry) => sideMatches(entry.side1Name, entry.side1Id) || sideMatches(entry.side2Name, entry.side2Id)
+  );
+  // A singles placing's id is the event player id, so its club comes from
+  // the roster.
+  const filteredPlacings = placings.filter(
+    (entry) =>
+      matchesSearch(entry.name, searchQuery) ||
+      matchesSearch(entry.faction, searchQuery) ||
+      matchesSearch(entry.subFaction, searchQuery) ||
+      matchesSearch(playerById.get(entry.id)?.homeClub, searchQuery)
+  );
+
+  const content = (
+    <>
+      {authCheckFailed && dataAsOf && (
+        <p className="mx-auto max-w-5xl px-4 text-xs text-text-secondary">
+          Showing saved data from {formatRelativeTime(dataAsOf)}.
+        </p>
+      )}
+
+      {error && !authCheckFailed && (
+        <div className="mx-auto max-w-5xl px-4">
+          {eventInfo ? (
+            // Still showing a last-known-good snapshot (see
+            // eventCache.ts) rather than blanking the page — a
+            // softer notice than a hard failure, since there's
+            // actually something on screen.
+            <ErrorAlert>
+              Showing saved data{dataAsOf ? ` from ${formatRelativeTime(dataAsOf)}` : ""} —
+              couldn&apos;t refresh: {error}
+            </ErrorAlert>
+          ) : (
+            <ErrorAlert>Couldn&apos;t load event data: {error}</ErrorAlert>
+          )}
+        </div>
+      )}
+
+      {followedPlayer && (
+        <SpectatingBar
+          followedName={followedPlayer.name}
+          spectating={spectating}
+          onToggleView={ownPlayer ? () => setViewAsFollowed((v) => !v) : undefined}
+          onStop={!follow && approved ? stopFollowing : undefined}
+        />
+      )}
+
+      <div className="sticky top-0 z-10 border-b border-surface-border bg-surface-0/90 pt-2 backdrop-blur">
+        <TabBar active={activeTab} onChange={changeTab} showTeamTab={myTeammates.length > 0} />
+      </div>
+
+      <PageMain>
+    {((activeTab === "roster" && !compareMode) || activeTab === "pairings" || activeTab === "placings") && (
+      <SearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder={
+          activeTab === "roster"
+            ? "Search teams, players, factions…"
+            : activeTab === "pairings"
+              ? "Search teams, players, factions…"
+              : "Search standings, factions, teams…"
+        }
+      />
+    )}
+
+    {/* Keyed on activeTab so switching tabs remounts this subtree and
+        replays the fade-in (see globals.css) instead of a hard cut —
+        SearchBar above stays outside it since it's shared chrome, not
+        per-tab content. */}
+    <div key={activeTab} className="animate-fade-in flex flex-col gap-6">
+    {activeTab === "overview" && (
+      <>
+        {joinable && <JoinEventCard eventId={eventId} showLinkHint={approved && !user?.bcpUserId} />}
+        <OverviewPanel eventInfo={eventInfo} />
+      </>
+    )}
+
+    {activeTab === "mine" && (
+      <MinePanel
+        myRound={
+          myRoundInfo
+            ? {
+                eventId,
+                round: boardRound ?? 0,
+                loading: myPairingState.loading,
+                error: myPairingState.error,
+                pairing: myPairingState.pairing,
+                board: myBoard,
+                myBcpUserId: myRoundInfo.bcpUserId,
+                players,
+                myTeamPlayerId: myRoundInfo.teamPlayerId,
+                isTeamEvent,
+                rosterByTeamId,
+                itcLeagueId,
+                itcByUserId: itcRankings,
+                onRefresh: refreshMine,
+                refreshing: myPairingState.loading || refreshingEvent,
+                lastSyncedAt: myPairingSyncedAt,
+                subjectName,
+                signedIn: approved,
+              }
+            : null
+        }
+        subjectName={subjectName}
+        emptyMessage={mineEmptyMessage({
+          showingFollowed,
+          followedName: followedPlayer?.name,
+          followedMissing,
+          linked: Boolean(user?.bcpUserId),
+          onRoster: ownPlayer !== undefined,
+        })}
+      />
+    )}
+    {activeTab === "mine" && ownPlayer && !spectating && approved && !follow && (
+      <ShareFollowLink eventId={eventId} canCreate={!eventInfo?.ended} />
+    )}
+    {activeTab === "mine" && joinable && <JoinEventCard eventId={eventId} showLinkHint={approved && !user?.bcpUserId} />}
+    {activeTab === "mine" && !follow && approved && !ownPlayer && !followedPlayer && players.length > 0 && !eventInfo?.ended && (
+      <FollowPlayerPicker players={players} teamEvent={isTeamEvent} onFollow={followPlayer} />
+    )}
+
+    {activeTab === "team" && myTeammates.length > 0 && (
+      <MyTeamPanel
+        teammates={myTeammates.map((teammate) => {
+          const entry = teammatePairings[String(teammate.id)];
+          const placingEntry = placings.find(
+            (p) => String(p.id) === String(teammate.id) || (teammate.bcpUserId && p.bcpUserId === teammate.bcpUserId)
+          );
+          return {
+            player: teammate,
+            pairings: entry?.pairings ?? [],
+            loading: entry?.loading ?? true,
+            error: entry?.error ?? null,
+            placing: placingEntry?.placing,
+          };
+        })}
+        players={players}
+        myPlayerId={myPlayer?.id}
+        subjectName={subjectName}
+      />
+    )}
+
+    {activeTab === "roster" && (
+      <>
+        {!rosterPending && (isTeamEvent ? sortedTeamNames : sortedPlayers).length >= 2 && (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {!compareMode && (
+              <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                {isTeamEvent ? "Sort players by" : "Sort by"}
+                <select
+                  value={rosterSort}
+                  onChange={(e) => updateQuery({ sort: e.target.value as RosterSortKey })}
+                  className="rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-500/60"
+                >
+                  {ROSTER_SORT_OPTIONS.map((o) => (
+                    <option key={o.key} value={o.key}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => updateQuery({ compare: !compareMode })}>
+              {compareMode ? "← Back to roster" : isTeamEvent ? "⇄ Compare two teams" : "⇄ Compare two players"}
+            </Button>
+          </div>
+        )}
+        {!rosterPending && compareMode && isTeamEvent ? (
+          <TeamCompare
+            teamNames={sortedTeamNames}
+            teams={teams}
+            itcLeagueId={itcLeagueId}
+            itcRankings={itcRankings}
+            onRequestItc={requestItcRanking}
+            selectedA={compareTeamA}
+            selectedB={compareTeamB}
+            onSelectA={(team) => updateQuery({ teamA: team })}
+            onSelectB={(team) => updateQuery({ teamB: team })}
+          />
+        ) : !rosterPending && compareMode && !isTeamEvent ? (
+          <PlayerCompare
+            players={sortPlayers(players, "name")}
+            itcLeagueId={itcLeagueId}
+            itcRankings={itcRankings}
+            onRequestItc={requestItcRanking}
+            selectedA={comparePlayerA}
+            selectedB={comparePlayerB}
+            onSelectA={(id) => updateQuery({ playerA: id })}
+            onSelectB={(id) => updateQuery({ playerB: id })}
+          />
+        ) : rosterPending ? (
+          <div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+            {slowLoad && (
+              <p aria-live="polite" className="mt-3 text-center text-xs text-text-tertiary">
+                Taking longer than usual — still waiting on Best Coast Pairings.
+              </p>
+            )}
+          </div>
+        ) : error && players.length === 0 ? null : isTeamEvent ? (
+          sortedTeamNames.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
+              No rosters published for this event yet.
+            </p>
+          ) : filteredTeamNames.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
+              No teams or players match &ldquo;{searchQuery}&rdquo;.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {filteredTeamNames.map((team) => (
+                <TeamRoster
+                  key={team}
+                  teamName={team}
+                  players={sortPlayers(teams.get(team) ?? [], rosterSort)}
+                  itcLeagueId={itcLeagueId}
+                  itcRankings={itcRankings}
+                  onPlayerVisible={requestItcRanking}
+                />
+              ))}
+            </div>
+          )
+        ) : sortedPlayers.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
+            No players published for this event yet.
+          </p>
+        ) : filteredPlayers.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
+            No players match &ldquo;{searchQuery}&rdquo;.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {filteredPlayers.map((player) => (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                itcLeagueId={itcLeagueId}
+                itcRanking={player.bcpUserId ? itcRankings[player.bcpUserId] : undefined}
+                onVisible={player.bcpUserId ? () => requestItcRanking(player.bcpUserId!) : undefined}
+              />
+            ))}
+          </div>
+        )}
+      </>
+    )}
+
+    {activeTab === "pairings" && (
+      <>
+        {boardRound && (
+          <RoundBoard
+            eventId={eventId}
+            round={boardRound}
+            minRound={1}
+            maxRound={Math.max(upToRound, boardRound)}
+            entries={filteredBoardEntries}
+            loading={boardLoading || boardLoadedFor !== `${eventId}:${boardRound}`}
+            error={boardError}
+            onRoundChange={changeBoardRound}
+            onRefresh={refreshBoard}
+            teamEvent={isTeamEvent}
+            itcLeagueId={itcLeagueId}
+            rosterByTeamId={rosterByTeamId}
+            players={players}
+            myId={myRowId}
+            lastSyncedAt={boardDataAsOf}
+            emptyMessage={
+              searchQuery && boardEntries.length > 0
+                ? `No pairings match "${searchQuery}" in round ${boardRound}.`
+                : undefined
+            }
+          />
+        )}
+      </>
+    )}
+
+    {activeTab === "placings" && (
+      <PlacingsTable
+        entries={filteredPlacings}
+        badgeEntries={placings}
+        loading={placingsLoading || placingsLoadedFor !== eventId}
+        error={placingsError}
+        onRefresh={refreshPlacings}
+        myId={myRowId}
+        rosterByTeamId={rosterByTeamId}
+        playerById={isTeamEvent ? undefined : playerById}
+        roundScoresById={placingRoundScores}
+        lastSyncedAt={placingsDataAsOf}
+        emptyMessage={
+          searchQuery && placings.length > 0
+            ? `No placings match "${searchQuery}".`
+            : undefined
+        }
+      />
+    )}
+    </div>
+      </PageMain>
+    </>
+  );
+
+  return (
+    <div className="flex-1 bg-surface-0">
+      <PageHeader
+        title="Brass Ledger"
+        subtitle="Pulls roster, published-pairing, and placings data straight from Best Coast Pairings for reference — it doesn't score or suggest pairings."
+        hideSubtitleOnMobile
+        actions={
+          <>
+            <RefreshButton
+              onRefresh={refreshEventData}
+              loading={refreshingEvent}
+              label="event"
+              lastSyncedAt={dataAsOf}
+            />
+            {!follow && (
+              <EventSettings
+                eventName={eventInfo?.name}
+                recentEvents={recentEvents.filter((e) => e.id !== eventId)}
+                onChangeEvent={handleChangeEvent}
+              />
+            )}
+          </>
+        }
+      />
+
+      {/* A failed /api/me lookup (authCheckFailed) leaves `user` null the
+          same as a confirmed sign-out, but useRedirectToLoginIfSignedOut
+          above already skips its redirect in that case — so if there's
+          also a cached event snapshot to fall back on (see
+          eventCache.ts), show it instead of rendering nothing. With
+          nothing cached, the layout's ServerUnreachableNotice explains. */}
+      {!authChecked ? null : follow ? (
+        content
+      ) : !user && !(authCheckFailed && eventInfo) ? null : user && user.status !== "approved" ? (
+        <PageMain>
+          <AccessStatusMessage status={user.status} />
+        </PageMain>
+      ) : (
+        content
+      )}
+    </div>
+  );
+}

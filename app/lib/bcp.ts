@@ -32,6 +32,17 @@ const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhos
 // BCP URL left in this file.
 const BCP_SITE_BASE = "https://www.bestcoastpairings.com";
 
+// A follow link's token, set while a page shows an event through that
+// link. The backend accepts it in place of a session, for that event only.
+let followToken: string | null = null;
+let followEventId: string | null = null;
+
+/** Sends `token` with every event-data request for `eventId` until cleared. */
+export function setFollowToken(token: string | null, eventId: string | null = null) {
+  followToken = token;
+  followEventId = token ? eventId : null;
+}
+
 /**
  * Fetches `${BACKEND_API_BASE}${path}` and decodes it as JSON. Throws
  * using the backend's own `{error}` message on a non-ok response (falling
@@ -47,7 +58,8 @@ const BCP_SITE_BASE = "https://www.bestcoastpairings.com";
  * here would 401 even for a genuinely signed-in visitor.
  */
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include", ...init });
+  const headers = followToken ? { "X-Follow-Token": followToken } : undefined;
+  const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include", headers, ...init });
   const text = await res.text();
 
   if (!res.ok) {
@@ -801,7 +813,10 @@ export async function fetchCurrentItcLeagueId(eventId: string): Promise<string |
  * Returns null if this player has no ranking in this league.
  */
 export function fetchItcRanking(bcpUserId: string, leagueId: string): Promise<ItcRanking | null> {
+  // A follow token only covers rankings for its own event's roster, so the
+  // backend needs to know which event that is.
+  const event = followEventId ? `&eventId=${encodeURIComponent(followEventId)}` : "";
   return getJSON<ItcRanking | null>(
-    `/api/itc/rankings?leagueId=${encodeURIComponent(leagueId)}&userId=${encodeURIComponent(bcpUserId)}`
+    `/api/itc/rankings?leagueId=${encodeURIComponent(leagueId)}&userId=${encodeURIComponent(bcpUserId)}${event}`
   );
 }

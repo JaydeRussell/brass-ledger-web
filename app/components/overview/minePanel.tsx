@@ -2,6 +2,7 @@
 import type { ItcRanking, MyPairing, TeamBoardMatchup } from "../../lib/bcp";
 import MyRoundCard from "../pairings/myRoundCard";
 import Card from "../ui/card";
+import { possessive } from "../../lib/spectating";
 
 // The signed-in account's own current-round pairing — see myRoundCard.tsx.
 // Absent (undefined/null) whenever there's nothing to auto-detect (no
@@ -29,23 +30,27 @@ export type MyRoundSummary = {
   onRefresh?: () => void;
   refreshing?: boolean;
   lastSyncedAt?: number | null;
+  subjectName?: string;
+  signedIn?: boolean;
 };
 
 type MinePanelProps = {
   myRound?: MyRoundSummary | null;
-  // Why there's no "Your round" to show, when `myRound` is absent.
+  // Why there's no round to show, when `myRound` is absent.
   emptyMessage: string;
+  // The followed player's name, when a spectator is viewing their round.
+  subjectName?: string;
 };
 
 /**
  * The "Mine" tab: your own current-round pairing, auto-detected via a
  * linked BCP profile.
  */
-export default function MinePanel({ myRound, emptyMessage }: MinePanelProps) {
+export default function MinePanel({ myRound, emptyMessage, subjectName }: MinePanelProps) {
   if (!myRound) {
     return (
       <Card className="p-4 shadow-sm">
-        <p className="font-semibold text-text-primary">Your round</p>
+        <p className="font-semibold text-text-primary">{subjectName ? `${possessive(subjectName)} round` : "Your round"}</p>
         <p className="mt-1 text-sm text-text-secondary">{emptyMessage}</p>
       </Card>
     );
@@ -69,6 +74,8 @@ export default function MinePanel({ myRound, emptyMessage }: MinePanelProps) {
       onRefresh={myRound.onRefresh}
       refreshing={myRound.refreshing}
       lastSyncedAt={myRound.lastSyncedAt}
+      subjectName={myRound.subjectName}
+      signedIn={myRound.signedIn}
     />
   );
 }

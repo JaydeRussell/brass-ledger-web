@@ -17,6 +17,7 @@ import Card from "../ui/card";
 import RefreshButton from "../shared/refreshButton";
 import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
+import { possessive } from "../../lib/spectating";
 
 type MyRoundCardProps = {
   loading: boolean;
@@ -74,6 +75,12 @@ type MyRoundCardProps = {
   onRefresh?: () => void;
   refreshing?: boolean;
   lastSyncedAt?: number | null;
+  // Set when this is someone else's round, seen by a spectator: headings
+  // use their name and the viewer's private round notes are left out.
+  subjectName?: string;
+  // False for a viewer with no approved account, who can't load the
+  // opponent's stats or head-to-head.
+  signedIn?: boolean;
 };
 
 type ResolvedOpponent = {
@@ -142,15 +149,21 @@ export default function MyRoundCard({
   onRefresh,
   refreshing = false,
   lastSyncedAt,
+  subjectName,
+  signedIn = true,
 }: MyRoundCardProps) {
   const slowLoad = useDelayedFlag(loading);
+  const roundTitle = subjectName ? `${possessive(subjectName)} round` : "Your round";
+  const roundInSentence = subjectName ? roundTitle : "your round";
+  const teamName = subjectName ? `${possessive(subjectName)} team` : "Your team";
+  const notes = subjectName ? null : <RoundNotes eventId={eventId} round={round} />;
   const header = (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className="font-semibold text-text-primary">Your round</p>
+      <p className="font-semibold text-text-primary">{roundTitle}</p>
       <div className="flex items-center gap-2">
         {round > 0 && <span className="text-xs text-text-tertiary">Round {round}</span>}
         {onRefresh && (
-          <RefreshButton onRefresh={onRefresh} loading={refreshing} label="your round" lastSyncedAt={lastSyncedAt} />
+          <RefreshButton onRefresh={onRefresh} loading={refreshing} label={roundInSentence} lastSyncedAt={lastSyncedAt} />
         )}
       </div>
     </div>
@@ -161,7 +174,7 @@ export default function MyRoundCard({
       <Card className="p-4 shadow-sm">
         {header}
         <ErrorAlert size="sm" className="mt-2">
-          Couldn&apos;t load your round: {error}
+          Couldn&apos;t load {roundInSentence}: {error}
         </ErrorAlert>
       </Card>
     );
@@ -173,7 +186,7 @@ export default function MyRoundCard({
     return (
       <Card className="p-4 shadow-sm" aria-live="polite">
         {header}
-        <span className="sr-only">Checking your round…</span>
+        <span className="sr-only">Checking {roundInSentence}…</span>
         <div className="mt-2 flex flex-col gap-1.5">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-3 w-56" />
@@ -192,7 +205,7 @@ export default function MyRoundCard({
         <p className="mt-1 text-sm text-text-secondary">
           No pairing published for round {round} yet.
         </p>
-        <RoundNotes eventId={eventId} round={round} />
+        {notes}
       </Card>
     );
   }
@@ -260,16 +273,18 @@ export default function MyRoundCard({
         </div>
       )}
 
-      <HeadToHead
-        myBcpUserId={myBcpUserId}
-        opponentBcpUserId={resolved.opponentBcpUserId}
-        opponentName={resolved.opponentName}
-      />
+      {signedIn && (
+        <HeadToHead
+          myBcpUserId={myBcpUserId}
+          opponentBcpUserId={resolved.opponentBcpUserId}
+          opponentName={resolved.opponentName}
+        />
+      )}
 
       {pairing.opponentTeamPlayerId && itcByUserId && (myRoster?.length || opponentRoster?.length) ? (
         <div className="mt-2">
           <TeamItcComparison
-            side1Name="Your team"
+            side1Name={teamName}
             side1Players={myRoster ?? []}
             side2Name={resolved.opponentName}
             side2Players={opponentRoster ?? []}
@@ -278,7 +293,7 @@ export default function MyRoundCard({
         </div>
       ) : null}
 
-      {resolved.opponentBcpUserId && (
+      {signedIn && resolved.opponentBcpUserId && (
         <div className="mt-3 border-t border-surface-border pt-3">
           {/* Keyed so a new opponent starts from empty state rather than
               showing the previous player's stats, error or picked disposition. */}
@@ -296,6 +311,7 @@ export default function MyRoundCard({
               opponentDisposition={opponentDisposition}
               opponentBcpUserId={resolved.opponentBcpUserId}
               opponentName={resolved.opponentName}
+              subjectName={subjectName}
             />
           )}
         </div>
@@ -304,7 +320,7 @@ export default function MyRoundCard({
       {unresolvedTeamPairing && (myRoster?.length || opponentRoster?.length) ? (
         <div className="mt-3 border-t border-surface-border pt-3">
           <TeamRosterFallback
-            side1Name="Your team"
+            side1Name={teamName}
             side1Players={myRoster ?? []}
             side2Name={resolved.opponentName}
             side2Players={opponentRoster ?? []}
@@ -314,7 +330,7 @@ export default function MyRoundCard({
         </div>
       ) : null}
 
-      <RoundNotes eventId={eventId} round={round} />
+      {notes}
     </Card>
   );
 }

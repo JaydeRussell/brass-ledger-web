@@ -447,3 +447,27 @@ test("fetchPlacingRoundScores: a refresh refetches only the latest round upstrea
   ]);
   assert.equal(seen[2].cache, "reload");
 });
+
+// --- Follow links ---------------------------------------------------------
+
+test("a follow token is sent on event requests and scopes ITC lookups to its event", async () => {
+  const { setFollowToken } = await import("./bcp.ts");
+  const seen: { url: string; headers?: HeadersInit }[] = [];
+  (globalThis as unknown as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
+    seen.push({ url, headers: init?.headers });
+    return { ok: true, status: 200, text: async () => "null" } as Response;
+  }) as typeof fetch;
+
+  setFollowToken("tok-1", "evt-1");
+  try {
+    await fetchBcpEventInfo("evt-1");
+    await fetchItcRanking("u1", "league-1");
+  } finally {
+    setFollowToken(null);
+  }
+  await fetchBcpPlayers("evt-1");
+
+  assert.deepEqual(seen[0].headers, { "X-Follow-Token": "tok-1" });
+  assert.match(seen[1].url, /\/api\/itc\/rankings\?leagueId=league-1&userId=u1&eventId=evt-1$/);
+  assert.equal(seen[2].headers, undefined, "cleared token is no longer sent");
+});

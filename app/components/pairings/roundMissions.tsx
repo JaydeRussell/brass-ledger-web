@@ -3,6 +3,7 @@ import React, { useId, useState } from "react";
 import { DISPOSITIONS, isDisposition, type Disposition } from "../../lib/dispositions";
 import PlayerStatsPanel from "../myEvents/playerStatsPanel";
 import MissionMatchupPanel from "./missionMatchupPanel";
+import { possessive } from "../../lib/spectating";
 
 const SELECT_CLASSES =
   "min-h-8 rounded-md border border-surface-border bg-surface-1 px-2 py-1 text-sm text-text-primary focus:border-brass-500 focus:outline-none focus:ring-2 focus:ring-brass-500/20";
@@ -12,6 +13,8 @@ type RoundMissionsProps = {
   opponentDisposition?: Disposition;
   opponentBcpUserId: string;
   opponentName: string;
+  // The followed player's name, when a spectator is viewing their round.
+  subjectName?: string;
 };
 
 /**
@@ -27,6 +30,7 @@ export default function RoundMissions({
   opponentDisposition,
   opponentBcpUserId,
   opponentName,
+  subjectName,
 }: RoundMissionsProps) {
   const [pickedMine, setPickedMine] = useState<Disposition | undefined>();
   const [pickedTheirs, setPickedTheirs] = useState<Disposition | undefined>();
@@ -44,13 +48,15 @@ export default function RoundMissions({
           ? "Neither of you has a Force Disposition on Best Coast Pairings."
           : !opponentDisposition
             ? `${opponentName} hasn't set a Force Disposition on Best Coast Pairings.`
-            : "You haven't set a Force Disposition on Best Coast Pairings."}{" "}
+            : subjectName
+              ? `${subjectName} hasn't set a Force Disposition on Best Coast Pairings.`
+              : "You haven't set a Force Disposition on Best Coast Pairings."}{" "}
         Pick {!myDisposition && !opponentDisposition ? "both" : "it"} to see this round&apos;s missions.
       </p>
       <div className="flex flex-wrap gap-3">
         {!myDisposition && (
           <label htmlFor={mineId} className="flex items-center gap-1.5 text-text-secondary">
-            Yours
+            {subjectName ? possessive(subjectName) : "Yours"}
             <select
               id={mineId}
               value={pickedMine ?? ""}
@@ -92,7 +98,11 @@ export default function RoundMissions({
     <div className="flex flex-col gap-3">
       {picker}
       {mine && theirs ? (
-        <MissionMatchupPanel myDisposition={mine} opponentDisposition={theirs} />
+        <MissionMatchupPanel
+          myDisposition={mine}
+          opponentDisposition={theirs}
+          myLabel={subjectName ? `${possessive(subjectName)} mission` : undefined}
+        />
       ) : (
         <PlayerStatsPanel mode="player" bcpUserId={opponentBcpUserId} playerName={opponentName} />
       )}
