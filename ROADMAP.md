@@ -17,6 +17,21 @@ roadmap item that brushes up against that needs to stay on the
 
 ## Ideas
 
+**PWA pass — installable, offline-capable web app** (2026-09-20): a
+`manifest.json` (icons, name, theme, orientation) plus a service worker
+scoped to the immutable set — an ended event's info/roster/pairings/
+placings, exactly what the backend already stores durably — and the
+6.2 MB of `public/deployment-maps` WebPs. Buys home-screen presence and
+offline use mid-event without a second UI codebase or an app store.
+Came out of the native-app spike (see Declined below) as the cheaper
+80% of it. Firm on the what, not yet scoped on the how. Nothing here
+polls: a service worker caches responses to requests the app already
+makes, leaving the fetch-on-load/on-explicit-action shape unchanged.
+Two constraints to design around — iOS caps the Cache API around 50 MB
+per partition (the maps fit), and Safari evicts script-writable storage
+after disuse, so assume a cold cache on arrival and cache "the event
+I'm at now" rather than everything ever opened.
+
 **"What's new" popup on visit** (2026-10-02): on opening the app, show
 the `app/lib/changelog.ts` entries released since this person last
 looked, and nothing at all when there are none. Dismissing it records
@@ -93,6 +108,44 @@ replaced with a neutral, unranked side-by-side stat comparison instead
 (see "Neutral side-by-side team stat comparison" above), which was
 built specifically to avoid computing or framing any judgment about
 the matchup.
+
+**Native mobile app (iOS/Android)** (2026-09-20): spiked and dropped.
+The feature that would justify a second codebase is push notifications
+("pairings are up," "your round started") — and that is already
+declined above on rules grounds, since it needs a backend job
+re-checking BCP with nobody actively using the app. Going native
+changes nothing about that, so the headline capability would ship
+unused. The other two draws are weak here: a native binary drops the
+framework from the critical path (~88% of it, per `CLAUDE.md`), but
+warm production is already 139-388 ms and the only figure over 2 s is
+cold *container* start, which is server-side and untouched by the
+client; and offline is a service-worker problem, not a native one —
+hence the PWA entry above.
+
+Scope, if it is ever revisited: `app/lib` is ~3,300 LOC of
+platform-agnostic TypeScript (only 9 files touch `window`/
+`localStorage`) and would port to React Native nearly unchanged, but
+the ~7,400 LOC of Tailwind/Radix `.tsx` is a full rewrite, and Phase G
+is discarded outright — `serverAuth.ts` seeding `initialUser` is
+web-only, so a native client inherits back the two-wave problem that
+release removed. Auth is the only real engineering blocker and it is
+small: `sessionTokens`/`resolveSession` in the backend's
+`internal/api/auth.go` already loop over candidate tokens, so an
+`Authorization: Bearer` source is ~10 lines plus one endpoint
+exchanging a native Google ID token for a session.
+
+The objection that outlives all of the above isn't technical. BCP ships
+its own free Player app on iOS and Android covering the overlapping
+core — browse and register for events, table assignments, pairings,
+placings. A native Brass Ledger would sit on the same store shelf as
+the first-party app, built on that party's undocumented API with no
+agreement: the loudest possible version of the opposite of both repos'
+"be respectful of BCP's API" stance. Apple's 4.2 minimum-functionality
+bar and this app's admin-gated accounts (a reviewer sees an empty app
+without a demo account) are secondary risks on top. The answer changes
+only if BCP grants an agreement — which would unlock push and make the
+second codebase worth it.
+
 
 ## Done / promoted
 

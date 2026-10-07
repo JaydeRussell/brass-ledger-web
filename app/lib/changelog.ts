@@ -25,7 +25,7 @@ export const CHANGELOG: ChangelogRelease[] = [
   {
     version: "0.26.0",
     date: "2026-10-06",
-    title: "Follow an event you're not playing in",
+    title: "Follow an event without playing in it",
     highlights: [
       "Share a follow link from the Mine tab. Anyone who opens it sees the event from your side: your round, your team, and your rows on Pairings and Placings. No account needed. It stops working a week after the event, and you can turn it off at any time.",
       "Not playing? Pick anyone on the roster from the Mine tab to follow their rounds, and their team in a team event.",
