@@ -39,3 +39,19 @@ test("a pending account sees the approval message instead of the form", () => {
   assert.match(html, /pending approval/);
   assert.ok(!html.includes('role="search"'));
 });
+
+test("fills the dates from the URL and asks for a name or location when there's neither", () => {
+  authState = { user: approved, checked: true };
+  searchParamsValue = new URLSearchParams("from=2026-10-10&to=2026-10-12");
+  const html = renderPage();
+  assert.match(html, /value="2026-10-10"/);
+  assert.match(html, /value="2026-10-12"/);
+  assert.match(html, /Add at least 3 characters of a name, or a location/);
+});
+
+test("ignores a malformed date in the URL", () => {
+  authState = { user: approved, checked: true };
+  searchParamsValue = new URLSearchParams("q=open&from=10/31/2026");
+  const html = renderPage();
+  assert.doesNotMatch(html, /value="10\/31\/2026"/);
+});

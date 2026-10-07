@@ -118,6 +118,10 @@ export type EventSearchResult = {
   endDate?: string;
   location?: string;
   playerCount?: number;
+  /** Ticket limit; only sent for singles events that have one. */
+  capacity?: number;
+  /** From the search's centre to the venue; only on a location search. */
+  distanceMiles?: number;
   teamEvent: boolean;
   started: boolean;
   ended: boolean;
@@ -147,21 +151,78 @@ export function eventStatus(
   return last && last < now ? "Not started" : "Upcoming";
 }
 
+/**
+ * "28 of 40 registered · 12 left", "Full · 40 of 40", or "28 registered"
+ * when there's no limit to compare against. Undefined when the organiser
+ * hides the count.
+ */
+export function registrationText(event: Pick<EventSearchResult, "playerCount" | "capacity">): string | undefined {
+  const { playerCount, capacity } = event;
+  if (playerCount == null) return undefined;
+  if (capacity == null) return `${playerCount} registered`;
+  const left = capacity - playerCount;
+  return left <= 0 ? `Full · ${playerCount} of ${capacity}` : `${playerCount} of ${capacity} registered · ${left} left`;
+}
+
+/**
+ * "11 mi (18 km) from Denver" for a typed place, or "About 11 mi (18 km)
+ * away" from the device, whose location was rounded to about 10 km.
+ */
+export function distanceText(miles: number, fromPlace?: string): string {
+  const both = `${miles} mi (${Math.round(miles * 1.609)} km)`;
+  if (!fromPlace) return `About ${both} away`;
+  const short = fromPlace.split(",")[0].trim() || fromPlace;
+  return `${both} from ${short}`;
+}
+
 /** The shortest search worth sending. */
 export const EVENT_SEARCH_MIN_LENGTH = 3;
 
 export type EventSearchPage = { results: EventSearchResult[]; nextCursor?: string };
 
+/** The radii a location search offers, in miles. */
+export const SEARCH_RADII_MILES = [25, 50, 100, 250] as const;
+
+export type EventSearchFilters = {
+  /** Part of an event's name; may be empty when `near` is set. */
+  q?: string;
+  near?: { lat: number; lon: number; radiusMiles: number };
+  /** YYYY-MM-DD. Empty means two days ago to two months ahead. */
+  from?: string;
+  to?: string;
+};
+
 /**
- * One page of 40k events whose name contains `query`, from two days ago to
- * two months ahead, in date order. Pass a page's `nextCursor` for the next.
+ * One page of 40k events matching `filters`, in date order. Pass a page's
+ * `nextCursor` for the next. Location goes in the request only, never in
+ * the page's own URL.
  */
-export async function searchEvents(query: string, cursor?: string): Promise<EventSearchPage> {
-  const params = new URLSearchParams({ q: query.trim() });
+export async function searchEvents(filters: EventSearchFilters, cursor?: string): Promise<EventSearchPage> {
+  const params = new URLSearchParams();
+  if (filters.q?.trim()) params.set("q", filters.q.trim());
+  if (filters.near) {
+    params.set("lat", String(filters.near.lat));
+    params.set("lon", String(filters.near.lon));
+    params.set("radius", String(filters.near.radiusMiles));
+  }
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
   if (cursor) params.set("cursor", cursor);
   const body = await request<EventSearchPage | EventSearchResult[]>(`/api/event-search?${params.toString()}`);
   // A backend without paging answers with a bare list.
   return Array.isArray(body) ? { results: body } : body;
+}
+
+export type Place = { name: string; lat: number; lon: number };
+
+/** Up to five places matching a typed name, looked up through OpenStreetMap by the backend. */
+export function lookupPlace(name: string): Promise<Place[]> {
+  return request<Place[]>(`/api/places?q=${encodeURIComponent(name.trim())}`);
+}
+
+/** Coordinates rounded to one decimal place (about 10 km), for sending a device's location. */
+export function coarsen(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 
 /** BCP's event page, where registration happens. */
