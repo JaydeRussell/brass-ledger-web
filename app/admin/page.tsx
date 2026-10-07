@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+
+import ClientRedirect from "../components/shared/clientRedirect";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -9,5 +10,5 @@ export const metadata: Metadata = { title: "Admin" };
 // bookmark, a typed-in URL) goes straight to Accounts, the first of the
 // two; gating (signed-out/non-admin/unapproved) happens there, not here.
 export default function AdminIndexPage() {
-  redirect("/admin/accounts");
+  return <ClientRedirect to="/admin/accounts" />;
 }
