@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.28.1",
+    date: "2026-10-07",
+    title: "Fixes from a bug hunt",
+    highlights: [
+      "The Admin page opens again instead of showing an error.",
+      "Event pages for events you're playing in load much less data: Your round fetches just the current round, and your club's round history loads when you open the Team tab.",
+      "Find Events no longer mixes results from an earlier search into a new one, never sends a location after you switch to Anywhere, and fits a 320px phone once you pick a place.",
+      "Opening a follow link shows progress on a slow connection, and the Pairings tab explains itself before round 1.",
+      "Small links and buttons are easier to tap, including in Compact density, and going too fast now says to wait a few seconds instead of \"HTTP 429\".",
+    ],
+  },
+  {
     version: "0.28.0",
     date: "2026-10-06",
     title: "Find events near you",
