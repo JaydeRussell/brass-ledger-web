@@ -11,7 +11,7 @@ test("Anywhere shows no radius and no privacy note", () => {
   const html = renderToStaticMarkup(
     React.createElement(LocationFilter, { location: null, onLocationChange: noop, radiusMiles: 50, onRadiusChange: noop })
   );
-  assert.match(html, /aria-checked="true"[^>]*>Anywhere/);
+  assert.match(html, /aria-pressed="true"[^>]*>Anywhere/);
   assert.doesNotMatch(html, /Within/);
   assert.doesNotMatch(html, /OpenStreetMap/);
 });
