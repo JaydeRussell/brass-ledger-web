@@ -84,7 +84,7 @@ export default function EventSettings({
           <Link
             href="/search"
             onClick={() => setOpen(false)}
-            className="text-xs font-medium text-brass-400 hover:underline"
+            className="inline-flex items-center min-h-6 text-xs font-medium text-brass-400 hover:underline"
           >
             Find by name →
           </Link>

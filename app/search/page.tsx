@@ -60,7 +60,7 @@ function ResultCard({ event, distance }: { event: EventSearchResult; distance?: 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           <Link
             href={`/event?event=${encodeURIComponent(event.id)}`}
-            className="text-xs font-medium text-brass-400 hover:underline"
+            className="inline-flex items-center min-h-6 text-xs font-medium text-brass-400 hover:underline"
           >
             View event →
           </Link>
@@ -69,7 +69,7 @@ function ResultCard({ event, distance }: { event: EventSearchResult; distance?: 
               href={bcpRegisterUrl(event.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-medium text-text-secondary hover:underline"
+              className="inline-flex items-center min-h-6 text-xs font-medium text-text-secondary hover:underline"
             >
               Join on BCP<span className="sr-only"> (opens in a new tab)</span>
             </a>
