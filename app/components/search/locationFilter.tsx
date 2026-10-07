@@ -105,7 +105,7 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
   };
 
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className="text-xs font-medium text-text-secondary">Location</legend>
       <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Location">
         {(
@@ -163,8 +163,8 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
         <p className="text-xs text-text-secondary">Using your approximate location.</p>
       )}
       {location?.kind === "place" && !busy && (
-        <div className="flex flex-col gap-1 text-xs text-text-secondary">
-          <span>
+        <div className="flex min-w-0 flex-col gap-1 text-xs text-text-secondary">
+          <span className="min-w-0 break-words">
             Near <span className="text-text-primary">{location.name}</span>
           </span>
           {location.others.length > 0 && (
@@ -172,7 +172,7 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
               aria-label="Not this place? Choose another match"
               value=""
               onChange={(e) => e.target.value !== "" && pickOther(Number(e.target.value) + 1)}
-              className="max-w-full rounded-md border border-surface-border bg-surface-1 px-2 py-1 text-xs text-text-secondary"
+              className="min-h-6 w-full min-w-0 max-w-full truncate rounded-md border border-surface-border bg-surface-1 px-2 py-1 text-xs text-text-secondary"
             >
               <option value="">Not this one?</option>
               {location.others.map((p, i) => (
@@ -192,7 +192,7 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
             id={radiusId}
             value={radiusMiles}
             onChange={(e) => onRadiusChange(Number(e.target.value))}
-            className="rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs text-text-primary"
+            className="min-h-6 rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs text-text-primary"
           >
             {SEARCH_RADII_MILES.map((m) => (
               <option key={m} value={m}>

@@ -264,7 +264,7 @@ function SearchContent() {
                 onRadiusChange={(radius) => setDraft((d) => ({ ...d, radius }))}
               />
 
-              <fieldset className="flex flex-col gap-1.5">
+              <fieldset className="flex min-w-0 flex-col gap-1.5">
                 <legend className="text-xs font-medium text-text-secondary">Dates</legend>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
                   <label htmlFor={fromId}>From</label>
@@ -288,7 +288,7 @@ function SearchContent() {
                     <button
                       type="button"
                       onClick={() => setDraft((d) => ({ ...d, from: "", to: "" }))}
-                      className="text-text-tertiary hover:underline"
+                      className="inline-flex min-h-6 items-center px-1 text-text-tertiary hover:underline"
                     >
                       Clear
                     </button>
