@@ -1282,7 +1282,7 @@ export default function EventView({ follow }: EventViewProps = {}) {
       </div>
 
       <PageMain>
-    {((activeTab === "roster" && !compareMode) || activeTab === "pairings" || activeTab === "placings") && (
+    {((activeTab === "roster" && !compareMode) || (activeTab === "pairings" && boardRound) || activeTab === "placings") && (
       <SearchBar
         value={searchQuery}
         onChange={setSearchQuery}
@@ -1485,6 +1485,11 @@ export default function EventView({ follow }: EventViewProps = {}) {
 
     {activeTab === "pairings" && (
       <>
+        {!boardRound && eventInfo && (
+          <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
+            No pairings published yet. They show here once round 1 is paired.
+          </p>
+        )}
         {boardRound && (
           <RoundBoard
             eventId={eventId}
