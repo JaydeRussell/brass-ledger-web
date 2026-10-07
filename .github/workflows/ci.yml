@@ -35,6 +35,16 @@ jobs:
       - run: npm run build:vinext
         env:
           NEXT_PUBLIC_BACKEND_URL: https://api.brass-ledger.app
+      # Runs that build locally on the Workers runtime and requests every
+      # page: a page can build fine and still crash only there, as /admin's
+      # server redirect() did.
+      - name: Smoke-test every page on the Workers runtime
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          npx wrangler dev --config dist/server/wrangler.json --port 8788 > wrangler.log 2>&1 &
+          for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:8788/about && break; sleep 2; done
+          scripts/route-smoke.sh http://localhost:8788 || { tail -40 wrangler.log; exit 1; }
       # Gated at "high" rather than every advisory: a moderate/low finding
       # in some transitive build-tool dependency (eslint's own toolchain,
       # tailwindcss's browserslist, etc.) shows up often in this ecosystem
