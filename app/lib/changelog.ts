@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.28.2",
+    date: "2026-10-07",
+    title: "More fixes from the bug hunt",
+    highlights: [
+      "Following someone at a big event through their link now shows every player's ITC rank on the Roster, instead of dropping some.",
+      "On a finished event, Your round says you weren't paired in the last round instead of \"not published yet\".",
+      "Settings like text size and density, the accent picker and the stats chart filters work with the arrow keys.",
+      "Your round's notes load once instead of twice.",
+    ],
+  },
+  {
     version: "0.28.1",
     date: "2026-10-07",
     title: "Fixes from a bug hunt",
