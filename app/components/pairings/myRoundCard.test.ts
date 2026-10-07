@@ -443,3 +443,17 @@ test("with onRefresh, every state shows a refresh button, and a refresh keeps th
   assert.match(waiting, /No pairing published for round 6 yet/);
   assert.match(waiting, /aria-label="[^"]*your round/i);
 });
+
+test("a finished event says the player wasn't paired in the last round, not 'yet'", async () => {
+  const React = (await import("react")).default;
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { default: MyRoundCard } = await import("./myRoundCard.tsx");
+  const html = renderToStaticMarkup(
+    React.createElement(MyRoundCard, {
+      loading: false, error: null, eventId: "evt-1", round: 10, pairing: null, board: null,
+      players: [], isTeamEvent: false, eventEnded: true, signedIn: false, subjectName: "Jayde Russell",
+    })
+  );
+  assert.match(html, /Not paired in round 10, the event(&#x27;|')s last round/);
+  assert.doesNotMatch(html, / yet\./);
+});

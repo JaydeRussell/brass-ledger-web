@@ -32,6 +32,7 @@ export type MyRoundSummary = {
   lastSyncedAt?: number | null;
   subjectName?: string;
   signedIn?: boolean;
+  eventEnded?: boolean;
 };
 
 type MinePanelProps = {
@@ -76,6 +77,7 @@ export default function MinePanel({ myRound, emptyMessage, subjectName }: MinePa
       lastSyncedAt={myRound.lastSyncedAt}
       subjectName={myRound.subjectName}
       signedIn={myRound.signedIn}
+      eventEnded={myRound.eventEnded}
     />
   );
 }

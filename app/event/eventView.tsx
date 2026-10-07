@@ -1332,6 +1332,7 @@ export default function EventView({ follow }: EventViewProps = {}) {
                 onRefresh: refreshMine,
                 refreshing: myPairingState.loading || refreshingEvent,
                 lastSyncedAt: myPairingSyncedAt,
+                eventEnded: eventInfo?.ended ?? false,
                 subjectName,
                 signedIn: approved,
               }
