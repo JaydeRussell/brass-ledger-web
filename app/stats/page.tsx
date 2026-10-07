@@ -46,7 +46,7 @@ export default function StatsPage() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(false)}
-                className="inline-flex items-center min-h-6 mt-2 text-xs text-text-secondary hover:underline"
+                className="inline-flex items-center min-h-[24px] mt-2 text-xs text-text-secondary hover:underline"
               >
                 Cancel
               </button>
@@ -58,7 +58,7 @@ export default function StatsPage() {
               <button
                 type="button"
                 onClick={() => setChangingProfile(true)}
-                className="inline-flex items-center min-h-6 text-xs text-text-secondary hover:underline"
+                className="inline-flex items-center min-h-[24px] text-xs text-text-secondary hover:underline"
               >
                 Change profile
               </button>

@@ -200,7 +200,7 @@ function FriendsCard({
           </p>
         </>
       )}
-      <Link href="/friends" className="inline-flex items-center min-h-6 mt-2 text-xs font-medium text-brass-400 hover:underline">
+      <Link href="/friends" className="inline-flex items-center min-h-[24px] mt-2 text-xs font-medium text-brass-400 hover:underline">
         {loading ? "Go to Friends →" : requests && requests.length > 0 ? "Review requests →" : "See friends →"}
       </Link>
     </Card>
@@ -263,7 +263,7 @@ function RecordCard({ stats, failed, onHide }: { stats: MyStats | null; failed: 
           <div className="text-3xs uppercase tracking-wide text-text-tertiary">Top faction</div>
         </div>
       </div>
-      <Link href="/stats" className="inline-flex items-center min-h-6 mt-2 text-xs font-medium text-brass-400 hover:underline">
+      <Link href="/stats" className="inline-flex items-center min-h-[24px] mt-2 text-xs font-medium text-brass-400 hover:underline">
         Full stats →
       </Link>
     </Card>
@@ -494,7 +494,7 @@ function HomeContent() {
               <button
                 type="button"
                 onClick={showAllCards}
-                className="inline-flex items-center min-h-6 self-start text-xs font-medium text-text-tertiary hover:text-text-secondary hover:underline"
+                className="inline-flex items-center min-h-[24px] self-start text-xs font-medium text-text-tertiary hover:text-text-secondary hover:underline"
               >
                 {hiddenCount} card{hiddenCount === 1 ? "" : "s"} hidden — Show all
               </button>

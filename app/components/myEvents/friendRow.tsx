@@ -55,7 +55,7 @@ export default function FriendRow({ friend, onRemove }: { friend: Friend; onRemo
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-text-primary">{friend.name}</p>
           {friend.bcpUserId && (
-            <Link href={`/dossier/${encodeURIComponent(friend.bcpUserId)}`} className="inline-flex items-center min-h-6 text-xs text-brass-400 hover:underline">
+            <Link href={`/dossier/${encodeURIComponent(friend.bcpUserId)}`} className="inline-flex items-center min-h-[24px] text-xs text-brass-400 hover:underline">
               View dossier
             </Link>
           )}

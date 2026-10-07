@@ -156,7 +156,7 @@ function RosterPicker({ onPick }: { onPick: (bcpUserId: string, name: string) =>
                 setLoadedEventId(null);
                 setQuery("");
               }}
-              className="inline-flex items-center min-h-6 mt-1 text-xs text-text-secondary hover:underline"
+              className="inline-flex items-center min-h-[24px] mt-1 text-xs text-text-secondary hover:underline"
             >
               Try a different event
             </button>

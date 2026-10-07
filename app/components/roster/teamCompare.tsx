@@ -106,7 +106,7 @@ export default function TeamCompare({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="inline-flex items-center min-h-6 self-start text-xs font-medium text-text-secondary hover:underline"
+          className="inline-flex items-center min-h-[24px] self-start text-xs font-medium text-text-secondary hover:underline"
         >
           ← Change team
         </button>

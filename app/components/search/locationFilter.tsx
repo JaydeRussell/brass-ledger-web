@@ -172,7 +172,7 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
               aria-label="Not this place? Choose another match"
               value=""
               onChange={(e) => e.target.value !== "" && pickOther(Number(e.target.value) + 1)}
-              className="min-h-6 w-full min-w-0 max-w-full truncate rounded-md border border-surface-border bg-surface-1 px-2 py-1 text-xs text-text-secondary"
+              className="min-h-[24px] w-full min-w-0 max-w-full truncate rounded-md border border-surface-border bg-surface-1 px-2 py-1 text-xs text-text-secondary"
             >
               <option value="">Not this one?</option>
               {location.others.map((p, i) => (
@@ -192,7 +192,7 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
             id={radiusId}
             value={radiusMiles}
             onChange={(e) => onRadiusChange(Number(e.target.value))}
-            className="min-h-6 rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs text-text-primary"
+            className="min-h-[24px] rounded-md border border-surface-border bg-surface-1 px-2 py-1.5 text-xs text-text-primary"
           >
             {SEARCH_RADII_MILES.map((m) => (
               <option key={m} value={m}>

@@ -17,7 +17,7 @@ export default function ArmyListLink({ href, playerName }: ArmyListLinkProps) {
       onClick={(e) => e.stopPropagation()}
       aria-label={`${playerName}'s army list on BCP`}
       title="Army list on BCP"
-      className="inline-flex min-h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-sm roomy:min-h-7 border border-surface-border bg-surface-2 px-1.5 py-0.5 text-xs font-medium text-text-secondary transition-colors hover:border-brass-500/40 hover:bg-brass-500/15 hover:text-brass-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-500/60"
+      className="inline-flex min-h-[24px] shrink-0 items-center gap-1 whitespace-nowrap rounded-sm roomy:min-h-7 border border-surface-border bg-surface-2 px-1.5 py-0.5 text-xs font-medium text-text-secondary transition-colors hover:border-brass-500/40 hover:bg-brass-500/15 hover:text-brass-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-500/60"
     >
       <svg aria-hidden viewBox="0 0 16 16" fill="none" className="h-3 w-3">
         <path
