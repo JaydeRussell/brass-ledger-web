@@ -174,3 +174,15 @@ test("marks the signed-in account's own row as (you)", () => {
   assert.equal(html.indexOf("(you)", youIndex + 1), -1, "expected exactly one (you) marker");
   assert.ok(meIndex < youIndex && youIndex < allyIndex, "expected (you) to sit right after Me, before Ally");
 });
+
+test("shows just the names, not loading, before the first round", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(MyTeamPanel, {
+      teammates: [{ player: player(), pairings: [], loading: false, error: null }],
+      started: false,
+    })
+  );
+  assert.match(html, /Teammate One/);
+  assert.doesNotMatch(html, /Not published yet/);
+  assert.doesNotMatch(html, /animate-pulse/);
+});

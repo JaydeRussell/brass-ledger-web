@@ -35,6 +35,8 @@ type MyTeamPanelProps = {
   myPlayerId?: string | number;
   // The followed player's name, when a spectator is viewing their team.
   subjectName?: string;
+  // False before the first round, when no teammate has a pairing to show.
+  started?: boolean;
 };
 
 function latestPublished(pairings: MyPairing[]): MyPairing | undefined {
@@ -57,9 +59,12 @@ function RoundLine({
   pairing,
   players,
   trailing,
+  emptyText = "Not published yet",
 }: {
   primary: ReactNode;
   pairing?: MyPairing;
+  // Shown under the name when there's no published pairing; null shows nothing.
+  emptyText?: string | null;
   players?: Player[];
   trailing?: ReactNode;
 }) {
@@ -80,7 +85,7 @@ function RoundLine({
             <DispositionBadge disposition={opponentDisposition} />
           </p>
         ) : (
-          <p className="mt-0.5 text-xs text-text-tertiary">Not published yet</p>
+          emptyText !== null && <p className="mt-0.5 text-xs text-text-tertiary">{emptyText}</p>
         )}
       </div>
       {trailing !== undefined
@@ -99,7 +104,17 @@ function RoundLine({
   );
 }
 
-function TeammateRow({ entry, players, isSelf }: { entry: TeammateEntry; players?: Player[]; isSelf: boolean }) {
+function TeammateRow({
+  entry,
+  players,
+  isSelf,
+  started,
+}: {
+  entry: TeammateEntry;
+  players?: Player[];
+  isSelf: boolean;
+  started: boolean;
+}) {
   const { player, pairings, loading, error, placing } = entry;
   const current = latestPublished(pairings);
   // Every other round besides the one already shown in the summary line
@@ -138,6 +153,7 @@ function TeammateRow({ entry, players, isSelf }: { entry: TeammateEntry; players
       <RoundLine
         primary={nameLine}
         pairing={current}
+        emptyText={started ? undefined : null}
         players={players}
         trailing={publishedPairings.length > 0 ? <RoundScoreStrip pairings={publishedPairings} /> : undefined}
       />
@@ -180,7 +196,7 @@ function TeammateRow({ entry, players, isSelf }: { entry: TeammateEntry; players
  * Purely a display of already-published BCP data, same scope as
  * MyPairings/Placings — nothing here is computed.
  */
-export default function MyTeamPanel({ teammates, players, myPlayerId, subjectName }: MyTeamPanelProps) {
+export default function MyTeamPanel({ teammates, players, myPlayerId, subjectName, started = true }: MyTeamPanelProps) {
   if (teammates.length === 0) return null;
 
   const sorted = [...teammates].sort((a, b) => {
@@ -210,6 +226,7 @@ export default function MyTeamPanel({ teammates, players, myPlayerId, subjectNam
             entry={entry}
             players={players}
             isSelf={myPlayerId !== undefined && entry.player.id === myPlayerId}
+            started={started}
           />
         ))}
       </ul>

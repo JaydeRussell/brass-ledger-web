@@ -1362,7 +1362,9 @@ export default function EventView({ follow }: EventViewProps = {}) {
           return {
             player: teammate,
             pairings: entry?.pairings ?? [],
-            loading: entry?.loading ?? true,
+            // Nothing is fetched until a round exists, so before then a
+            // missing entry means "no rounds yet", not "still loading".
+            loading: entry?.loading ?? upToRound > 0,
             error: entry?.error ?? null,
             placing: placingEntry?.placing,
           };
@@ -1370,6 +1372,7 @@ export default function EventView({ follow }: EventViewProps = {}) {
         players={players}
         myPlayerId={myPlayer?.id}
         subjectName={subjectName}
+        started={upToRound > 0}
       />
     )}
 
