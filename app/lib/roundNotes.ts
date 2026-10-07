@@ -27,15 +27,32 @@ async function handleJSONResponse<T>(res: Response): Promise<T> {
   return JSON.parse(text) as T;
 }
 
+// One request per round for the page's lifetime: the notes box mounts
+// twice while "Your round" loads, and only this account edits its notes.
+// A save replaces the entry; a failure drops it so the next mount retries.
+const noteRequests = new Map<string, Promise<string>>();
+const noteKey = (eventId: string, round: number) => `${eventId}:${round}`;
+
+/** Clears the per-page note cache. Exported for tests. */
+export function __clearRoundNotesForTests() {
+  noteRequests.clear();
+}
+
 /** The signed-in account's own private note for one round of one event —
  * "" if they've never saved one. */
-export async function fetchRoundNote(eventId: string, round: number): Promise<string> {
-  const res = await fetch(
+export function fetchRoundNote(eventId: string, round: number): Promise<string> {
+  const key = noteKey(eventId, round);
+  const existing = noteRequests.get(key);
+  if (existing) return existing;
+  const request = fetch(
     `${BACKEND_API_BASE}/api/me/events/${encodeURIComponent(eventId)}/rounds/${round}/note`,
     { credentials: "include" }
-  );
-  const body = await handleJSONResponse<{ note: string }>(res);
-  return body.note;
+  )
+    .then((res) => handleJSONResponse<{ note: string }>(res))
+    .then((body) => body.note);
+  noteRequests.set(key, request);
+  request.catch(() => noteRequests.delete(key));
+  return request;
 }
 
 /** Saves (or, given an empty/whitespace-only note, clears) the signed-in
@@ -51,4 +68,6 @@ export async function saveRoundNote(eventId: string, round: number, note: string
     }
   );
   await handleJSONResponse(res);
+  // Matches the server, which keeps a note as typed and deletes a blank one.
+  noteRequests.set(noteKey(eventId, round), Promise.resolve(note.trim() === "" ? "" : note));
 }
