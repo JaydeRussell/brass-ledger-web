@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCommandPalette } from "./commandPaletteContext";
 import { useCurrentUser } from "../../lib/auth";
 import { NAV_LINKS } from "../../lib/navLinks";
+import { EVENT_SEARCH_MIN_LENGTH } from "../../lib/follow";
 import { loadRecentEvents, fetchRecentEventsFromServer, type RecentEvent } from "../../lib/recentEvents";
 import { logClientEvent } from "../../lib/clientLog";
 import { useDialogKeyboard } from "../../lib/useDialogKeyboard";
@@ -105,7 +106,21 @@ export default function CommandPaletteBody() {
       detail: event.teamEvent ? "Team event" : "Singles event",
       href: `/event?event=${encodeURIComponent(event.id)}`,
     }));
-  const results = [...pageResults, ...eventResults];
+  // Hands a longer query on to Find Events, which searches every event on BCP.
+  const trimmed = query.trim();
+  const searchResult: Result[] =
+    trimmed.length >= EVENT_SEARCH_MIN_LENGTH
+      ? [
+          {
+            kind: "page",
+            key: "search",
+            label: `Search all events for “${trimmed}”`,
+            detail: "Find Events",
+            href: `/search?q=${encodeURIComponent(trimmed)}`,
+          },
+        ]
+      : [];
+  const results = [...pageResults, ...eventResults, ...searchResult];
   const clampedIndex = Math.min(highlightedIndex, Math.max(0, results.length - 1));
 
   const activate = (result: Result) => {

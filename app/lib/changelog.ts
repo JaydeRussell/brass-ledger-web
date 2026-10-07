@@ -23,6 +23,18 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.27.0",
+    date: "2026-10-06",
+    title: "A page for finding events",
+    highlights: [
+      "New Find Events page, in the menu: search Best Coast Pairings for 40k events by name, from the past two days to two months ahead, soonest first. Each result shows its dates, format, how many are registered and where it is, with links to the event and to registration.",
+      "Results load 25 at a time, with Load more at the bottom.",
+      "Type an event name into the quick switcher (Search on phones, Ctrl/⌘ K elsewhere) to jump straight to Find Events.",
+      "The event switcher's search is replaced by a Find by name link, and its recent-events list no longer covers the Cancel and Switch event buttons.",
+      "Events whose dates have passed without starting say Not started, and no longer offer Join.",
+    ],
+  },
+  {
     version: "0.26.0",
     date: "2026-10-06",
     title: "Follow an event without playing in it",

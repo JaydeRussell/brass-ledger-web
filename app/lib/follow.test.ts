@@ -52,8 +52,32 @@ test("saveSpectating posts the link token or the picked player", async () => {
   assert.deepEqual(JSON.parse(String(calls[1].init?.body)), { eventId: "evt-1", playerId: "p2" });
 });
 
-test("searchEvents encodes the query", async () => {
-  const calls = installFetch(() => ({ status: 200, body: [] }));
-  await searchEvents("  Lone Star & Co ");
-  assert.match(calls[0].url, /\/api\/event-search\?q=Lone%20Star%20%26%20Co$/);
+test("searchEvents encodes the query, passes the cursor, and accepts an unpaged list", async () => {
+  const calls = installFetch(() => ({ status: 200, body: { results: [], nextCursor: "c2" } }));
+  const page = await searchEvents("  Lone Star & Co ");
+  assert.match(calls[0].url, /\/api\/event-search\?q=Lone\+Star\+%26\+Co$/);
+  assert.equal(page.nextCursor, "c2");
+  await searchEvents("open", "c2");
+  assert.match(calls[1].url, /q=open&cursor=c2$/);
+
+  installFetch(() => ({ status: 200, body: [{ id: "e1", name: "Open", teamEvent: false, started: false, ended: false }] }));
+  const legacy = await searchEvents("open");
+  assert.equal(legacy.results.length, 1);
+  assert.equal(legacy.nextCursor, undefined);
+});
+
+test("eventStatus: upcoming, underway or finished", async () => {
+  const { eventStatus } = await import("./follow.ts");
+  assert.equal(eventStatus({ started: false, ended: false }), "Upcoming");
+  assert.equal(eventStatus({ started: true, ended: false }), "Underway");
+  assert.equal(eventStatus({ started: true, ended: true }), "Finished");
+});
+
+test("eventStatus: a past event BCP never started is Not started, not Upcoming", async () => {
+  const { eventStatus } = await import("./follow.ts");
+  const now = new Date("2026-10-06T12:00:00");
+  assert.equal(eventStatus({ started: false, ended: false, startDate: "2026-10-02" }, now), "Not started");
+  assert.equal(eventStatus({ started: false, ended: false, startDate: "2026-10-06" }, now), "Upcoming", "today still counts");
+  assert.equal(eventStatus({ started: false, ended: false, startDate: "2026-10-05", endDate: "2026-10-07" }, now), "Upcoming");
+  assert.equal(eventStatus({ started: false, ended: false }, now), "Upcoming", "no dates");
 });

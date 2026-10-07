@@ -1,6 +1,8 @@
 // Whose point of view the event page shows, and what it offers someone who
 // isn't playing. Pure functions of data the page already holds.
 
+import { eventStatus } from "./follow.ts";
+
 export type Perspective = {
   /** The viewer's own roster entry, from their linked BCP profile. */
   ownPlayer?: Player;
@@ -30,9 +32,13 @@ export function resolvePerspective(
   return { ownPlayer, followedPlayer, subject: spectating ? followedPlayer : ownPlayer, spectating };
 }
 
-/** Join goes to BCP's registration, which only makes sense before round one. */
-export function canJoin(eventInfo: { started: boolean; ended: boolean } | null, ownPlayer: Player | undefined): boolean {
-  return eventInfo !== null && !eventInfo.started && !eventInfo.ended && ownPlayer === undefined;
+/** Join goes to BCP's registration, which only makes sense for an event still to come. */
+export function canJoin(
+  eventInfo: { started: boolean; ended: boolean; startDate?: string; endDate?: string } | null,
+  ownPlayer: Player | undefined,
+  now: Date = new Date()
+): boolean {
+  return eventInfo !== null && eventStatus(eventInfo, now) === "Upcoming" && ownPlayer === undefined;
 }
 
 /** Why the Mine tab has no round to show. */
