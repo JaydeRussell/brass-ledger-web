@@ -10,6 +10,7 @@
 // account's own session cookie.
 
 import type { FactionStat, PlacingHistoryPoint, PlacingWithField } from "./myStats";
+import { httpErrorMessage } from "./httpError";
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
@@ -48,7 +49,7 @@ export async function fetchDossier(bcpUserId: string): Promise<Dossier | null> {
   if (res.status === 404) return null;
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;
@@ -75,7 +76,7 @@ export async function setDossierVisibility(isPublic: boolean): Promise<void> {
   });
   if (!res.ok) {
     const text = await res.text();
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;

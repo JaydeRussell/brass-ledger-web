@@ -1,6 +1,7 @@
 // Client for follow links, spectated events and event search (see
 // internal/api/follow.go and search.go in the brass-ledger-api repo).
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 /** A response that wasn't ok, keeping its status for callers that branch on 404. */
@@ -17,7 +18,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include", cache: "no-store", ...init });
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;

@@ -6,6 +6,7 @@
 // Like app/lib/auth.ts and bcp.ts, session state lives in an httpOnly
 // cookie, so every request here needs credentials: "include".
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 /**
@@ -34,7 +35,7 @@ export function parseBcpUserId(input: string): string {
 async function handleJSONResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;

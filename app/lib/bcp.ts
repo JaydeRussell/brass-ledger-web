@@ -25,6 +25,7 @@
 // numbers side by side (no framing, no "favored" label) stays fine —
 // see the backend's internal/bcp/types.go for the full reasoning.
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 // Only used to build a link out to a player's public BCP profile page —
@@ -63,7 +64,7 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const text = await res.text();
 
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;
