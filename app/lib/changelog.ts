@@ -23,6 +23,14 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.27.1",
+    date: "2026-10-06",
+    title: "Team tab before round one",
+    highlights: [
+      "Before an event starts, the Team tab lists your clubmates instead of looking like it's still loading.",
+    ],
+  },
+  {
     version: "0.27.0",
     date: "2026-10-06",
     title: "A page for finding events",
