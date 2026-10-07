@@ -1510,6 +1510,7 @@ export default function EventView({ follow }: EventViewProps = {}) {
             rosterByTeamId={rosterByTeamId}
             players={players}
             myId={myRowId}
+            subjectName={subjectName}
             lastSyncedAt={boardDataAsOf}
             emptyMessage={
               searchQuery && boardEntries.length > 0
