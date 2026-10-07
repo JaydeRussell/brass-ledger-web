@@ -1308,7 +1308,10 @@ export default function EventView({ follow }: EventViewProps = {}) {
       </>
     )}
 
-    {activeTab === "mine" && (
+    {/* Until the roster arrives a followed player has no name or round to
+        show, and the empty panel would read as the viewer's own. */}
+    {activeTab === "mine" && showingFollowed && !followedPlayer && rosterPending && <CardSkeleton />}
+    {activeTab === "mine" && !(showingFollowed && !followedPlayer && rosterPending) && (
       <MinePanel
         myRound={
           myRoundInfo
