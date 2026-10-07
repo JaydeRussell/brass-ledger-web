@@ -20,7 +20,7 @@ test("renders every release's version, date, and title", () => {
   for (const release of CHANGELOG) {
     assert.match(html, new RegExp(`v${release.version.replace(/\./g, "\\.")}`));
     assert.ok(html.includes(release.date), `expected ${release.date} in output`);
-    assert.ok(html.includes(release.title), `expected title ${release.title} in output`);
+    assert.ok(html.includes(escapeForRenderedText(release.title)), `expected title ${release.title} in output`);
   }
 });
 
