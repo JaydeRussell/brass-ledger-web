@@ -17,18 +17,23 @@ import { useCurrentUser } from "../lib/auth";
 import { useRedirectToLoginIfSignedOut } from "../lib/useRedirectToLoginIfSignedOut";
 import { fetchMyEvents, type MyEvent, type MyEvents } from "../lib/myEvents";
 import { logClientEvent } from "../lib/clientLog";
+import { fetchSpectating, removeSpectating, type SpectatingList as SpectatingListData } from "../lib/follow";
+import SpectatingList, { spectatingCount } from "../components/follow/spectatingList";
 
 // "Ongoing" here is this page's name for what the backend calls
 // "present" (see internal/api/me.go's myEventsResponse) — events that
 // have started but not ended. Kept as a separate, page-local vocabulary
 // rather than renaming the API field, since "present" reads fine as a
 // JSON key but "ongoing" reads better as a tab label.
-type EventsTabKey = "past" | "ongoing" | "future";
-const TAB_KEYS: EventsTabKey[] = ["past", "ongoing", "future"];
+// "spectating" holds events the viewer follows someone in, and only
+// appears while there is at least one.
+type EventsTabKey = "past" | "ongoing" | "future" | "spectating";
+const TAB_KEYS: EventsTabKey[] = ["past", "ongoing", "future", "spectating"];
 const TAB_LABELS: Record<EventsTabKey, string> = {
   past: "Past",
   ongoing: "Ongoing",
   future: "Future",
+  spectating: "Spectating",
 };
 
 function isTabKey(value: string | null): value is EventsTabKey {
@@ -44,6 +49,8 @@ function eventsForTab(events: MyEvents | null, tab: EventsTabKey): MyEvent[] {
       return events.present;
     case "future":
       return events.future;
+    case "spectating":
+      return [];
   }
 }
 
@@ -81,7 +88,7 @@ function MyEventsContent() {
   // Same URL-query-string tab pattern as the event page (app/event/page.tsx)
   // — defaults to "ongoing" rather than "past", since the events you're
   // most likely to want to check on are the ones happening right now.
-  const activeTab: EventsTabKey = isTabKey(searchParams.get("tab"))
+  const requestedTab: EventsTabKey = isTabKey(searchParams.get("tab"))
     ? (searchParams.get("tab") as EventsTabKey)
     : "ongoing";
 
@@ -99,6 +106,13 @@ function MyEventsContent() {
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [changingProfile, setChangingProfile] = React.useState(false);
   const slowLoad = useDelayedFlag(loading);
+  const [spectating, setSpectating] = React.useState<SpectatingListData | null>(null);
+  const [spectatingError, setSpectatingError] = React.useState<string | null>(null);
+  const spectatingTotal = spectatingCount(spectating);
+  // With nothing left to spectate the tab is gone, so a link to it lands
+  // on Ongoing instead.
+  const activeTab: EventsTabKey = requestedTab === "spectating" && spectatingTotal === 0 ? "ongoing" : requestedTab;
+  const visibleTabs = TAB_KEYS.filter((tab) => tab !== "spectating" || spectatingTotal > 0);
   const [refreshing, setRefreshing] = React.useState(false);
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
 
@@ -139,6 +153,42 @@ function MyEventsContent() {
       cancelled = true;
     };
   }, [bcpUserId, user?.status]);
+
+  // Loaded alongside My Events, and for accounts with no BCP profile too:
+  // spectating doesn't need one.
+  React.useEffect(() => {
+    if (user?.status !== "approved") {
+      setSpectating(null);
+      return;
+    }
+    let cancelled = false;
+    fetchSpectating()
+      .then((data) => {
+        if (!cancelled) setSpectating(data);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : String(err);
+        setSpectatingError(message);
+        logClientEvent("error", "my events: spectating failed to load", { error: message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.status]);
+
+  const handleRemoveSpectating = (eventId: string) => {
+    const previous = spectating;
+    setSpectating((prev) =>
+      prev
+        ? { now: prev.now.filter((e) => e.eventId !== eventId), upcoming: prev.upcoming.filter((e) => e.eventId !== eventId) }
+        : prev
+    );
+    removeSpectating(eventId).catch((err: unknown) => {
+      setSpectating(previous);
+      setSpectatingError(err instanceof Error ? err.message : String(err));
+    });
+  };
 
   // An explicit "check again now" for Ongoing/Future only — Past never
   // needs this, since an already-concluded event's placing can't change.
@@ -191,18 +241,26 @@ function MyEventsContent() {
               </button>
             )}
           </Card>
-        ) : (
+        ) : null}
+        {checked && user?.status === "approved" && !bcpUserId && spectatingTotal > 0 && spectating && (
+          <>
+            <h2 className="text-sm font-semibold text-text-primary">Spectating</h2>
+            <SpectatingList spectating={spectating} onRemove={handleRemoveSpectating} />
+          </>
+        )}
+        {spectatingError && <ErrorAlert>Couldn&apos;t update Spectating: {spectatingError}</ErrorAlert>}
+        {!checked || !user || user.status !== "approved" || !bcpUserId || changingProfile ? null : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border">
               <Tabs
                 value={activeTab}
                 onValueChange={changeTab}
                 label="My events range"
-                tabs={TAB_KEYS.map(
+                tabs={visibleTabs.map(
                   (tab): TabItem<EventsTabKey> => ({
                     value: tab,
                     label: (() => {
-                      const count = countForTab(events, tab);
+                      const count = tab === "spectating" ? spectatingTotal : countForTab(events, tab);
                       return count !== undefined ? `${TAB_LABELS[tab]} (${count})` : TAB_LABELS[tab];
                     })(),
                   })
@@ -217,7 +275,7 @@ function MyEventsContent() {
               </button>
             </div>
 
-            {!loading && !loadError && events && activeTab !== "past" && (
+            {!loading && !loadError && events && (activeTab === "ongoing" || activeTab === "future") && (
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-tertiary">
                 <span>
                   {events.upcomingFetchedAt
@@ -238,7 +296,7 @@ function MyEventsContent() {
             )}
             {refreshError && <ErrorAlert>Couldn&apos;t check for updates: {refreshError}</ErrorAlert>}
 
-            {loading && (
+            {loading && activeTab !== "spectating" && (
               <div role="status" aria-live="polite">
                 <div className="flex items-center gap-2 text-sm text-text-secondary">
                   <Spinner size="sm" />
@@ -252,8 +310,11 @@ function MyEventsContent() {
                 )}
               </div>
             )}
-            {loadError && <ErrorAlert>Couldn&apos;t load events: {loadError}</ErrorAlert>}
-            {!loading && !loadError && (
+            {loadError && activeTab !== "spectating" && <ErrorAlert>Couldn&apos;t load events: {loadError}</ErrorAlert>}
+            {activeTab === "spectating" && spectating && (
+              <SpectatingList spectating={spectating} onRemove={handleRemoveSpectating} />
+            )}
+            {!loading && !loadError && activeTab !== "spectating" && (
               <EventList
                 // Keyed by tab so React fully remounts the list (and
                 // EventCard's key-based reconciliation starts fresh)

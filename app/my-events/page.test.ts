@@ -125,3 +125,17 @@ test("respects a ?tab= query param for which tab starts active", () => {
   const past = buttons.find((b) => b.includes(">Past<"));
   assert.ok(past?.includes('aria-selected="true"'));
 });
+
+test("hides the Spectating tab while there's nothing to spectate, and lands a link to it on Ongoing", () => {
+  authState = {
+    checked: true,
+    setUser: () => {},
+    user: { id: 1, email: "a@b.com", name: "A B", avatarUrl: "", bcpUserId: "u1", role: "user", status: "approved" },
+  };
+  searchParamsValue = new URLSearchParams("tab=spectating");
+  const html = renderPage();
+  assert.ok(!html.includes(">Spectating"));
+  const buttons = html.split("<button").slice(1);
+  const ongoing = buttons.find((b) => b.includes(">Ongoing<"));
+  assert.ok(ongoing?.includes('aria-selected="true"'));
+});

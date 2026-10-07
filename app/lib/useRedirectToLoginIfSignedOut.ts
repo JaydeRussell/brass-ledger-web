@@ -14,15 +14,17 @@ import { useCurrentUser, type CurrentUser } from "./auth";
  * Never redirects when the /api/me lookup itself failed (the backend is
  * unreachable) rather than returning 401: /login can't sign anyone in
  * then either. ServerUnreachableNotice explains the outage instead.
+ *
+ * `enabled` is false on a page that also serves signed-out visitors.
  */
-export function useRedirectToLoginIfSignedOut(user: CurrentUser | null, checked: boolean) {
+export function useRedirectToLoginIfSignedOut(user: CurrentUser | null, checked: boolean, enabled = true) {
   const router = useRouter();
   const pathname = usePathname();
   const { authError } = useCurrentUser();
 
   useEffect(() => {
-    if (checked && !user && !authError) {
+    if (enabled && checked && !user && !authError) {
       router.replace(`/login?return_to=${encodeURIComponent(pathname)}`);
     }
-  }, [checked, user, authError, pathname, router]);
+  }, [enabled, checked, user, authError, pathname, router]);
 }
