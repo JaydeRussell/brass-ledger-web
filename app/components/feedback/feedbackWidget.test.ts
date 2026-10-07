@@ -32,7 +32,7 @@ const { default: FeedbackWidget } = await import("./feedbackWidget.tsx");
 test("renders a labeled floating button, not the form, before it's opened", () => {
   const html = renderToStaticMarkup(React.createElement(FeedbackWidget));
   assert.match(html, /Feedback</);
-  assert.match(html, /aria-label="Report a bug or suggest something"/);
+  assert.match(html, /aria-label="Feedback: report a bug or suggest something"/, "the name starts with the visible label, so voice control can find it");
   assert.ok(!html.includes("What went wrong?"), "form should not be rendered while closed");
   assert.ok(!html.includes('role="dialog"'), "dialog panel should not be rendered while closed");
 });

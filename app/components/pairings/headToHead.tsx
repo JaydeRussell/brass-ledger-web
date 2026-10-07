@@ -83,7 +83,7 @@ export default function HeadToHead({ myBcpUserId, opponentBcpUserId, opponentNam
       {status === "loading" && (
         <div className="flex items-center gap-2 text-xs text-text-secondary">
           <Spinner size="sm" />
-          <span>Checking your shared event history…</span>
+          <span>Checking shared event history…</span>
         </div>
       )}
 
@@ -97,7 +97,7 @@ export default function HeadToHead({ myBcpUserId, opponentBcpUserId, opponentNam
             <p className="text-xs text-text-tertiary">
               {result.sharedEventsChecked === 0 && result.sharedEventsFailed === 0
                 ? `No shared events found with ${opponentName}.`
-                : `No previous meetings found (checked your ${result.sharedEventsChecked} most recent shared event${result.sharedEventsChecked === 1 ? "" : "s"}${result.sharedEventsFailed > 0 ? `; ${result.sharedEventsFailed} couldn't be loaded` : ""}).`}
+                : `No previous meetings found (checked the ${result.sharedEventsChecked} most recent shared event${result.sharedEventsChecked === 1 ? "" : "s"}${result.sharedEventsFailed > 0 ? `; ${result.sharedEventsFailed} couldn't be loaded` : ""}).`}
             </p>
           ) : (
             <>

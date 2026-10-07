@@ -23,6 +23,17 @@ export type ChangelogRelease = {
 // meant to be kept current as work actually ships.
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "0.28.3",
+    date: "2026-10-07",
+    title: "Clearer when you're following someone",
+    highlights: [
+      "When you follow someone, the round board's jump button says whose row it goes to, the Team tab marks them as \"following\" instead of \"you\", and head-to-head no longer says \"your\".",
+      "In team events, the team ITC comparison on Your round names the opposing team instead of your board opponent.",
+      "Finished events you still follow move to their own \"Recently finished\" group on My Events.",
+      "The Feedback button can be found by voice control and screen readers by its label.",
+    ],
+  },
+  {
     version: "0.28.2",
     date: "2026-10-07",
     title: "More fixes from the bug hunt",

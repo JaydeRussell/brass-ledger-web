@@ -40,7 +40,7 @@ export default function FeedbackWidget() {
     <button
       type="button"
       onClick={() => setIsOpen(true)}
-      aria-label="Report a bug or suggest something"
+      aria-label="Feedback: report a bug or suggest something"
       // bottom-20 (not bottom-4) below `sm:` — BottomTabBar
       // (bottomTabBar.tsx) is fixed to the bottom of the viewport at
       // that same breakpoint and would otherwise sit right under this.

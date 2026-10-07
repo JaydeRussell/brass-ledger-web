@@ -22,6 +22,7 @@ import Card from "../ui/card";
 import ErrorAlert from "../ui/errorAlert";
 import { useDelayedFlag } from "../../lib/useDelayedFlag";
 import { motionReduced } from "../../lib/motionPrefs";
+import { possessive } from "../../lib/spectating";
 
 type BoardsState = {
   loading: boolean;
@@ -71,6 +72,9 @@ type RoundBoardProps = {
   // one. My row is highlighted, and "Jump to mine" scrolls straight to it
   // on a large board (Challengers Cup has 68 teams).
   myId?: string;
+  // The followed player's name when a spectator views the board, for the
+  // jump button.
+  subjectName?: string;
   // When `entries` was last fetched — passed straight through to
   // RefreshButton's own label. See its doc comment.
   lastSyncedAt?: number | null;
@@ -138,6 +142,7 @@ export default function RoundBoard({
   rosterByTeamId,
   players,
   myId,
+  subjectName,
   lastSyncedAt,
 }: RoundBoardProps) {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
@@ -272,7 +277,7 @@ export default function RoundBoard({
         <div className="flex items-center gap-2">
           {myEntry && (
             <Button variant="ghost" size="sm" onClick={jumpToMine}>
-              Jump to mine
+              {subjectName ? `Jump to ${possessive(subjectName)}` : "Jump to mine"}
             </Button>
           )}
           <RefreshButton

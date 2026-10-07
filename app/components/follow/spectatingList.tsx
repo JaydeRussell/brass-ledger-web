@@ -59,12 +59,16 @@ function Section({ title, events, onRemove }: { title: string; events: Spectated
   );
 }
 
-/** The events the viewer follows someone in, happening now and coming up. */
+/**
+ * The events the viewer follows someone in: happening now, coming up, and
+ * finished within the week a follow lasts after an event.
+ */
 export default function SpectatingList({ spectating, onRemove }: SpectatingListProps) {
   return (
     <div className="flex flex-col gap-4">
-      <Section title="Now" events={spectating.now} onRemove={onRemove} />
+      <Section title="Now" events={spectating.now.filter((e) => !e.ended)} onRemove={onRemove} />
       <Section title="Upcoming" events={spectating.upcoming} onRemove={onRemove} />
+      <Section title="Recently finished" events={spectating.now.filter((e) => e.ended)} onRemove={onRemove} />
     </div>
   );
 }
