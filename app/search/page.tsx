@@ -157,10 +157,16 @@ function SearchContent() {
     }
   }
 
+  // Bumped by each new search, so a Load more page that arrives after the
+  // search changed is dropped rather than appended to the wrong results.
+  const searchGeneration = React.useRef(0);
+
   const appliedKey = applied ? JSON.stringify(applied) : "";
   React.useEffect(() => {
     if (!approved || !applied) return;
     let cancelled = false;
+    searchGeneration.current += 1;
+    setLoadingMore(false);
     setLoading(true);
     setError(null);
     searchEvents(toFilters(applied))
@@ -184,10 +190,13 @@ function SearchContent() {
 
   const loadMore = () => {
     if (!nextCursor || !applied || loadingMore) return;
+    const generation = searchGeneration.current;
+    const current = () => generation === searchGeneration.current;
     setLoadingMore(true);
     setError(null);
     searchEvents(toFilters(applied), nextCursor)
       .then((page) => {
+        if (!current()) return;
         // BCP's pages can overlap at the boundary.
         setResults((prev) => {
           const seen = new Set((prev ?? []).map((e) => e.id));
@@ -195,8 +204,12 @@ function SearchContent() {
         });
         setNextCursor(page.results.length > 0 ? page.nextCursor : undefined);
       })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setLoadingMore(false));
+      .catch((err: unknown) => {
+        if (current()) setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (current()) setLoadingMore(false);
+      });
   };
 
   const datesValid = !draft.from || !draft.to || draft.to >= draft.from;
