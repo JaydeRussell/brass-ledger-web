@@ -28,6 +28,7 @@ const {
   fetchMyIndividualPairings,
   fetchPlacingRoundScores,
   fetchMyTeamPairings,
+  fetchMyPairingForRound,
   fetchRoundBoard,
   fetchTeamPairingBoards,
   fetchBcpPlacings,
@@ -470,4 +471,29 @@ test("a follow token is sent on event requests and scopes ITC lookups to its eve
   assert.deepEqual(seen[0].headers, { "X-Follow-Token": "tok-1" });
   assert.match(seen[1].url, /\/api\/itc\/rankings\?leagueId=league-1&userId=u1&eventId=evt-1$/);
   assert.equal(seen[2].headers, undefined, "cleared token is no longer sent");
+});
+
+test("fetchMyPairingForRound asks for that one round, not every round", async () => {
+  const { calls } = installFetch(() => ({
+    status: 200,
+    body: JSON.stringify([
+      {
+        id: "pr-3", pairingType: "Pairing", round: 3, table: 7, published: true, isDone: false,
+        player1Id: "opp", player2Id: "me",
+        player1: { id: "opp", user: { id: "u-opp", firstName: "Oppo", lastName: "Nent" } },
+        player2: { id: "me", user: { id: "u-me" } },
+      },
+    ]),
+  }));
+  const mine = await fetchMyPairingForRound("evt-1", "me", 3, false);
+  assert.equal(calls.length, 1);
+  const params = new URL(calls[0]).searchParams;
+  assert.equal(params.get("round"), "3");
+  assert.equal(params.get("rounds"), null);
+  assert.equal(mine?.table, 7);
+  assert.equal(mine?.opponentName, "Oppo Nent");
+
+  __clearRequestCacheForTests();
+  installFetch(() => ({ status: 200, body: "[]" }));
+  assert.equal(await fetchMyPairingForRound("evt-1", "me", 4, false), null, "no pairing for me yet");
 });

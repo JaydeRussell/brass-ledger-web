@@ -497,6 +497,27 @@ export async function fetchMyTeamPairings(
 }
 
 /**
+ * My pairing in one round, or null if BCP hasn't published one for me. One
+ * round's pairings rather than every round's: the full set for a large
+ * event is close to a megabyte, and the round board already asks for
+ * this same URL, so the two share one request.
+ */
+export async function fetchMyPairingForRound(
+  eventId: string,
+  myId: string,
+  round: number,
+  teamEvent: boolean,
+  refresh = false
+): Promise<MyPairing | null> {
+  const records = await fetchRoundPairings(eventId, round, teamEvent ? "TeamPairing" : "Pairing", refresh);
+  for (const record of records) {
+    const mine = teamEvent ? teamPairingToMine(record, myId) : individualPairingToMine(record, myId);
+    if (mine) return { ...mine, round: mine.round || round };
+  }
+  return null;
+}
+
+/**
  * Every entry's round-by-round pairing result for an event's placings,
  * keyed by the same id PlacingEntry.id uses (player id for individual
  * events, teamPlayerId for team events) — lets the Placings tab show a
