@@ -65,3 +65,5 @@ jobs:
           done
           echo "FAIL  https://brass-ledger.app/about isn't serving $want after 6 attempts" >&2
           exit 1
+      - name: Smoke-test every page in production
+        run: scripts/route-smoke.sh https://brass-ledger.app

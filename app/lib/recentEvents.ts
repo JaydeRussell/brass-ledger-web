@@ -8,6 +8,7 @@
 // still updates their in-memory list but doesn't save it locally.
 // Neither half talks to BCP.
 
+import { httpErrorMessage } from "./httpError";
 const RECENT_EVENTS_STORAGE_KEY = "bcp-recent-events";
 const MAX_RECENT_EVENTS = 8;
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
@@ -67,7 +68,7 @@ export function recordRecentEvent(
 async function handleJSONResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;

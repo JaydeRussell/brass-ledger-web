@@ -7,7 +7,9 @@ import Card from "../../components/ui/card";
 import ErrorAlert from "../../components/ui/errorAlert";
 import PageHeader from "../../components/layout/pageHeader";
 import PageMain from "../../components/layout/pageMain";
+import Spinner from "../../components/shared/spinner";
 import { resolveFollowLink } from "../../lib/follow";
+import { useDelayedFlag } from "../../lib/useDelayedFlag";
 
 type LinkState = { status: "loading" } | { status: "dead" } | { status: "error"; message: string } | { status: "ok"; view: FollowLinkView };
 
@@ -19,6 +21,7 @@ function FollowPage() {
   const params = useParams<{ token: string }>();
   const token = params?.token ? decodeURIComponent(params.token) : "";
   const [state, setState] = React.useState<LinkState>({ status: "loading" });
+  const slow = useDelayedFlag(state.status === "loading");
 
   React.useEffect(() => {
     if (!token) return;
@@ -52,7 +55,15 @@ function FollowPage() {
           </Card>
         ) : state.status === "error" ? (
           <ErrorAlert>Couldn&apos;t open this link: {state.message}</ErrorAlert>
-        ) : null}
+        ) : (
+          <div role="status" aria-live="polite" className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+              <Spinner size="sm" />
+              <span>Opening the link…</span>
+            </div>
+            {slow && <p className="text-xs text-text-tertiary">Taking longer than usual.</p>}
+          </div>
+        )}
       </PageMain>
     </div>
   );

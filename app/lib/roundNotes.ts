@@ -5,6 +5,7 @@
 // recentEvents.ts's account-synced half — no guest/localStorage fallback
 // (see components/pairings/roundNotes.tsx's doc comment for why).
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 /** Same decode/error handling as recentEvents.ts's handleJSONResponse —
@@ -13,7 +14,7 @@ const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhos
 async function handleJSONResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;

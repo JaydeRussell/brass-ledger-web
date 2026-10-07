@@ -103,3 +103,9 @@ test("distanceText: approximate from the device, exact from a typed place", asyn
   assert.equal(distanceText(11, "Denver, Colorado, United States"), "11 mi (18 km) from Denver");
   assert.equal(distanceText(0, "Lindsay"), "0 mi (0 km) from Lindsay");
 });
+
+test("a 200 null answer also means there isn't one", async () => {
+  installFetch(() => ({ status: 200, body: null }));
+  assert.equal(await fetchMyFollowLink("evt-1"), null);
+  assert.equal(await fetchSpectatingFor("evt-1"), null);
+});

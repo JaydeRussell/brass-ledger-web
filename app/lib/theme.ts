@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { logClientEvent } from "./clientLog.ts";
+import { httpErrorMessage } from "./httpError.ts";
 
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
@@ -112,7 +113,7 @@ export async function setAccountAccentTheme(accent: AccentTheme): Promise<void> 
     body: JSON.stringify({ accentTheme: accent }),
   });
   if (!res.ok) {
-    throw new Error(`Request failed: HTTP ${res.status}`);
+    throw new Error(httpErrorMessage(res.status));
   }
 }
 

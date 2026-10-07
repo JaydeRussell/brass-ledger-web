@@ -9,13 +9,14 @@
 // needs credentials: "include" — same small getJSON duplicated here as
 // in myEvents.ts, for the same reason noted there.
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${BACKEND_API_BASE}${path}`, { credentials: "include" });
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;

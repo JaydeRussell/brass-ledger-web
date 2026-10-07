@@ -25,6 +25,7 @@
 // numbers side by side (no framing, no "favored" label) stays fine —
 // see the backend's internal/bcp/types.go for the full reasoning.
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 // Only used to build a link out to a player's public BCP profile page —
@@ -63,7 +64,7 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const text = await res.text();
 
   if (!res.ok) {
-    let message = `Request failed: HTTP ${res.status}`;
+    let message = httpErrorMessage(res.status);
     try {
       const body = JSON.parse(text) as { error?: string };
       if (body?.error) message = body.error;
@@ -494,6 +495,27 @@ export async function fetchMyTeamPairings(
     if (mine) results.push(mine);
   }
   return results.sort((a, b) => a.round - b.round);
+}
+
+/**
+ * My pairing in one round, or null if BCP hasn't published one for me. One
+ * round's pairings rather than every round's: the full set for a large
+ * event is close to a megabyte, and the round board already asks for
+ * this same URL, so the two share one request.
+ */
+export async function fetchMyPairingForRound(
+  eventId: string,
+  myId: string,
+  round: number,
+  teamEvent: boolean,
+  refresh = false
+): Promise<MyPairing | null> {
+  const records = await fetchRoundPairings(eventId, round, teamEvent ? "TeamPairing" : "Pairing", refresh);
+  for (const record of records) {
+    const mine = teamEvent ? teamPairingToMine(record, myId) : individualPairingToMine(record, myId);
+    if (mine) return { ...mine, round: mine.round || round };
+  }
+  return null;
 }
 
 /**

@@ -9,6 +9,7 @@
 // backend attaches that account's name/email to the admin alert for
 // triage context. Its absence never blocks the submission.
 
+import { httpErrorMessage } from "./httpError";
 const BACKEND_API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 export type FeedbackKind = "bug" | "suggestion";
@@ -40,7 +41,7 @@ export async function submitFeedback(submission: FeedbackSubmission): Promise<vo
   if (res.ok) return;
 
   const text = await res.text();
-  let message = `Request failed: HTTP ${res.status}`;
+  let message = httpErrorMessage(res.status);
   try {
     const body = JSON.parse(text) as { error?: string };
     if (body?.error) message = body.error;

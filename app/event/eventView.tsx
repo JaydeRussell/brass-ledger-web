@@ -33,7 +33,7 @@ import {
   fetchCurrentItcLeagueId,
   fetchItcRanking,
   fetchMyIndividualPairings,
-  fetchMyTeamPairings,
+  fetchMyPairingForRound,
   fetchPlacingRoundScores,
   fetchTeamPairingBoards,
   fetchRoundBoard,
@@ -765,10 +765,12 @@ export default function EventView({ follow }: EventViewProps = {}) {
     return clubmates.length > 0 ? [myPlayer, ...clubmates] : [];
   }, [players, myPlayer, eventInfo?.teamEvent]);
 
-  // Round-by-round pairings for myTeammates. Purely a read of
-  // already-published BCP data.
+  // Round-by-round pairings for myTeammates, loaded once the Team tab is
+  // opened: every round's pairings for a large event is close to a
+  // megabyte, so it isn't fetched for people who never look. Purely a
+  // read of already-published BCP data.
   useEffect(() => {
-    if (!eventInfo || myTeammates.length === 0) return;
+    if (activeTab !== "team" || !eventInfo || myTeammates.length === 0) return;
     const upToRound = eventInfo.ended ? eventInfo.numberOfRounds : eventInfo.currentRound;
     if (upToRound <= 0) return;
 
@@ -808,7 +810,7 @@ export default function EventView({ follow }: EventViewProps = {}) {
     return () => {
       cancelled = true;
     };
-  }, [myTeammates, eventInfo, eventId]);
+  }, [activeTab, myTeammates, eventInfo, eventId]);
 
   // Non-null exactly when the "Your round" card is shown.
   const myRoundInfo =
@@ -831,18 +833,16 @@ export default function EventView({ follow }: EventViewProps = {}) {
     const refresh = mineRefreshRequestedRef.current;
     mineRefreshRequestedRef.current = false;
 
-    const request =
-      eventInfo.teamEvent && myPlayer.teamPlayerId
-        ? fetchMyTeamPairings(eventId, myPlayer.teamPlayerId, boardRound, refresh)
-        : fetchMyIndividualPairings(eventId, String(myPlayer.id), boardRound, refresh);
-
-    request
-      .then((results) => {
+    const teamRound = Boolean(eventInfo.teamEvent && myPlayer.teamPlayerId);
+    fetchMyPairingForRound(
+      eventId,
+      teamRound ? myPlayer.teamPlayerId! : String(myPlayer.id),
+      boardRound,
+      teamRound,
+      refresh
+    )
+      .then((mine) => {
         if (cancelled) return;
-        // Match on round number rather than taking the array's last entry
-        // — a round can come back with no entry at all if BCP hasn't
-        // generated it yet, which shouldn't fall back to an older round.
-        const mine = results.find((p) => p.round === boardRound) ?? null;
         setMyPairingState({ pairing: mine, loading: false, error: null });
         setMyPairingSyncedAt(Date.now());
       })
@@ -1282,7 +1282,7 @@ export default function EventView({ follow }: EventViewProps = {}) {
       </div>
 
       <PageMain>
-    {((activeTab === "roster" && !compareMode) || activeTab === "pairings" || activeTab === "placings") && (
+    {((activeTab === "roster" && !compareMode) || (activeTab === "pairings" && boardRound) || activeTab === "placings") && (
       <SearchBar
         value={searchQuery}
         onChange={setSearchQuery}
@@ -1308,7 +1308,10 @@ export default function EventView({ follow }: EventViewProps = {}) {
       </>
     )}
 
-    {activeTab === "mine" && (
+    {/* Until the roster arrives a followed player has no name or round to
+        show, and the empty panel would read as the viewer's own. */}
+    {activeTab === "mine" && showingFollowed && !followedPlayer && rosterPending && <CardSkeleton />}
+    {activeTab === "mine" && !(showingFollowed && !followedPlayer && rosterPending) && (
       <MinePanel
         myRound={
           myRoundInfo
@@ -1485,6 +1488,11 @@ export default function EventView({ follow }: EventViewProps = {}) {
 
     {activeTab === "pairings" && (
       <>
+        {!boardRound && eventInfo && (
+          <p className="rounded-lg border border-dashed border-surface-border p-6 text-center text-sm text-text-secondary">
+            No pairings published yet. They show here once round 1 is paired.
+          </p>
+        )}
         {boardRound && (
           <RoundBoard
             eventId={eventId}

@@ -60,7 +60,7 @@ function ResultCard({ event, distance }: { event: EventSearchResult; distance?: 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           <Link
             href={`/event?event=${encodeURIComponent(event.id)}`}
-            className="text-xs font-medium text-brass-400 hover:underline"
+            className="inline-flex items-center min-h-[24px] text-xs font-medium text-brass-400 hover:underline"
           >
             View event →
           </Link>
@@ -69,7 +69,7 @@ function ResultCard({ event, distance }: { event: EventSearchResult; distance?: 
               href={bcpRegisterUrl(event.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-medium text-text-secondary hover:underline"
+              className="inline-flex items-center min-h-[24px] text-xs font-medium text-text-secondary hover:underline"
             >
               Join on BCP<span className="sr-only"> (opens in a new tab)</span>
             </a>
@@ -157,10 +157,16 @@ function SearchContent() {
     }
   }
 
+  // Bumped by each new search, so a Load more page that arrives after the
+  // search changed is dropped rather than appended to the wrong results.
+  const searchGeneration = React.useRef(0);
+
   const appliedKey = applied ? JSON.stringify(applied) : "";
   React.useEffect(() => {
     if (!approved || !applied) return;
     let cancelled = false;
+    searchGeneration.current += 1;
+    setLoadingMore(false);
     setLoading(true);
     setError(null);
     searchEvents(toFilters(applied))
@@ -184,10 +190,13 @@ function SearchContent() {
 
   const loadMore = () => {
     if (!nextCursor || !applied || loadingMore) return;
+    const generation = searchGeneration.current;
+    const current = () => generation === searchGeneration.current;
     setLoadingMore(true);
     setError(null);
     searchEvents(toFilters(applied), nextCursor)
       .then((page) => {
+        if (!current()) return;
         // BCP's pages can overlap at the boundary.
         setResults((prev) => {
           const seen = new Set((prev ?? []).map((e) => e.id));
@@ -195,8 +204,12 @@ function SearchContent() {
         });
         setNextCursor(page.results.length > 0 ? page.nextCursor : undefined);
       })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setLoadingMore(false));
+      .catch((err: unknown) => {
+        if (current()) setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (current()) setLoadingMore(false);
+      });
   };
 
   const datesValid = !draft.from || !draft.to || draft.to >= draft.from;
@@ -251,7 +264,7 @@ function SearchContent() {
                 onRadiusChange={(radius) => setDraft((d) => ({ ...d, radius }))}
               />
 
-              <fieldset className="flex flex-col gap-1.5">
+              <fieldset className="flex min-w-0 flex-col gap-1.5">
                 <legend className="text-xs font-medium text-text-secondary">Dates</legend>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
                   <label htmlFor={fromId}>From</label>
@@ -275,7 +288,7 @@ function SearchContent() {
                     <button
                       type="button"
                       onClick={() => setDraft((d) => ({ ...d, from: "", to: "" }))}
-                      className="text-text-tertiary hover:underline"
+                      className="inline-flex min-h-[24px] items-center px-1 text-text-tertiary hover:underline"
                     >
                       Clear
                     </button>

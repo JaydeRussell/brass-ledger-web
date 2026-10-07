@@ -42,7 +42,7 @@ function EventCard({ event }: { event: MyEvent }) {
         </div>
         <Link
           href={`/event?event=${encodeURIComponent(event.eventId)}`}
-          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brass-400 hover:underline"
+          className="mt-2 inline-flex min-h-[24px] items-center gap-1 text-xs font-medium text-brass-400 hover:underline"
         >
           View event page →
         </Link>
