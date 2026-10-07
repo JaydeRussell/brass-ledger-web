@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { ACCENT_THEMES, useAccentTheme, type AccentTheme } from "../../lib/theme";
+import { radioGroupKeyDown } from "../../lib/radioGroup";
 
 type AccentThemePickerProps = {
   // The signed-in account's saved accent theme, or null for a signed-out
@@ -74,7 +75,14 @@ export default function AccentThemePicker({ account = null }: AccentThemePickerP
           Done
         </button>
       </div>
-      <div role="radiogroup" aria-label="Accent theme" className="grid grid-cols-3 gap-1.5">
+      {/* Choosing an accent closes the picker, so arrows only move focus here;
+          Enter or Space chooses. */}
+      <div
+        role="radiogroup"
+        aria-label="Accent theme"
+        className="grid grid-cols-3 gap-1.5"
+        onKeyDown={(e) => radioGroupKeyDown(e, { select: false })}
+      >
         {ACCENT_THEMES.map((option) => {
           const isActive = accent === option.value;
           return (
@@ -83,6 +91,7 @@ export default function AccentThemePicker({ account = null }: AccentThemePickerP
               type="button"
               role="radio"
               aria-checked={isActive}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => {
                 setAccent(option.value);
                 setExpanded(false);

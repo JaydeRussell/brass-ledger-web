@@ -13,9 +13,18 @@ routes=(
   /login /welcome /admin /admin/accounts /admin/feedback
   /follow/smoke-test /dossier/smoke-test /players/smoke-test
 )
+# A single 5xx is retried: right after a deploy, Cloudflare can answer
+# 503 for a moment while the new version rolls out. curl prints 000 when
+# nothing answers.
+fetch_code() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1" || true; }
 failed=0
 for route in "${routes[@]}"; do
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$base$route" || echo 000)"
+  code="$(fetch_code "$base$route")"
+  for retry in 1 2; do
+    [[ "$code" == 5* || "$code" == 000 ]] || break
+    sleep "${RETRY_WAIT:-10}"
+    code="$(fetch_code "$base$route")"
+  done
   if [[ "$code" == 5* || "$code" == 000 ]]; then
     echo "FAIL  $code $route"
     failed=1

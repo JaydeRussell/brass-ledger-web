@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { PlacingHistoryPoint } from "../../lib/myStats";
 import { ordinal } from "../../lib/formatStats";
 import { formatEventDate } from "../../lib/eventDates";
+import { radioGroupKeyDown } from "../../lib/radioGroup";
 
 type PlacingTrendChartProps = {
   // Chronological (oldest first) — see PlacingHistoryPoint's doc comment.
@@ -185,6 +186,7 @@ export default function PlacingTrendChart({ points, showChart }: PlacingTrendCha
           <div
             role="radiogroup"
             aria-label="Chart metric"
+            onKeyDown={(e) => radioGroupKeyDown(e)}
             className="flex gap-1 rounded-md border border-surface-border bg-surface-2 p-1"
           >
             {(["placing", "percentile"] as const).map((m) => {
@@ -196,6 +198,7 @@ export default function PlacingTrendChart({ points, showChart }: PlacingTrendCha
                   type="button"
                   role="radio"
                   aria-checked={active}
+                  tabIndex={active ? 0 : -1}
                   disabled={disabled}
                   title={disabled ? "No event here has a published field size" : undefined}
                   onClick={() => setMetric(m)}
@@ -349,6 +352,7 @@ export default function PlacingTrendChart({ points, showChart }: PlacingTrendCha
           <div
             role="radiogroup"
             aria-label="Format filter"
+            onKeyDown={(e) => radioGroupKeyDown(e)}
             className="flex gap-1 rounded-md border border-surface-border bg-surface-2 p-1"
           >
             {(["all", ...availableFormats] as const).map((f) => {
@@ -359,6 +363,7 @@ export default function PlacingTrendChart({ points, showChart }: PlacingTrendCha
                   type="button"
                   role="radio"
                   aria-checked={active}
+                  tabIndex={active ? 0 : -1}
                   onClick={() => selectFormat(f)}
                   className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
                     active ? "bg-brass-500 text-[oklch(0.16_0.006_260)]" : "text-text-secondary hover:text-text-primary"

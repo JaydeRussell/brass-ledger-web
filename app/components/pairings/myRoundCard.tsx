@@ -81,6 +81,8 @@ type MyRoundCardProps = {
   // False for a viewer with no approved account, who can't load the
   // opponent's stats or head-to-head.
   signedIn?: boolean;
+  // The event has finished, so a missing pairing won't be published later.
+  eventEnded?: boolean;
 };
 
 type ResolvedOpponent = {
@@ -151,6 +153,7 @@ export default function MyRoundCard({
   lastSyncedAt,
   subjectName,
   signedIn = true,
+  eventEnded = false,
 }: MyRoundCardProps) {
   const slowLoad = useDelayedFlag(loading);
   const roundTitle = subjectName ? `${possessive(subjectName)} round` : "Your round";
@@ -203,7 +206,9 @@ export default function MyRoundCard({
       <Card className="p-4 shadow-sm">
         {header}
         <p className="mt-1 text-sm text-text-secondary">
-          No pairing published for round {round} yet.
+          {eventEnded
+            ? `Not paired in round ${round}, the event's last round. Placings has the final standings.`
+            : `No pairing published for round ${round} yet.`}
         </p>
         {notes}
       </Card>

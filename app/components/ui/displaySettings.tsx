@@ -1,5 +1,6 @@
 "use client";
 import { DENSITIES, TEXT_SIZES, useDisplayPrefs } from "../../lib/displayPrefs";
+import { radioGroupKeyDown } from "../../lib/radioGroup";
 
 /**
  * Text size (four steps, each shown at its own size), Density and a
@@ -14,7 +15,7 @@ export default function DisplaySettings() {
         <span id="text-size-label" className="text-xs text-text-secondary">
           Text size
         </span>
-        <div role="radiogroup" aria-labelledby="text-size-label" className="flex gap-1">
+        <div role="radiogroup" aria-labelledby="text-size-label" className="flex gap-1" onKeyDown={(e) => radioGroupKeyDown(e)}>
           {TEXT_SIZES.map((size) => (
             <button
               key={size.value}
@@ -23,6 +24,7 @@ export default function DisplaySettings() {
               aria-checked={textSize === size.value}
               aria-label={size.label}
               title={size.label}
+              tabIndex={textSize === size.value ? 0 : -1}
               onClick={() => setTextSize(size.value)}
               className={`flex h-7 w-7 items-center justify-center rounded-md border font-medium leading-none ${
                 textSize === size.value
@@ -46,6 +48,7 @@ export default function DisplaySettings() {
         <div
           role="radiogroup"
           aria-labelledby="density-label"
+          onKeyDown={(e) => radioGroupKeyDown(e)}
           className="flex overflow-hidden rounded-md border border-surface-border"
         >
           {DENSITIES.map((d) => (
@@ -54,6 +57,7 @@ export default function DisplaySettings() {
               type="button"
               role="radio"
               aria-checked={density === d.value}
+              tabIndex={density === d.value ? 0 : -1}
               onClick={() => setDensity(d.value)}
               className={`px-2 py-1 text-2xs font-medium ${
                 density === d.value

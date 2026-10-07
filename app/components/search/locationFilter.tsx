@@ -107,7 +107,9 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
   return (
     <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className="text-xs font-medium text-text-secondary">Location</legend>
-      <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Location">
+      {/* Toggle buttons rather than radios: radios select as arrow keys
+          move, and passing "Near me" would ask for the location. */}
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Location">
         {(
           [
             ["anywhere", "Anywhere"],
@@ -118,8 +120,7 @@ export default function LocationFilter({ location, onLocationChange, radiusMiles
           <button
             key={value}
             type="button"
-            role="radio"
-            aria-checked={mode === value}
+            aria-pressed={mode === value}
             onClick={() => choose(value)}
             className={`${SEGMENT} ${
               mode === value
